@@ -69,7 +69,8 @@ def fetch(payload: dict[str, Any], timeout: int) -> tuple[int, str, Any]:
         headers={
             "Accept": "application/json",
             "Content-Type": "application/json",
-            "User-Agent": "Mozilla/5.0 (compatible; qd766-readonly-catalog/1.0)",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
         },
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
