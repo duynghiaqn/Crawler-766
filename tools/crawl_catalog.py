@@ -29,9 +29,11 @@ import json
 import random
 import re
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -52,7 +54,7 @@ except ImportError:
 
 
 class CrawlerProgressBar:
-    """Flexible progress bar supporting tqdm with fallback to clean standard console output."""
+    """Flexible thread-safe progress bar supporting tqdm with fallback to clean standard console output."""
 
     def __init__(self, total: int, desc: str = "Crawling", unit: str = "item"):
         self.total = total
@@ -60,6 +62,7 @@ class CrawlerProgressBar:
         self.unit = unit
         self.current = 0
         self.start_time = time.time()
+        self._lock = threading.Lock()
         if HAS_TQDM:
             self.pbar = tqdm(
                 total=total,
@@ -73,19 +76,21 @@ class CrawlerProgressBar:
             self._render_fallback()
 
     def update(self, n: int = 1, status: str = ""):
-        self.current += n
-        if self.pbar:
-            if status:
-                self.pbar.set_postfix_str(status)
-            self.pbar.update(n)
-        else:
-            self._render_fallback(status)
+        with self._lock:
+            self.current += n
+            if self.pbar:
+                if status:
+                    self.pbar.set_postfix_str(status)
+                self.pbar.update(n)
+            else:
+                self._render_fallback(status)
 
     def set_postfix_str(self, status: str):
-        if self.pbar:
-            self.pbar.set_postfix_str(status)
-        else:
-            self._render_fallback(status)
+        with self._lock:
+            if self.pbar:
+                self.pbar.set_postfix_str(status)
+            else:
+                self._render_fallback(status)
 
     def _render_fallback(self, status: str = ""):
         elapsed = time.time() - self.start_time
@@ -104,10 +109,12 @@ class CrawlerProgressBar:
             sys.stdout.write("\n")
 
     def close(self):
-        if self.pbar:
-            self.pbar.close()
-        elif self.current < self.total:
-            sys.stdout.write("\n")
+        with self._lock:
+            if self.pbar:
+                self.pbar.close()
+            elif self.current < self.total:
+                sys.stdout.write("\n")
+
 
 
 
@@ -628,6 +635,86 @@ def crawl_one_province(pw, province: dict[str, Any], year: int, headed: bool, ti
                 pass
 
 
+def _process_one_province(
+    pw: Any,
+    province: dict[str, Any],
+    args: Any,
+    checkpoint: dict[str, Any],
+    raw_dir: Path,
+    catalog_dir: Path,
+    checkpoint_path: Path,
+    provinces: list[dict[str, Any]],
+    pbar: CrawlerProgressBar,
+    lock: threading.Lock,
+) -> None:
+    code = province["departmentCode"]
+    name = province["departmentName"]
+    pbar.set_postfix_str(f"[{code}] {name}")
+
+    with lock:
+        previous = checkpoint["items"].get(code, {})
+    raw_path = raw_dir / f"{code}.json"
+
+    if args.resume and previous.get("status") == "verified" and raw_path.exists() and not args.force:
+        pbar.update(1, status=f"{code} Skipped (already verified)")
+        return
+
+    if not args.force and previous.get("status") == "verified" and raw_path.exists():
+        pbar.update(1, status=f"{code} Skipped (verified RAW exists)")
+        return
+
+    success = False
+    last_result: dict[str, Any] = {}
+    for attempt in range(1, args.retries_per_province + 2):
+        try:
+            success, result = crawl_one_province(
+                pw,
+                province,
+                args.year,
+                headed=args.headed,
+                timeout_ms=args.timeout,
+                ui_first=args.ui_first,
+            )
+            last_result = result
+            if success:
+                break
+        except KeyboardInterrupt:
+            raise
+        except Exception as exc:
+            last_result = {"status": "error", "error": str(exc)}
+        if not success and attempt <= args.retries_per_province:
+            retry_wait = min(30.0, (args.delay_max * attempt) + random.uniform(1.0, 3.0))
+            pbar.set_postfix_str(f"{code} retrying in {retry_wait:.1f}s...")
+            time.sleep(retry_wait)
+
+    with lock:
+        if success:
+            text = last_result.pop("rawText")
+            raw_path.write_text(text, encoding="utf-8")
+            last_result["departmentId"] = province["departmentId"]
+            last_result["departmentName"] = name
+            last_result["departmentCode"] = code
+            last_result["rootDepartmentId"] = province["departmentId"]
+            checkpoint["items"][code] = last_result
+            pbar.update(1, status=f"{code} VERIFIED ({last_result['evaluationCount']} eval, {last_result['agencyCount']} agency)")
+        else:
+            checkpoint["items"][code] = {
+                "departmentId": province["departmentId"],
+                "departmentName": name,
+                "departmentCode": code,
+                "rootDepartmentId": province["departmentId"],
+                **last_result,
+            }
+            pbar.update(1, status=f"{code} FAILED ({last_result.get('error', 'unknown')})")
+
+        catalog_summary = rebuild_catalog(args.year, provinces, raw_dir, catalog_dir, checkpoint)
+        save_checkpoint(checkpoint_path, checkpoint)
+        write_manifest(args.year, ENDPOINT, checkpoint, catalog_summary, catalog_dir)
+
+    wait = random.uniform(args.delay_min, args.delay_max) + random.uniform(0.1, 0.4)
+    time.sleep(wait)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--year", type=int, default=datetime.now().year)
@@ -640,7 +727,7 @@ def main() -> int:
     parser.add_argument("--resume", action="store_true", help="Skip provinces already verified in checkpoint")
     parser.add_argument("--retry-failed", action="store_true", help="Crawl only provinces previously marked failed")
     parser.add_argument("--skip-if-exists", action="store_true", help="Skip crawling if verified RAW data already exists for targets")
-    parser.add_argument("--concurrency", type=int, default=1, help="Number of worker threads (default: 1 - Single-threaded to avoid WAF block)")
+    parser.add_argument("--concurrency", type=int, default=3, help="Number of worker threads (default: 3 - Multi-threaded partition)")
     parser.add_argument("--timeout", type=int, default=45_000)
     parser.add_argument("--delay-min", type=float, default=2.5)
     parser.add_argument("--delay-max", type=float, default=5.0)
@@ -651,12 +738,7 @@ def main() -> int:
     if args.delay_max < args.delay_min:
         raise SystemExit("--delay-max must be >= --delay-min")
 
-    if args.concurrency > 1:
-        print(
-            f"⚠️  Warning: --concurrency={args.concurrency} requested. Enforcing Single-Threaded Sequential mode (1 worker) "
-            f"to protect against DVCQG WAF IP ban.",
-            file=sys.stderr,
-        )
+    if args.concurrency < 1:
         args.concurrency = 1
 
     provinces = load_provinces()
@@ -705,9 +787,11 @@ def main() -> int:
     elif args.retry_failed:
         targets = [p for p in targets if classify_status_from_checkpoint(checkpoint["items"].get(p["departmentCode"])) not in ("failed_request", "failed_http", "failed_verification", "error")]
 
-
     print(f"Discovered {len(provinces)} province records. Crawling {len(targets)} province(s).")
-    print(f"🔒 Execution Mode: Single-Threaded Sequential (1 worker | Avoid WAF IP block)")
+    if args.concurrency > 1:
+        print(f"⚡ Execution Mode: Multi-Threaded Province Partition ({args.concurrency} workers | Speed Optimized)")
+    else:
+        print(f"🔒 Execution Mode: Single-Threaded Sequential (1 worker)")
     print(f"⏱️  Randomized Sleep Jitter: {args.delay_min}s ➡️ {args.delay_max}s")
     if args.resume:
         print("Mode: RESUME")
@@ -717,74 +801,38 @@ def main() -> int:
         print("Mode: NORMAL")
 
     pbar = CrawlerProgressBar(total=len(targets), desc="Crawling DVCQG Provinces", unit="province")
+    checkpoint_lock = threading.Lock()
 
     try:
         with sync_playwright() as pw:
-            for index, province in enumerate(targets, start=1):
-                code = province["departmentCode"]
-                name = province["departmentName"]
-                pbar.set_postfix_str(f"[{code}] {name}")
-
-                previous = checkpoint["items"].get(code, {})
-                raw_path = raw_dir / f"{code}.json"
-
-                if args.resume and previous.get("status") == "verified" and raw_path.exists() and not args.force:
-                    pbar.update(1, status=f"{code} Skipped (already verified)")
-                    continue
-
-                if not args.force and previous.get("status") == "verified" and raw_path.exists():
-                    pbar.update(1, status=f"{code} Skipped (verified RAW exists)")
-                    continue
-
-                success = False
-                last_result: dict[str, Any] = {}
-                for attempt in range(1, args.retries_per_province + 2):
-                    try:
-                        success, result = crawl_one_province(
+            if args.concurrency <= 1 or len(targets) <= 1:
+                for province in targets:
+                    _process_one_province(pw, province, args, checkpoint, raw_dir, catalog_dir, checkpoint_path, provinces, pbar, checkpoint_lock)
+            else:
+                max_workers = min(args.concurrency, len(targets))
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    futures = [
+                        executor.submit(
+                            _process_one_province,
                             pw,
                             province,
-                            args.year,
-                            headed=args.headed,
-                            timeout_ms=args.timeout,
-                            ui_first=args.ui_first,
+                            args,
+                            checkpoint,
+                            raw_dir,
+                            catalog_dir,
+                            checkpoint_path,
+                            provinces,
+                            pbar,
+                            checkpoint_lock,
                         )
-                        last_result = result
-                        if success:
-                            break
-                    except KeyboardInterrupt:
-                        raise
-                    except Exception as exc:
-                        last_result = {"status": "error", "error": str(exc)}
-                    if not success and attempt <= args.retries_per_province:
-                        retry_wait = min(30.0, (args.delay_max * attempt) + random.uniform(1.0, 3.0))
-                        pbar.set_postfix_str(f"{code} retrying in {retry_wait:.1f}s...")
-                        time.sleep(retry_wait)
+                        for province in targets
+                    ]
+                    for future in as_completed(futures):
+                        try:
+                            future.result()
+                        except Exception as exc:
+                            print(f"\n⚠️  Province worker thread error: {exc}", file=sys.stderr)
 
-                if success:
-                    text = last_result.pop("rawText")
-                    raw_path.write_text(text, encoding="utf-8")
-                    last_result["departmentId"] = province["departmentId"]
-                    last_result["departmentName"] = name
-                    last_result["departmentCode"] = code
-                    last_result["rootDepartmentId"] = province["departmentId"]
-                    checkpoint["items"][code] = last_result
-                    pbar.update(1, status=f"{code} VERIFIED ({last_result['evaluationCount']} eval, {last_result['agencyCount']} agency)")
-                else:
-                    checkpoint["items"][code] = {
-                        "departmentId": province["departmentId"],
-                        "departmentName": name,
-                        "departmentCode": code,
-                        "rootDepartmentId": province["departmentId"],
-                        **last_result,
-                    }
-                    pbar.update(1, status=f"{code} FAILED ({last_result.get('error', 'unknown')})")
-
-                catalog_summary = rebuild_catalog(args.year, provinces, raw_dir, catalog_dir, checkpoint)
-                save_checkpoint(checkpoint_path, checkpoint)
-                write_manifest(args.year, ENDPOINT, checkpoint, catalog_summary, catalog_dir)
-
-                wait = random.uniform(args.delay_min, args.delay_max) + random.uniform(0.1, 0.4)
-                time.sleep(wait)
         pbar.close()
     except KeyboardInterrupt:
         pbar.close()
@@ -810,6 +858,7 @@ def main() -> int:
     print(f"  raw directory       : {raw_dir}")
     print(f"  catalog directory   : {catalog_dir}")
     return 0
+
 
 
 

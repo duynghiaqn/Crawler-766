@@ -25,9 +25,11 @@ import json
 import random
 import re
 import sys
+import threading
 import time
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -68,7 +70,7 @@ except ImportError:
 
 
 class CrawlerProgressBar:
-    """Flexible progress bar supporting tqdm with fallback to clean standard console output."""
+    """Flexible thread-safe progress bar supporting tqdm with fallback to clean standard console output."""
 
     def __init__(self, total: int, desc: str = "Crawling", unit: str = "item"):
         self.total = total
@@ -76,6 +78,7 @@ class CrawlerProgressBar:
         self.unit = unit
         self.current = 0
         self.start_time = time.time()
+        self._lock = threading.Lock()
         if HAS_TQDM:
             self.pbar = tqdm(
                 total=total,
@@ -89,19 +92,21 @@ class CrawlerProgressBar:
             self._render_fallback()
 
     def update(self, n: int = 1, status: str = ""):
-        self.current += n
-        if self.pbar:
-            if status:
-                self.pbar.set_postfix_str(status)
-            self.pbar.update(n)
-        else:
-            self._render_fallback(status)
+        with self._lock:
+            self.current += n
+            if self.pbar:
+                if status:
+                    self.pbar.set_postfix_str(status)
+                self.pbar.update(n)
+            else:
+                self._render_fallback(status)
 
     def set_postfix_str(self, status: str):
-        if self.pbar:
-            self.pbar.set_postfix_str(status)
-        else:
-            self._render_fallback(status)
+        with self._lock:
+            if self.pbar:
+                self.pbar.set_postfix_str(status)
+            else:
+                self._render_fallback(status)
 
     def _render_fallback(self, status: str = ""):
         elapsed = time.time() - self.start_time
@@ -120,10 +125,12 @@ class CrawlerProgressBar:
             sys.stdout.write("\n")
 
     def close(self):
-        if self.pbar:
-            self.pbar.close()
-        elif self.current < self.total:
-            sys.stdout.write("\n")
+        with self._lock:
+            if self.pbar:
+                self.pbar.close()
+            elif self.current < self.total:
+                sys.stdout.write("\n")
+
 
 
 def utc_now() -> str:
@@ -266,6 +273,51 @@ def fetch_national_gia_lai_group_scores(
     return None
 
 
+def _fetch_single_group_map(
+    group_code: str,
+    url: str,
+    data_key: str,
+    time_type: str,
+    year: int,
+    period: int | None,
+    timeout: int,
+    max_retries: int,
+    delay_min: float,
+    delay_max: float,
+    pbar: CrawlerProgressBar | None = None,
+) -> tuple[str, dict[str, float]]:
+    """Worker task to fetch a single group score endpoint concurrently."""
+    result_map: dict[str, float] = {}
+    try:
+        if pbar:
+            pbar.set_postfix_str(f"Fetching {group_code}...")
+        resp = fetch_dvc_endpoint(
+            url,
+            time_type,
+            year,
+            period,
+            timeout=timeout,
+            max_retries=max_retries,
+            delay_min=delay_min,
+            delay_max=delay_max,
+        )
+        data = resp.get("data", {}) if isinstance(resp, dict) else {}
+        items = data.get(data_key, [])
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, dict) and item.get("departmentId"):
+                    score_val = item.get("score") if item.get("score") is not None else item.get("totalScore", 0)
+                    result_map[item["departmentId"]] = round(float(score_val), 2)
+        if pbar:
+            pbar.update(1, status=f"{group_code} OK")
+    except Exception as exc:
+        print(f"\n⚠️  Warning fetching {group_code} group scores: {exc}", file=sys.stderr)
+        if pbar:
+            pbar.update(1, status=f"{group_code} Warn")
+
+    return group_code, result_map
+
+
 def fetch_child_units_group_scores_maps(
     time_type: str,
     year: int,
@@ -274,9 +326,10 @@ def fetch_child_units_group_scores_maps(
     max_retries: int = 4,
     delay_min: float = 1.0,
     delay_max: float = 2.5,
+    concurrency: int = 5,
     pbar: CrawlerProgressBar | None = None,
 ) -> dict[str, dict[str, float]]:
-    """Fetch all 5 criteria group endpoints with User-Agent rotation to build per-child-unit groupScores maps."""
+    """Fetch all 5 criteria group endpoints with User-Agent rotation and multi-threaded partition assembly."""
     maps: dict[str, dict[str, float]] = {
         "CKMB": {},
         "TDGQ": {},
@@ -285,123 +338,51 @@ def fetch_child_units_group_scores_maps(
         "MDSH": {},
     }
 
-    try:
-        if pbar:
-            pbar.set_postfix_str("Fetching CKMB (Công khai minh bạch)...")
-        data_transparency = fetch_dvc_endpoint(
-            ENDPOINT_TRANSPARENCY,
-            time_type,
-            year,
-            period,
-            timeout=timeout,
-            max_retries=max_retries,
-            delay_min=delay_min,
-            delay_max=delay_max,
-        )
-        for item in data_transparency.get("data", {}).get("evaluation", []):
-            if isinstance(item, dict) and item.get("departmentId"):
-                maps["CKMB"][item["departmentId"]] = round(float(item.get("totalScore", 0)), 2)
-        if pbar:
-            pbar.update(1, status="CKMB OK")
-    except Exception as exc:
-        print(f"\n⚠️  Warning fetching Transparency group scores: {exc}", file=sys.stderr)
-        if pbar:
-            pbar.update(1, status="CKMB Warn")
+    tasks = [
+        ("CKMB", ENDPOINT_TRANSPARENCY, "evaluation"),
+        ("TDGQ", ENDPOINT_PROGRESS, "children"),
+        ("ONLINE", ENDPOINT_ONLINE, "children"),
+        ("TTTT", ENDPOINT_PAYMENT, "children"),
+        ("MDSH", ENDPOINT_DIGITIZED, "evaluation"),
+    ]
 
-    try:
-        if pbar:
-            pbar.set_postfix_str("Fetching TDGQ (Tiến độ giải quyết)...")
-        data_progress = fetch_dvc_endpoint(
-            ENDPOINT_PROGRESS,
-            time_type,
-            year,
-            period,
-            timeout=timeout,
-            max_retries=max_retries,
-            delay_min=delay_min,
-            delay_max=delay_max,
-        )
-        for item in data_progress.get("data", {}).get("children", []):
-            if isinstance(item, dict) and item.get("departmentId"):
-                score_val = item.get("score") if item.get("score") is not None else item.get("totalScore", 0)
-                maps["TDGQ"][item["departmentId"]] = round(float(score_val), 2)
-        if pbar:
-            pbar.update(1, status="TDGQ OK")
-    except Exception as exc:
-        print(f"\n⚠️  Warning fetching Progress group scores: {exc}", file=sys.stderr)
-        if pbar:
-            pbar.update(1, status="TDGQ Warn")
-
-    try:
-        if pbar:
-            pbar.set_postfix_str("Fetching ONLINE (Dịch vụ công trực tuyến)...")
-        data_online = fetch_dvc_endpoint(
-            ENDPOINT_ONLINE,
-            time_type,
-            year,
-            period,
-            timeout=timeout,
-            max_retries=max_retries,
-            delay_min=delay_min,
-            delay_max=delay_max,
-        )
-        for item in data_online.get("data", {}).get("children", []):
-            if isinstance(item, dict) and item.get("departmentId"):
-                maps["ONLINE"][item["departmentId"]] = round(float(item.get("totalScore", 0)), 2)
-        if pbar:
-            pbar.update(1, status="ONLINE OK")
-    except Exception as exc:
-        print(f"\n⚠️  Warning fetching Online group scores: {exc}", file=sys.stderr)
-        if pbar:
-            pbar.update(1, status="ONLINE Warn")
-
-    try:
-        if pbar:
-            pbar.set_postfix_str("Fetching TTTT (Thanh toán trực tuyến)...")
-        data_payment = fetch_dvc_endpoint(
-            ENDPOINT_PAYMENT,
-            time_type,
-            year,
-            period,
-            timeout=timeout,
-            max_retries=max_retries,
-            delay_min=delay_min,
-            delay_max=delay_max,
-        )
-        for item in data_payment.get("data", {}).get("children", []):
-            if isinstance(item, dict) and item.get("departmentId"):
-                maps["TTTT"][item["departmentId"]] = round(float(item.get("totalScore", 0)), 2)
-        if pbar:
-            pbar.update(1, status="TTTT OK")
-    except Exception as exc:
-        print(f"\n⚠️  Warning fetching Payment group scores: {exc}", file=sys.stderr)
-        if pbar:
-            pbar.update(1, status="TTTT Warn")
-
-    try:
-        if pbar:
-            pbar.set_postfix_str("Fetching MDSH (Mức độ số hóa)...")
-        data_digitized = fetch_dvc_endpoint(
-            ENDPOINT_DIGITIZED,
-            time_type,
-            year,
-            period,
-            timeout=timeout,
-            max_retries=max_retries,
-            delay_min=delay_min,
-            delay_max=delay_max,
-        )
-        for item in data_digitized.get("data", {}).get("evaluation", []):
-            if isinstance(item, dict) and item.get("departmentId"):
-                maps["MDSH"][item["departmentId"]] = round(float(item.get("totalScore", 0)), 2)
-        if pbar:
-            pbar.update(1, status="MDSH OK")
-    except Exception as exc:
-        print(f"\n⚠️  Warning fetching Digitized group scores: {exc}", file=sys.stderr)
-        if pbar:
-            pbar.update(1, status="MDSH Warn")
+    if concurrency <= 1:
+        # Sequential processing
+        for group_code, url, data_key in tasks:
+            g_code, g_map = _fetch_single_group_map(
+                group_code, url, data_key, time_type, year, period, timeout, max_retries, delay_min, delay_max, pbar
+            )
+            maps[g_code] = g_map
+    else:
+        # Multi-threaded parallel partition execution & assembly (ráp nối)
+        max_workers = min(concurrency, len(tasks))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [
+                executor.submit(
+                    _fetch_single_group_map,
+                    group_code,
+                    url,
+                    data_key,
+                    time_type,
+                    year,
+                    period,
+                    timeout,
+                    max_retries,
+                    delay_min,
+                    delay_max,
+                    pbar,
+                )
+                for group_code, url, data_key in tasks
+            ]
+            for future in as_completed(futures):
+                try:
+                    g_code, g_map = future.result()
+                    maps[g_code] = g_map
+                except Exception as exc:
+                    print(f"\n⚠️  Thread partition error: {exc}", file=sys.stderr)
 
     return maps
+
 
 
 
@@ -956,7 +937,7 @@ def main() -> int:
     parser.add_argument("--clean-days", type=int, default=3, help="Tự động xóa dữ liệu snapshot cũ quá N ngày (mặc định: 3)")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR, help="Thư mục lưu file JSON điểm số & Index")
     parser.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR, help="Thư mục lưu file RAW JSON")
-    parser.add_argument("--concurrency", type=int, default=1, help="Số lượng worker luồng xử lý (mặc định: 1 - Single-threaded để tránh WAF chặn)")
+    parser.add_argument("--concurrency", type=int, default=5, help="Số lượng worker luồng chạy song song tự phân tách & ráp nối dữ liệu (mặc định: 5)")
     parser.add_argument("--delay-min", type=float, default=1.0, help="Thời gian nghỉ tối thiểu giữa các request tính theo giây (mặc định: 1.0s)")
     parser.add_argument("--delay-max", type=float, default=2.5, help="Thời gian nghỉ tối đa giữa các request tính theo giây (mặc định: 2.5s)")
     parser.add_argument("--timeout", type=int, default=45, help="Thời gian chờ socket timeout cho mỗi HTTP request (mặc định: 45s)")
@@ -968,12 +949,7 @@ def main() -> int:
     if args.delay_max < args.delay_min:
         raise SystemExit("--delay-max phải lớn hơn hoặc bằng --delay-min")
 
-    if args.concurrency > 1:
-        print(
-            f"⚠️  Cảnh báo: --concurrency={args.concurrency} đã được chỉ định, tuy nhiên để tránh WAF DVCQG chặn IP, "
-            f"hệ thống ép chuyển về chế độ Single-Threaded Sequential (1 worker).",
-            file=sys.stderr,
-        )
+    if args.concurrency < 1:
         args.concurrency = 1
 
     period = args.period if args.time_type in ("month", "quarter") else None
@@ -990,7 +966,10 @@ def main() -> int:
     comparison_file = args.output_dir / f"comparison_GiaLai_{run_date_str}.json"
 
     print(f"🔄 Đang khởi tạo trích xuất điểm số Gia Lai (Mốc ngày: {run_date_str})...")
-    print(f"🔒 Chế độ thực thi: Single-Threaded Sequential (1 worker | Tránh quá tải WAF)")
+    if args.concurrency > 1:
+        print(f"⚡ Chế độ thực thi: Multi-Threaded Partition & Assembly ({args.concurrency} workers | Tự phân tách & ráp nối dữ liệu)")
+    else:
+        print(f"🔒 Chế độ thực thi: Single-Threaded Sequential (1 worker)")
     print(f"⏱️  Phân phối ngẫu nhiên thời gian nghỉ (Jitter Sleep): {args.delay_min}s ➡️ {args.delay_max}s | Timeout: {args.timeout}s | Retries: {args.max_retries}")
 
     # Initialize Crawler Progress Bar (Total 7 endpoints: 1 national + 5 criteria groups + 1 main service results)
@@ -1010,7 +989,7 @@ def main() -> int:
         )
         pbar.update(1, status="National Scores OK")
 
-        # Fetch Child Units Group Scores Maps across all 5 criteria endpoints
+        # Fetch Child Units Group Scores Maps across all 5 criteria endpoints (Parallel partition & assembly)
         child_group_maps = fetch_child_units_group_scores_maps(
             args.time_type,
             args.year,
@@ -1019,8 +998,10 @@ def main() -> int:
             max_retries=args.max_retries,
             delay_min=args.delay_min,
             delay_max=args.delay_max,
+            concurrency=args.concurrency,
             pbar=pbar,
         )
+
 
         # Fetch Current Period Main Data
         pbar.set_postfix_str("Fetching Gia Lai Main Service Results...")
