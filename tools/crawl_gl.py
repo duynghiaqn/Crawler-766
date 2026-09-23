@@ -60,6 +60,71 @@ USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0",
 ]
 
+try:
+    from tqdm import tqdm
+    HAS_TQDM = True
+except ImportError:
+    HAS_TQDM = False
+
+
+class CrawlerProgressBar:
+    """Flexible progress bar supporting tqdm with fallback to clean standard console output."""
+
+    def __init__(self, total: int, desc: str = "Crawling", unit: str = "item"):
+        self.total = total
+        self.desc = desc
+        self.unit = unit
+        self.current = 0
+        self.start_time = time.time()
+        if HAS_TQDM:
+            self.pbar = tqdm(
+                total=total,
+                desc=desc,
+                unit=unit,
+                leave=True,
+                bar_format="{l_bar}{bar:25}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}{postfix}]",
+            )
+        else:
+            self.pbar = None
+            self._render_fallback()
+
+    def update(self, n: int = 1, status: str = ""):
+        self.current += n
+        if self.pbar:
+            if status:
+                self.pbar.set_postfix_str(status)
+            self.pbar.update(n)
+        else:
+            self._render_fallback(status)
+
+    def set_postfix_str(self, status: str):
+        if self.pbar:
+            self.pbar.set_postfix_str(status)
+        else:
+            self._render_fallback(status)
+
+    def _render_fallback(self, status: str = ""):
+        elapsed = time.time() - self.start_time
+        pct = (self.current / self.total * 100) if self.total > 0 else 0
+        filled_len = int(25 * self.current // self.total) if self.total > 0 else 0
+        bar = "█" * filled_len + "░" * (25 - filled_len)
+        if self.current > 0 and self.current < self.total:
+            eta_sec = (elapsed / self.current) * (self.total - self.current)
+            eta_str = f" | ETA: {int(eta_sec // 60):02d}:{int(eta_sec % 60):02d}"
+        else:
+            eta_str = f" | Elapsed: {int(elapsed // 60):02d}:{int(elapsed % 60):02d}"
+        status_part = f" [{status}]" if status else ""
+        sys.stdout.write(f"\r⏳ {self.desc}: [{bar}] {self.current}/{self.total} ({pct:.1f}%){eta_str}{status_part}")
+        sys.stdout.flush()
+        if self.current >= self.total:
+            sys.stdout.write("\n")
+
+    def close(self):
+        if self.pbar:
+            self.pbar.close()
+        elif self.current < self.total:
+            sys.stdout.write("\n")
+
 
 def utc_now() -> str:
     """Return ISO 8601 UTC timestamp."""
@@ -110,9 +175,12 @@ def fetch_dvc_endpoint(
     period: int | None = None,
     root_dept_id: str | None = GIA_LAI_ROOT_ID,
     page_size: int = 300,
-    timeout: int = 30,
+    timeout: int = 45,
+    max_retries: int = 4,
+    delay_min: float = 1.0,
+    delay_max: float = 2.5,
 ) -> dict[str, Any]:
-    """Fetch DVCQG API endpoint with header rotation, random delay jitter, and retries."""
+    """Fetch DVCQG API endpoint with header rotation, random delay jitter, longer timeout, and retries."""
     payload: dict[str, Any] = {
         "timeType": time_type,
         "year": year,
@@ -133,10 +201,10 @@ def fetch_dvc_endpoint(
 
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
 
-    # Anti-blocking: Add jitter delay (0.2s - 0.5s)
-    time.sleep(random.uniform(0.2, 0.5))
+    # Anti-blocking: Add randomized jitter delay (uniform + gaussian-like jitter)
+    sleep_sec = random.uniform(delay_min, delay_max) + random.uniform(0.05, 0.25)
+    time.sleep(sleep_sec)
 
-    max_retries = 3
     for attempt in range(1, max_retries + 1):
         headers = get_random_headers()
         request = urllib.request.Request(url, data=body, method="POST", headers=headers)
@@ -151,22 +219,43 @@ def fetch_dvc_endpoint(
         except urllib.error.HTTPError as exc:
             err_body = exc.read().decode("utf-8", errors="replace")
             if exc.code in (429, 403, 502, 503, 504) and attempt < max_retries:
-                time.sleep(1.5 * attempt)
+                retry_wait = (2.0 * attempt) + random.uniform(1.0, 3.0)
+                time.sleep(retry_wait)
                 continue
             raise RuntimeError(f"HTTP Error {exc.code}: {err_body[:500]}") from exc
-        except urllib.error.URLError as exc:
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
             if attempt < max_retries:
-                time.sleep(1.5 * attempt)
+                retry_wait = (2.0 * attempt) + random.uniform(1.0, 3.0)
+                time.sleep(retry_wait)
                 continue
-            raise RuntimeError(f"Network error connecting to DVCQG: {exc.reason}") from exc
+            reason = getattr(exc, "reason", str(exc))
+            raise RuntimeError(f"Network error connecting to DVCQG: {reason}") from exc
 
     raise RuntimeError(f"Failed to fetch DVCQG endpoint after {max_retries} attempts")
 
 
-def fetch_national_gia_lai_group_scores(time_type: str, year: int, period: int | None) -> dict[str, float] | None:
+def fetch_national_gia_lai_group_scores(
+    time_type: str,
+    year: int,
+    period: int | None,
+    timeout: int = 45,
+    max_retries: int = 4,
+    delay_min: float = 1.0,
+    delay_max: float = 2.5,
+) -> dict[str, float] | None:
     """Fetch national service-results response to obtain Gia Lai's full groupScores."""
     try:
-        raw_national = fetch_dvc_endpoint(ENDPOINT_SERVICE_RESULTS, time_type, year, period, root_dept_id=None)
+        raw_national = fetch_dvc_endpoint(
+            ENDPOINT_SERVICE_RESULTS,
+            time_type,
+            year,
+            period,
+            root_dept_id=None,
+            timeout=timeout,
+            max_retries=max_retries,
+            delay_min=delay_min,
+            delay_max=delay_max,
+        )
         eval_list = raw_national.get("data", {}).get("evaluation", [])
         if isinstance(eval_list, list):
             for row in eval_list:
@@ -177,7 +266,16 @@ def fetch_national_gia_lai_group_scores(time_type: str, year: int, period: int |
     return None
 
 
-def fetch_child_units_group_scores_maps(time_type: str, year: int, period: int | None) -> dict[str, dict[str, float]]:
+def fetch_child_units_group_scores_maps(
+    time_type: str,
+    year: int,
+    period: int | None,
+    timeout: int = 45,
+    max_retries: int = 4,
+    delay_min: float = 1.0,
+    delay_max: float = 2.5,
+    pbar: CrawlerProgressBar | None = None,
+) -> dict[str, dict[str, float]]:
     """Fetch all 5 criteria group endpoints with User-Agent rotation to build per-child-unit groupScores maps."""
     maps: dict[str, dict[str, float]] = {
         "CKMB": {},
@@ -188,47 +286,124 @@ def fetch_child_units_group_scores_maps(time_type: str, year: int, period: int |
     }
 
     try:
-        data_transparency = fetch_dvc_endpoint(ENDPOINT_TRANSPARENCY, time_type, year, period)
+        if pbar:
+            pbar.set_postfix_str("Fetching CKMB (Công khai minh bạch)...")
+        data_transparency = fetch_dvc_endpoint(
+            ENDPOINT_TRANSPARENCY,
+            time_type,
+            year,
+            period,
+            timeout=timeout,
+            max_retries=max_retries,
+            delay_min=delay_min,
+            delay_max=delay_max,
+        )
         for item in data_transparency.get("data", {}).get("evaluation", []):
             if isinstance(item, dict) and item.get("departmentId"):
                 maps["CKMB"][item["departmentId"]] = round(float(item.get("totalScore", 0)), 2)
+        if pbar:
+            pbar.update(1, status="CKMB OK")
     except Exception as exc:
-        print(f"⚠️  Warning fetching Transparency group scores: {exc}", file=sys.stderr)
+        print(f"\n⚠️  Warning fetching Transparency group scores: {exc}", file=sys.stderr)
+        if pbar:
+            pbar.update(1, status="CKMB Warn")
 
     try:
-        data_progress = fetch_dvc_endpoint(ENDPOINT_PROGRESS, time_type, year, period)
+        if pbar:
+            pbar.set_postfix_str("Fetching TDGQ (Tiến độ giải quyết)...")
+        data_progress = fetch_dvc_endpoint(
+            ENDPOINT_PROGRESS,
+            time_type,
+            year,
+            period,
+            timeout=timeout,
+            max_retries=max_retries,
+            delay_min=delay_min,
+            delay_max=delay_max,
+        )
         for item in data_progress.get("data", {}).get("children", []):
             if isinstance(item, dict) and item.get("departmentId"):
                 score_val = item.get("score") if item.get("score") is not None else item.get("totalScore", 0)
                 maps["TDGQ"][item["departmentId"]] = round(float(score_val), 2)
+        if pbar:
+            pbar.update(1, status="TDGQ OK")
     except Exception as exc:
-        print(f"⚠️  Warning fetching Progress group scores: {exc}", file=sys.stderr)
+        print(f"\n⚠️  Warning fetching Progress group scores: {exc}", file=sys.stderr)
+        if pbar:
+            pbar.update(1, status="TDGQ Warn")
 
     try:
-        data_online = fetch_dvc_endpoint(ENDPOINT_ONLINE, time_type, year, period)
+        if pbar:
+            pbar.set_postfix_str("Fetching ONLINE (Dịch vụ công trực tuyến)...")
+        data_online = fetch_dvc_endpoint(
+            ENDPOINT_ONLINE,
+            time_type,
+            year,
+            period,
+            timeout=timeout,
+            max_retries=max_retries,
+            delay_min=delay_min,
+            delay_max=delay_max,
+        )
         for item in data_online.get("data", {}).get("children", []):
             if isinstance(item, dict) and item.get("departmentId"):
                 maps["ONLINE"][item["departmentId"]] = round(float(item.get("totalScore", 0)), 2)
+        if pbar:
+            pbar.update(1, status="ONLINE OK")
     except Exception as exc:
-        print(f"⚠️  Warning fetching Online group scores: {exc}", file=sys.stderr)
+        print(f"\n⚠️  Warning fetching Online group scores: {exc}", file=sys.stderr)
+        if pbar:
+            pbar.update(1, status="ONLINE Warn")
 
     try:
-        data_payment = fetch_dvc_endpoint(ENDPOINT_PAYMENT, time_type, year, period)
+        if pbar:
+            pbar.set_postfix_str("Fetching TTTT (Thanh toán trực tuyến)...")
+        data_payment = fetch_dvc_endpoint(
+            ENDPOINT_PAYMENT,
+            time_type,
+            year,
+            period,
+            timeout=timeout,
+            max_retries=max_retries,
+            delay_min=delay_min,
+            delay_max=delay_max,
+        )
         for item in data_payment.get("data", {}).get("children", []):
             if isinstance(item, dict) and item.get("departmentId"):
                 maps["TTTT"][item["departmentId"]] = round(float(item.get("totalScore", 0)), 2)
+        if pbar:
+            pbar.update(1, status="TTTT OK")
     except Exception as exc:
-        print(f"⚠️  Warning fetching Payment group scores: {exc}", file=sys.stderr)
+        print(f"\n⚠️  Warning fetching Payment group scores: {exc}", file=sys.stderr)
+        if pbar:
+            pbar.update(1, status="TTTT Warn")
 
     try:
-        data_digitized = fetch_dvc_endpoint(ENDPOINT_DIGITIZED, time_type, year, period)
+        if pbar:
+            pbar.set_postfix_str("Fetching MDSH (Mức độ số hóa)...")
+        data_digitized = fetch_dvc_endpoint(
+            ENDPOINT_DIGITIZED,
+            time_type,
+            year,
+            period,
+            timeout=timeout,
+            max_retries=max_retries,
+            delay_min=delay_min,
+            delay_max=delay_max,
+        )
         for item in data_digitized.get("data", {}).get("evaluation", []):
             if isinstance(item, dict) and item.get("departmentId"):
                 maps["MDSH"][item["departmentId"]] = round(float(item.get("totalScore", 0)), 2)
+        if pbar:
+            pbar.update(1, status="MDSH OK")
     except Exception as exc:
-        print(f"⚠️  Warning fetching Digitized group scores: {exc}", file=sys.stderr)
+        print(f"\n⚠️  Warning fetching Digitized group scores: {exc}", file=sys.stderr)
+        if pbar:
+            pbar.update(1, status="MDSH Warn")
 
     return maps
+
+
 
 
 def extract_score_data(
@@ -781,9 +956,25 @@ def main() -> int:
     parser.add_argument("--clean-days", type=int, default=3, help="Tự động xóa dữ liệu snapshot cũ quá N ngày (mặc định: 3)")
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR, help="Thư mục lưu file JSON điểm số & Index")
     parser.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR, help="Thư mục lưu file RAW JSON")
+    parser.add_argument("--concurrency", type=int, default=1, help="Số lượng worker luồng xử lý (mặc định: 1 - Single-threaded để tránh WAF chặn)")
+    parser.add_argument("--delay-min", type=float, default=1.0, help="Thời gian nghỉ tối thiểu giữa các request tính theo giây (mặc định: 1.0s)")
+    parser.add_argument("--delay-max", type=float, default=2.5, help="Thời gian nghỉ tối đa giữa các request tính theo giây (mặc định: 2.5s)")
+    parser.add_argument("--timeout", type=int, default=45, help="Thời gian chờ socket timeout cho mỗi HTTP request (mặc định: 45s)")
+    parser.add_argument("--max-retries", type=int, default=4, help="Số lần thử lại tối đa khi gặp lỗi mạng/timeout (mặc định: 4)")
     parser.add_argument("--quiet", action="store_true", help="Không in bảng console, chỉ xuất JSON")
 
     args = parser.parse_args()
+
+    if args.delay_max < args.delay_min:
+        raise SystemExit("--delay-max phải lớn hơn hoặc bằng --delay-min")
+
+    if args.concurrency > 1:
+        print(
+            f"⚠️  Cảnh báo: --concurrency={args.concurrency} đã được chỉ định, tuy nhiên để tránh WAF DVCQG chặn IP, "
+            f"hệ thống ép chuyển về chế độ Single-Threaded Sequential (1 worker).",
+            file=sys.stderr,
+        )
+        args.concurrency = 1
 
     period = args.period if args.time_type in ("month", "quarter") else None
 
@@ -798,19 +989,55 @@ def main() -> int:
     communes_curr_file = args.output_dir / f"communes_GiaLai_{run_date_str}.json"
     comparison_file = args.output_dir / f"comparison_GiaLai_{run_date_str}.json"
 
-    print(f"🔄 Đang trích xuất điểm số Gia Lai (Mốc ngày: {run_date_str}, UA Rotation Pool & Anti-Block)...")
+    print(f"🔄 Đang khởi tạo trích xuất điểm số Gia Lai (Mốc ngày: {run_date_str})...")
+    print(f"🔒 Chế độ thực thi: Single-Threaded Sequential (1 worker | Tránh quá tải WAF)")
+    print(f"⏱️  Phân phối ngẫu nhiên thời gian nghỉ (Jitter Sleep): {args.delay_min}s ➡️ {args.delay_max}s | Timeout: {args.timeout}s | Retries: {args.max_retries}")
 
-    # Fetch National GroupScores for Gia Lai Overview
-    national_group_scores = fetch_national_gia_lai_group_scores(args.time_type, args.year, period)
+    # Initialize Crawler Progress Bar (Total 7 endpoints: 1 national + 5 criteria groups + 1 main service results)
+    pbar = CrawlerProgressBar(total=7, desc="Trích xuất API Endpoints Gia Lai", unit="endpoint")
 
-    # Fetch Child Units Group Scores Maps across all 5 criteria endpoints
-    print("🔄 Đang trích xuất chi tiết 6 nhóm chỉ tiêu cho 149 đơn vị con...")
-    child_group_maps = fetch_child_units_group_scores_maps(args.time_type, args.year, period)
-
-    # Fetch Current Period Data
     try:
-        raw_curr_data = fetch_dvc_endpoint(ENDPOINT_SERVICE_RESULTS, args.time_type, args.year, period)
+        # Fetch National GroupScores for Gia Lai Overview
+        pbar.set_postfix_str("Fetching National Gia Lai Overview...")
+        national_group_scores = fetch_national_gia_lai_group_scores(
+            args.time_type,
+            args.year,
+            period,
+            timeout=args.timeout,
+            max_retries=args.max_retries,
+            delay_min=args.delay_min,
+            delay_max=args.delay_max,
+        )
+        pbar.update(1, status="National Scores OK")
+
+        # Fetch Child Units Group Scores Maps across all 5 criteria endpoints
+        child_group_maps = fetch_child_units_group_scores_maps(
+            args.time_type,
+            args.year,
+            period,
+            timeout=args.timeout,
+            max_retries=args.max_retries,
+            delay_min=args.delay_min,
+            delay_max=args.delay_max,
+            pbar=pbar,
+        )
+
+        # Fetch Current Period Main Data
+        pbar.set_postfix_str("Fetching Gia Lai Main Service Results...")
+        raw_curr_data = fetch_dvc_endpoint(
+            ENDPOINT_SERVICE_RESULTS,
+            args.time_type,
+            args.year,
+            period,
+            timeout=args.timeout,
+            max_retries=args.max_retries,
+            delay_min=args.delay_min,
+            delay_max=args.delay_max,
+        )
+
         write_json(raw_curr_file, raw_curr_data)
+        pbar.update(1, status="Main Service Results OK")
+        pbar.close()
 
         curr_score_data = extract_score_data(
             raw_curr_data,
@@ -844,8 +1071,10 @@ def main() -> int:
         print(f"🚀 Đã Cập nhật API Index Database: {index_file}")
 
     except Exception as exc:
+        pbar.close()
         print(f"❌ Lỗi khi tải dữ liệu mốc hiện tại: {exc}", file=sys.stderr)
         return 1
+
 
     # Daily Comparison: Find previous stored daily date
     prev_date_str = find_previous_daily_date(args.output_dir, run_date_str, args.compare_date)

@@ -23,7 +23,7 @@ concurrency:
 
 jobs:
   crawl:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     timeout-minutes: 20
 
     steps:
@@ -58,7 +58,8 @@ jobs:
             --year ${{ github.event.inputs.year || '2026' }} \
             --province-code "${{ github.event.inputs.province || 'H21' }}" \
             --allow-fail \
-            --force
+            --skip-if-exists
+
 
       - name: Run Gia Lai crawler (crawl_gl.py)
         run: |

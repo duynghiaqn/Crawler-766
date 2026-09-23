@@ -25,6 +25,109 @@ Hệ thống tự động trích xuất, phân loại, build API Index và so s�
 
 ---
 
+## 🏗️ Sơ Đồ & Mô Hình Hoạt Động (Architecture & Flowchart)
+
+### 1. Sơ đồ Kiến trúc Hệ thống (System Architecture)
+
+```mermaid
+graph TD
+    subgraph External["🌐 CỔNG DỊCH VỤ CÔNG QUỐC GIA (DVCQG API)"]
+        API_SR["/api/v1/.../service-results"]
+        API_CKMB["/api/v1/.../transparency (CKMB)"]
+        API_TDGQ["/api/v1/.../dvc-progress-tree (TDGQ)"]
+        API_ONLINE["/api/v1/.../provide-online-tree (ONLINE)"]
+        API_TTTT["/api/v1/.../formality-online-payment-tree (TTTT)"]
+        API_MDSH["/api/v1/.../dossier-digitized (MDSH)"]
+    end
+
+    subgraph CoreEngine["🛡️ CRAWLER ENGINE (SINGLE-THREADED & ANTI-BLOCK)"]
+        subgraph SecurityLayer["Evasion & Safety Layer"]
+            UA["User-Agent Rotation Pool"]
+            Jitter["Randomized Sleep Jitter (1.0s - 5.0s)"]
+            SingleThread["Single-Threaded Sequential Executor"]
+        end
+
+        subgraph ProgressTrack["Progress & Visual Monitoring"]
+            PBAR["CrawlerProgressBar / tqdm"]
+        end
+
+        GL_CRAWLER["crawl_gl.py (Gia Lai Data Collector)"]
+        CATALOG_CRAWLER["crawl_catalog.py (Provinces Collector)"]
+        SKIP_CHECK["Skip-If-Exists Smart Verification"]
+    end
+
+    subgraph DataStore["💾 KHO DỮ LIỆU THÔNG MINH (data/)"]
+        RAW["data/raw/ (Raw JSON Evidence)"]
+        INDEX["data/gia_lai/index.json (Fast API Lookup Index)"]
+        SCORES["data/gia_lai/scores_GiaLai_*.json (Overall)"]
+        AGENCIES["data/gia_lai/agencies_GiaLai_*.json (Sở/Ngành)"]
+        COMMUNES["data/gia_lai/communes_GiaLai_*.json (Xã/Phường)"]
+        COMP["data/gia_lai/comparison_GiaLai_*.json (So sánh Ngày)"]
+        CHECKPOINT["data/state/crawl-2026.json (Checkpoint State)"]
+    end
+
+    subgraph Automation["🤖 CI/CD & INTEGRATION"]
+        GHA["GitHub Actions Cron (01:00 AM VN)"]
+        CLIENT["Frontend App / Dashboard Lookup"]
+    end
+
+    %% Flow connections
+    External --> SecurityLayer
+    SecurityLayer --> GL_CRAWLER
+    SecurityLayer --> CATALOG_CRAWLER
+    CATALOG_CRAWLER --> SKIP_CHECK
+    GL_CRAWLER --> ProgressTrack
+    CATALOG_CRAWLER --> ProgressTrack
+
+    GL_CRAWLER --> RAW
+    GL_CRAWLER --> INDEX
+    GL_CRAWLER --> SCORES
+    GL_CRAWLER --> AGENCIES
+    GL_CRAWLER --> COMMUNES
+    GL_CRAWLER --> COMP
+
+    CATALOG_CRAWLER --> CHECKPOINT
+    CATALOG_CRAWLER --> RAW
+
+    GHA --> GL_CRAWLER
+    GHA --> CATALOG_CRAWLER
+    INDEX --> CLIENT
+```
+
+### 2. Quy trình Thực thi Trích xuất & So sánh Điểm (Execution Lifecycle)
+
+```mermaid
+flowchart TD
+    A["🚀 Khởi động (main)"] --> B["🧹 Auto-Clean Snapshots (> 3 ngày)"]
+    B --> C["🔒 Bật chế độ Single-Threaded & Jitter Delay"]
+    C --> D["📊 Khởi tạo CrawlerProgressBar (7 Steps)"]
+    
+    D --> E1["1️⃣ Fetch National Gia Lai Overview"]
+    E1 --> E2["2️⃣ Fetch Group CKMB (Công khai minh bạch)"]
+    E2 --> E3["3️⃣ Fetch Group TDGQ (Tiến độ giải quyết)"]
+    E3 --> E4["4️⃣ Fetch Group ONLINE (Dịch vụ trực tuyến)"]
+    E4 --> E5["5️⃣ Fetch Group TTTT (Thanh toán trực tuyến)"]
+    E5 --> E6["6️⃣ Fetch Group MDSH (Mức độ số hóa)"]
+    E6 --> E7["7️⃣ Fetch Main Service Results Data"]
+    
+    E7 --> F["🧩 Extract & Ghép 6 Nhóm Chỉ Tiêu + Tính MDHL"]
+    F --> G["🏆 Xếp hạng Rank (Overall, Agency, Commune)"]
+    G --> H["💾 Lưu file Raw, Scores, Agencies, Communes JSON"]
+    H --> I["🚀 Rebuild API Index Database (index.json)"]
+    
+    I --> J{"🔍 Đã có Snapshot ngày trước đó?"}
+    J -- "Có" --> K["📈 So sánh Delta, Shift Rank, Trend theo Ngày"]
+    J -- "Không" --> L["🆕 Khởi tạo Mốc So sánh Kỳ Đầu"]
+    
+    K --> M["✅ Lưu File Comparison JSON"]
+    L --> M
+    M --> N["🖥️ Render Bảng Kết quả lên Terminal Console"]
+    N --> O["🏁 Hoàn thành xuất sắc"]
+```
+
+---
+
+
 ## 📁 Cấu Trúc Dữ Liệu (`data/`)
 
 ```text

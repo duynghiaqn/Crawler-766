@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-23T17:00:19Z",
+  "updatedAt": "2026-09-23T22:41:24Z",
   "items": {
     "H21": {
       "status": "verified",
@@ -36,13 +36,48 @@
       "catalogWarnings": [
         "No province-level record was found inside data.evaluation."
       ]
+    },
+    "H01": {
+      "status": "verified",
+      "method": "direct-http-post",
+      "httpStatus": 201,
+      "contentType": "application/json; charset=utf-8",
+      "responseSha256": "7b75afe5366ffe8243fb5631d5d6350dfaecc2d0b70089a8661d9b7144e9b700",
+      "evaluationCount": 117,
+      "agencyCount": 15,
+      "communeCount": 102,
+      "warnings": [
+        "No province-level record was found inside data.evaluation."
+      ],
+      "provinceRecord": {
+        "departmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+        "departmentName": "UBND tỉnh An Giang",
+        "departmentCode": "H01",
+        "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+        "verified": true,
+        "overview": {
+          "departmentName": "UBND tỉnh An Giang",
+          "departmentCode": "H01",
+          "totalScore": 60.56,
+          "totalMaxScore": 100,
+          "ratio": 60.56
+        },
+        "source": "service-results"
+      },
+      "departmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "departmentName": "UBND tỉnh An Giang",
+      "departmentCode": "H01",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "catalogWarnings": [
+        "No province-level record was found inside data.evaluation."
+      ]
     }
   },
   "year": 2026,
   "endpoint": "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-results",
   "catalogSummary": {
-    "verifiedProvinces": 1,
-    "agencies": 14,
-    "communes": 135
+    "verifiedProvinces": 2,
+    "agencies": 29,
+    "communes": 237
   }
 }
