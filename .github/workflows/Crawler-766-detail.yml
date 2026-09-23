@@ -37,6 +37,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -84,6 +86,7 @@ jobs:
             echo "No detailed data changes to commit"
           else
             git commit -m "📊 Update DVCQG Detailed Component Criteria & Units Score Data (${{ github.event.inputs.province || 'H21' }}) [skip ci]"
-            git push
-            echo "✅ Detailed data successfully updated and pushed."
+            for i in 1 2 3; do
+              git pull --rebase --autostash -X ours origin main && git push origin main && echo "✅ Detailed data successfully updated and pushed." && break || sleep 3
+            done
           fi
