@@ -61,7 +61,7 @@ jobs:
       - name: Run Gia Lai crawler (crawl_gl.py)
         run: |
           python tools/crawl_gl.py \
-            --time-type month \
+            --time-type year \
             --year ${{ github.event.inputs.year || '2026' }} \
             --clean-days 3
 
@@ -79,7 +79,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No data changes to commit"
           else
-            git commit -m "📊 Update DVCQG Gia Lai data (${{ github.event.inputs.province || 'H21' }}) [skip ci]"
+            git commit -m "📊 Update DVCQG Gia Lai data Score (${{ github.event.inputs.province || 'H21' }}) [skip ci]"
             git push
             echo "✅ Data successfully updated and pushed."
           fi

@@ -772,7 +772,7 @@ def main() -> int:
     run_date_str = now.strftime("%d%m%Y")
 
     parser = argparse.ArgumentParser(description="Tool crawl-gl: Trích xuất, Build Index & So sánh Điểm số Gia Lai")
-    parser.add_argument("--time-type", choices=["month", "quarter", "year"], default="month", help="Loại thời gian (mặc định: month)")
+    parser.add_argument("--time-type", choices=["month", "quarter", "year"], default="year", help="Loại thời gian (mặc định: year)")
     parser.add_argument("--year", type=int, default=default_year, help=f"Năm thống kê (mặc định: {default_year})")
     parser.add_argument("--period", type=int, default=default_month, help="Tháng (1-12) hoặc Quý (1-4)")
     parser.add_argument("--compare-date", help="Mốc ngày so sánh tính theo DDMMYYYY (tùy chọn)")
