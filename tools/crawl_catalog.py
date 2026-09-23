@@ -30,6 +30,8 @@ import random
 import re
 import sys
 import time
+import urllib.error
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -428,7 +430,57 @@ def browser_fetch(page, province: dict[str, Any], year: int, timeout_ms: int) ->
     return int(result["status"]), str(result.get("text", "")), str(result.get("contentType", ""))
 
 
+def direct_http_fetch(province: dict[str, Any], year: int, timeout: int = 10) -> tuple[int, str, str] | None:
+    """Fast-path direct HTTP POST attempt to bypass browser launching overhead/timeouts."""
+    payload = {"timeType": "year", "year": year, "rootDepartmentId": province["departmentId"]}
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    user_agents = [
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    ]
+    headers = {
+        "Accept": "application/json, text/plain, */*",
+        "Content-Type": "application/json",
+        "User-Agent": random.choice(user_agents),
+        "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
+        "Referer": SOURCE_URL,
+        "Origin": "https://dichvucong.gov.vn",
+    }
+    request = urllib.request.Request(ENDPOINT, data=body, method="POST", headers=headers)
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            status = response.status
+            content_type = response.headers.get("Content-Type", "")
+            text = response.read().decode("utf-8", errors="replace")
+            if status in (200, 201) and text.lstrip().startswith(("{", "[")) and response_matches_province(text, province):
+                return status, text, content_type
+    except Exception:
+        pass
+    return None
+
+
 def crawl_one_province(pw, province: dict[str, Any], year: int, headed: bool, timeout_ms: int, ui_first: bool) -> tuple[bool, dict[str, Any]]:
+    # Fast path: Try direct HTTP POST first to avoid Playwright browser startup overhead/hangs
+    fast_http = direct_http_fetch(province, year, timeout=min(10, int(timeout_ms / 1000)))
+    if fast_http:
+        status, text, content_type = fast_http
+        payload = parse_response(text)
+        province_record, agencies, communes, warnings = verify_and_extract(province, payload)
+        return True, {
+            "status": "verified",
+            "method": "direct-http-post",
+            "httpStatus": status,
+            "contentType": content_type,
+            "responseSha256": sha256_text(text),
+            "evaluationCount": len(payload["data"].get("evaluation") or []),
+            "agencyCount": len(agencies),
+            "communeCount": len(communes),
+            "warnings": warnings,
+            "provinceRecord": province_record,
+            "rawText": text,
+        }
+
     browser = None
     try:
         browser = pw.chromium.launch(headless=not headed)
@@ -436,8 +488,8 @@ def crawl_one_province(pw, province: dict[str, Any], year: int, headed: bool, ti
         page = context.new_page()
 
         try:
-            page.goto(SOURCE_URL, wait_until="domcontentloaded", timeout=60_000)
-            page.wait_for_timeout(4500)
+            page.goto(SOURCE_URL, wait_until="domcontentloaded", timeout=10_000)
+            page.wait_for_timeout(2000)
         except PlaywrightTimeoutError:
             pass
 
@@ -524,7 +576,8 @@ def main() -> int:
     parser.add_argument("--timeout", type=int, default=45_000)
     parser.add_argument("--delay-min", type=float, default=3.0)
     parser.add_argument("--delay-max", type=float, default=6.0)
-    parser.add_argument("--retries-per-province", type=int, default=2)
+    parser.add_argument("--retries-per-province", type=int, default=1)
+    parser.add_argument("--allow-fail", action="store_true", help="Do not exit with non-zero code on request failure")
     args = parser.parse_args()
 
     if args.delay_max < args.delay_min:

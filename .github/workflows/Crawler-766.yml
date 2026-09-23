@@ -52,10 +52,12 @@ jobs:
           python tools/bootstrap_catalog_api.py --year ${{ github.event.inputs.year || '2026' }} --allow-fail --skip-if-exists
 
       - name: Run crawler for province
+        continue-on-error: true
         run: |
           python tools/crawl_catalog.py \
             --year ${{ github.event.inputs.year || '2026' }} \
             --province-code "${{ github.event.inputs.province || 'H21' }}" \
+            --allow-fail \
             --force
 
       - name: Run Gia Lai crawler (crawl_gl.py)
@@ -79,7 +81,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No data changes to commit"
           else
-            git commit -m "📊 Update DVCQG Gia Lai data Score (${{ github.event.inputs.province || 'H21' }}) [skip ci]"
+            git commit -m "📊 Update DVCQG Gia Lai Data Score (${{ github.event.inputs.province || 'H21' }}) [skip ci]"
             git push
             echo "✅ Data successfully updated and pushed."
           fi

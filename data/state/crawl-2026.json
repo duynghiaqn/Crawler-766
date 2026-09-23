@@ -1,22 +1,48 @@
 {
   "schemaVersion": 1,
-  "updatedAt": "2026-09-17T03:42:52Z",
+  "updatedAt": "2026-09-23T17:00:19Z",
   "items": {
     "H21": {
+      "status": "verified",
+      "method": "direct-http-post",
+      "httpStatus": 201,
+      "contentType": "application/json; charset=utf-8",
+      "responseSha256": "ec86178f42a990035d44fde54a4e1e37878b09c36d635ffa75d1a7350049ed88",
+      "evaluationCount": 149,
+      "agencyCount": 14,
+      "communeCount": 135,
+      "warnings": [
+        "No province-level record was found inside data.evaluation."
+      ],
+      "provinceRecord": {
+        "departmentId": "019d2be3-6a85-74ec-a346-6489e82ae4c7",
+        "departmentName": "UBND tỉnh Gia Lai",
+        "departmentCode": "H21",
+        "rootDepartmentId": "019d2be3-6a85-74ec-a346-6489e82ae4c7",
+        "verified": true,
+        "overview": {
+          "departmentName": "UBND tỉnh Gia Lai",
+          "departmentCode": "H21",
+          "totalScore": 62.74,
+          "totalMaxScore": 100,
+          "ratio": 62.74
+        },
+        "source": "service-results"
+      },
       "departmentId": "019d2be3-6a85-74ec-a346-6489e82ae4c7",
       "departmentName": "UBND tỉnh Gia Lai",
       "departmentCode": "H21",
       "rootDepartmentId": "019d2be3-6a85-74ec-a346-6489e82ae4c7",
-      "status": "failed_request",
-      "method": null,
-      "error": "No matching province response obtained"
+      "catalogWarnings": [
+        "No province-level record was found inside data.evaluation."
+      ]
     }
   },
   "year": 2026,
   "endpoint": "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-results",
   "catalogSummary": {
-    "verifiedProvinces": 0,
-    "agencies": 0,
-    "communes": 0
+    "verifiedProvinces": 1,
+    "agencies": 14,
+    "communes": 135
   }
 }
