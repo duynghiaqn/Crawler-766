@@ -2,7 +2,7 @@ name: Crawl DVCQG Data - Gia Lai (H21)
 
 on:
   schedule:
-    - cron: '0 22 * * *'
+    - cron: '0 18 * * *'
   workflow_dispatch:
     inputs:
       province:
@@ -56,6 +56,13 @@ jobs:
             --year ${{ github.event.inputs.year || '2026' }} \
             --province-code "${{ github.event.inputs.province || 'H21' }}" \
             --force
+
+      - name: Run Gia Lai crawler (crawl_gl.py)
+        run: |
+          python tools/crawl_gl.py \
+            --time-type month \
+            --year ${{ github.event.inputs.year || '2026' }} \
+            --clean-days 3
 
       - name: Show generated files
         if: always()
