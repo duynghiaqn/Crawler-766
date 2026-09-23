@@ -820,6 +820,7 @@ def clean_old_snapshots(output_dir: Path, raw_dir: Path, retention_days: int = 3
         (output_dir, "agencies_GiaLai_*.json"),
         (output_dir, "communes_GiaLai_*.json"),
         (output_dir, "comparison_GiaLai_*.json"),
+        (output_dir, "details_GiaLai_*.json"),
         (raw_dir / "2026" / "gia_lai", "raw_GiaLai_*.json"),
         (raw_dir / "2026" / "gia_lai" / "checkpoints", "checkpoint_*.json"),
     ]
@@ -1083,24 +1084,26 @@ def main() -> int:
             child_group_maps=child_group_maps,
             run_date_str=run_date_str,
         )
-        write_json(scores_curr_file, curr_score_data)
-
-        write_json(agencies_curr_file, {
+        details_curr_file = args.output_dir / f"details_GiaLai_{run_date_str}.json"
+        write_json(details_curr_file, {
             "metadata": curr_score_data["metadata"],
             "overview": curr_score_data["overview"],
-            "count": len(curr_score_data["agencies"]),
-            "agencies": curr_score_data["agencies"],
-        })
-        write_json(communes_curr_file, {
-            "metadata": curr_score_data["metadata"],
-            "overview": curr_score_data["overview"],
-            "count": len(curr_score_data["communes"]),
-            "communes": curr_score_data["communes"],
+            "criteriaGroups": {
+                "CKMB": "Công khai, minh bạch",
+                "TDGQ": "Tiến độ giải quyết",
+                "ONLINE": "Dịch vụ công trực tuyến",
+                "TTTT": "Thanh toán trực tuyến",
+                "MDSH": "Mức độ số hóa",
+                "MDHL": "Mức độ hài lòng",
+            },
+            "totalUnitsCount": len(curr_score_data["units"]),
+            "unitsDetail": curr_score_data["units"],
         })
 
         print(f"✅ Đã lưu Score JSON tổng hợp: {scores_curr_file}")
         print(f"✅ Đã lưu Score JSON Khối Sở/Ngành: {agencies_curr_file}")
         print(f"✅ Đã lưu Score JSON Khối UBND Xã/Phường: {communes_curr_file}")
+        print(f"🔍 Đã lưu Score JSON Chi tiết Tất cả Chỉ tiêu Con: {details_curr_file}")
 
         index_file = update_api_index(args.output_dir, curr_score_data, run_date_str)
         print(f"🚀 Đã Cập nhật API Index Database: {index_file}")

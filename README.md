@@ -140,11 +140,13 @@ data/
 │   ├── scores_GiaLai_DDMMYYYY.json        # Dữ liệu điểm số tổng hợp 149 đơn vị
 │   ├── agencies_GiaLai_DDMMYYYY.json      # Dữ liệu điểm số Khối Sở/Ban/Ngành
 │   ├── communes_GiaLai_DDMMYYYY.json      # Dữ liệu điểm số Khối UBND Xã/Phường
+│   ├── details_GiaLai_DDMMYYYY.json       # Dữ liệu chi tiết toàn bộ các chỉ tiêu con & thành phần đơn vị
 │   └── comparison_GiaLai_DDMMYYYY.json    # File so sánh điểm số & xu hướng theo ngày
 └── raw/
     └── 2026/
         └── gia_lai/
-            └── raw_GiaLai_DDMMYYYY.json   # Dữ liệu RAW JSON nguyên bản từ DVCQG API
+            ├── raw_GiaLai_DDMMYYYY.json   # Dữ liệu RAW JSON nguyên bản từ DVCQG API
+            └── checkpoints/               # Dữ liệu checkpoint tự động lưu vết chống lỗi mạng
 ```
 
 ---
@@ -236,13 +238,15 @@ File `data/gia_lai/index.json` được thiết kế tối ưu cho các dịch v
 
 ## 🤖 Tự Động Hóa Với GitHub Actions
 
-Workflow [`.github/workflows/Crawler-766.yml`](.github/workflows/Crawler-766.yml) được cấu hình chạy tự động vào **01:00 AM hàng ngày (Giờ Việt Nam - `18:00 UTC`)**:
+Hệ thống được trang bị 2 Workflows CI/CD tự động:
 
-- **Schedule Cron**: `0 18 * * *`
-- **Các bước thực thi**:
-  1. Setup Python & Playwright environment.
-  2. Chạy `tools/crawl_gl.py` trích xuất điểm số, 6 nhóm chỉ tiêu, build index & so sánh ngày.
-  3. Tự động commit và push dữ liệu mới lên GitHub repository.
+1. **Workflow Tổng hợp Hàng ngày** ([`.github/workflows/Crawler-766.yml`](.github/workflows/Crawler-766.yml)):
+   - **Schedule Cron**: `0 18 * * *` (01:00 AM Việt Nam).
+   - Tự động trích xuất điểm số, build API Index & so sánh biến động ngày.
+
+2. **Workflow Trích xuất Chi tiết Chỉ tiêu Con & Thành phần** ([`.github/workflows/Crawler-766-detail.yml`](.github/workflows/Crawler-766-detail.yml)):
+   - **Schedule Cron**: `30 18 * * *` (01:30 AM Việt Nam).
+   - Tự động trích xuất chuyên sâu 6 nhóm chỉ tiêu con thành phần cho toàn bộ 149 đơn vị con (`details_GiaLai_DDMMYYYY.json`).
 
 ---
 
