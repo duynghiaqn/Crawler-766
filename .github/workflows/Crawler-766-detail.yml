@@ -17,6 +17,15 @@ on:
         description: 'Time type (year, month, quarter)'
         required: false
         default: 'year'
+        type: choice
+        options:
+          - year
+          - month
+          - quarter
+      period:
+        description: 'Period (Month 1-12 or Quarter 1-4, if time_type is month/quarter)'
+        required: false
+        default: '3'
       clean_days:
         description: 'Clean snapshot files older than N days'
         required: false
@@ -66,6 +75,7 @@ jobs:
           python tools/crawl_gl.py \
             --time-type ${{ github.event.inputs.time_type || 'year' }} \
             --year ${{ github.event.inputs.year || '2026' }} \
+            --period ${{ github.event.inputs.period || '3' }} \
             --clean-days ${{ github.event.inputs.clean_days || '3' }} \
             --concurrency 5 \
             --max-retries 6
