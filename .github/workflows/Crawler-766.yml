@@ -47,8 +47,9 @@ jobs:
           python tools/test_dvcqg_connectivity.py --allow-fail
 
       - name: Bootstrap DVCQG province catalog
+        continue-on-error: true
         run: |
-          python tools/bootstrap_catalog_api.py --year ${{ github.event.inputs.year || '2026' }}
+          python tools/bootstrap_catalog_api.py --year ${{ github.event.inputs.year || '2026' }} --allow-fail --skip-if-exists
 
       - name: Run crawler for province
         run: |
