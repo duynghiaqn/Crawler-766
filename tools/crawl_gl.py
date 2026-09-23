@@ -183,11 +183,11 @@ def fetch_dvc_endpoint(
     root_dept_id: str | None = GIA_LAI_ROOT_ID,
     page_size: int = 300,
     timeout: int = 45,
-    max_retries: int = 4,
+    max_retries: int = 6,
     delay_min: float = 1.0,
     delay_max: float = 2.5,
 ) -> dict[str, Any]:
-    """Fetch DVCQG API endpoint with header rotation, random delay jitter, longer timeout, and retries."""
+    """Fetch DVCQG API endpoint with header rotation, random delay jitter, longer timeout, and smart exponential backoff retries."""
     payload: dict[str, Any] = {
         "timeType": time_type,
         "year": year,
@@ -225,17 +225,19 @@ def fetch_dvc_endpoint(
                 return parsed
         except urllib.error.HTTPError as exc:
             err_body = exc.read().decode("utf-8", errors="replace")
-            if exc.code in (429, 403, 502, 503, 504) and attempt < max_retries:
-                retry_wait = (2.0 * attempt) + random.uniform(1.0, 3.0)
+            if exc.code in (429, 403, 500, 502, 503, 504) and attempt < max_retries:
+                retry_wait = (3.0 * (1.4 ** (attempt - 1))) + random.uniform(1.0, 3.5)
+                print(f"\n⚠️ [Thử lại {attempt}/{max_retries}] HTTP {exc.code} từ DVCQG. Đợi {retry_wait:.1f}s...", file=sys.stderr)
                 time.sleep(retry_wait)
                 continue
             raise RuntimeError(f"HTTP Error {exc.code}: {err_body[:500]}") from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            reason = getattr(exc, "reason", str(exc))
             if attempt < max_retries:
-                retry_wait = (2.0 * attempt) + random.uniform(1.0, 3.0)
+                retry_wait = (3.0 * (1.4 ** (attempt - 1))) + random.uniform(1.0, 3.5)
+                print(f"\n⚠️ [Thử lại {attempt}/{max_retries}] Lỗi kết nối DVCQG ({reason}). Tự động thử lại sau {retry_wait:.1f}s...", file=sys.stderr)
                 time.sleep(retry_wait)
                 continue
-            reason = getattr(exc, "reason", str(exc))
             raise RuntimeError(f"Network error connecting to DVCQG: {reason}") from exc
 
     raise RuntimeError(f"Failed to fetch DVCQG endpoint after {max_retries} attempts")
@@ -245,12 +247,19 @@ def fetch_national_gia_lai_group_scores(
     time_type: str,
     year: int,
     period: int | None,
+    checkpoint_file: Path | None = None,
     timeout: int = 45,
-    max_retries: int = 4,
+    max_retries: int = 6,
     delay_min: float = 1.0,
     delay_max: float = 2.5,
 ) -> dict[str, float] | None:
-    """Fetch national service-results response to obtain Gia Lai's full groupScores."""
+    """Fetch national service-results response to obtain Gia Lai's full groupScores with checkpoint resume."""
+    if checkpoint_file and checkpoint_file.exists():
+        cached = load_json(checkpoint_file)
+        if isinstance(cached, dict) and "groupScores" in cached:
+            print("  ℹ️ Khôi phục Checkpoint điểm tổng quan Tỉnh Gia Lai từ đĩa.")
+            return cached.get("groupScores")
+
     try:
         raw_national = fetch_dvc_endpoint(
             ENDPOINT_SERVICE_RESULTS,
@@ -267,9 +276,12 @@ def fetch_national_gia_lai_group_scores(
         if isinstance(eval_list, list):
             for row in eval_list:
                 if isinstance(row, dict) and row.get("departmentCode") == GIA_LAI_CODE:
-                    return row.get("groupScores")
-    except Exception:
-        pass
+                    scores = row.get("groupScores")
+                    if checkpoint_file and scores:
+                        write_json(checkpoint_file, {"groupScores": scores, "updatedAt": utc_now()})
+                    return scores
+    except Exception as exc:
+        print(f"\n⚠️  Warning fetching National Gia Lai group scores: {exc}", file=sys.stderr)
     return None
 
 
@@ -322,14 +334,15 @@ def fetch_child_units_group_scores_maps(
     time_type: str,
     year: int,
     period: int | None,
+    checkpoint_file: Path | None = None,
     timeout: int = 45,
-    max_retries: int = 4,
+    max_retries: int = 6,
     delay_min: float = 1.0,
     delay_max: float = 2.5,
     concurrency: int = 5,
     pbar: CrawlerProgressBar | None = None,
 ) -> dict[str, dict[str, float]]:
-    """Fetch all 5 criteria group endpoints with User-Agent rotation and multi-threaded partition assembly."""
+    """Fetch all 5 criteria group endpoints with User-Agent rotation, checkpoint resume, and multi-threaded partition assembly."""
     maps: dict[str, dict[str, float]] = {
         "CKMB": {},
         "TDGQ": {},
@@ -337,6 +350,13 @@ def fetch_child_units_group_scores_maps(
         "TTTT": {},
         "MDSH": {},
     }
+
+    if checkpoint_file and checkpoint_file.exists():
+        cached = load_json(checkpoint_file)
+        if isinstance(cached, dict):
+            for k in maps:
+                if k in cached and isinstance(cached[k], dict) and len(cached[k]) > 0:
+                    maps[k] = cached[k]
 
     tasks = [
         ("CKMB", ENDPOINT_TRANSPARENCY, "evaluation"),
@@ -346,38 +366,40 @@ def fetch_child_units_group_scores_maps(
         ("MDSH", ENDPOINT_DIGITIZED, "evaluation"),
     ]
 
-    if concurrency <= 1:
-        # Sequential processing
-        for group_code, url, data_key in tasks:
-            g_code, g_map = _fetch_single_group_map(
-                group_code, url, data_key, time_type, year, period, timeout, max_retries, delay_min, delay_max, pbar
-            )
-            maps[g_code] = g_map
+    pending_tasks = [t for t in tasks if not maps[t[0]]]
+    completed_count = len(tasks) - len(pending_tasks)
+
+    if completed_count > 0:
+        if pbar:
+            pbar.update(completed_count, status=f"Checkpoint {completed_count}/5 OK")
+        print(f"  ℹ️ Đã tự động khôi phục {completed_count}/5 nhóm chỉ tiêu từ mốc checkpoint đĩa (bỏ qua fetch lại).")
+
+    if not pending_tasks:
+        return maps
+
+    lock = threading.Lock()
+
+    def _worker(group_code: str, url: str, data_key: str) -> tuple[str, dict[str, float]]:
+        g_code, g_map = _fetch_single_group_map(
+            group_code, url, data_key, time_type, year, period, timeout, max_retries, delay_min, delay_max, pbar
+        )
+        with lock:
+            if g_map:
+                maps[g_code] = g_map
+                if checkpoint_file:
+                    write_json(checkpoint_file, maps)
+        return g_code, g_map
+
+    if concurrency <= 1 or len(pending_tasks) == 1:
+        for group_code, url, data_key in pending_tasks:
+            _worker(group_code, url, data_key)
     else:
-        # Multi-threaded parallel partition execution & assembly (ráp nối)
-        max_workers = min(concurrency, len(tasks))
+        max_workers = min(concurrency, len(pending_tasks))
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [
-                executor.submit(
-                    _fetch_single_group_map,
-                    group_code,
-                    url,
-                    data_key,
-                    time_type,
-                    year,
-                    period,
-                    timeout,
-                    max_retries,
-                    delay_min,
-                    delay_max,
-                    pbar,
-                )
-                for group_code, url, data_key in tasks
-            ]
+            futures = [executor.submit(_worker, g_code, url, d_key) for g_code, url, d_key in pending_tasks]
             for future in as_completed(futures):
                 try:
-                    g_code, g_map = future.result()
-                    maps[g_code] = g_map
+                    future.result()
                 except Exception as exc:
                     print(f"\n⚠️  Thread partition error: {exc}", file=sys.stderr)
 
@@ -799,6 +821,7 @@ def clean_old_snapshots(output_dir: Path, raw_dir: Path, retention_days: int = 3
         (output_dir, "communes_GiaLai_*.json"),
         (output_dir, "comparison_GiaLai_*.json"),
         (raw_dir / "2026" / "gia_lai", "raw_GiaLai_*.json"),
+        (raw_dir / "2026" / "gia_lai" / "checkpoints", "checkpoint_*.json"),
     ]
 
     for parent_dir, pattern in patterns:
@@ -941,7 +964,7 @@ def main() -> int:
     parser.add_argument("--delay-min", type=float, default=1.0, help="Thời gian nghỉ tối thiểu giữa các request tính theo giây (mặc định: 1.0s)")
     parser.add_argument("--delay-max", type=float, default=2.5, help="Thời gian nghỉ tối đa giữa các request tính theo giây (mặc định: 2.5s)")
     parser.add_argument("--timeout", type=int, default=45, help="Thời gian chờ socket timeout cho mỗi HTTP request (mặc định: 45s)")
-    parser.add_argument("--max-retries", type=int, default=4, help="Số lần thử lại tối đa khi gặp lỗi mạng/timeout (mặc định: 4)")
+    parser.add_argument("--max-retries", type=int, default=6, help="Số lần thử lại tối đa khi gặp lỗi mạng/timeout (mặc định: 6)")
     parser.add_argument("--quiet", action="store_true", help="Không in bảng console, chỉ xuất JSON")
 
     args = parser.parse_args()
@@ -965,12 +988,19 @@ def main() -> int:
     communes_curr_file = args.output_dir / f"communes_GiaLai_{run_date_str}.json"
     comparison_file = args.output_dir / f"comparison_GiaLai_{run_date_str}.json"
 
+    # Checkpoint configuration
+    chk_dir = args.raw_dir / str(args.year) / "gia_lai" / "checkpoints"
+    chk_dir.mkdir(parents=True, exist_ok=True)
+    chk_national_file = chk_dir / f"checkpoint_national_{run_date_str}.json"
+    chk_group_maps_file = chk_dir / f"checkpoint_group_maps_{run_date_str}.json"
+
     print(f"🔄 Đang khởi tạo trích xuất điểm số Gia Lai (Mốc ngày: {run_date_str})...")
     if args.concurrency > 1:
         print(f"⚡ Chế độ thực thi: Multi-Threaded Partition & Assembly ({args.concurrency} workers | Tự phân tách & ráp nối dữ liệu)")
     else:
         print(f"🔒 Chế độ thực thi: Single-Threaded Sequential (1 worker)")
     print(f"⏱️  Phân phối ngẫu nhiên thời gian nghỉ (Jitter Sleep): {args.delay_min}s ➡️ {args.delay_max}s | Timeout: {args.timeout}s | Retries: {args.max_retries}")
+    print(f"💾 Cơ chế Checkpoint Resumption & Fallback Active: {chk_dir}")
 
     # Initialize Crawler Progress Bar (Total 7 endpoints: 1 national + 5 criteria groups + 1 main service results)
     pbar = CrawlerProgressBar(total=7, desc="Trích xuất API Endpoints Gia Lai", unit="endpoint")
@@ -982,6 +1012,7 @@ def main() -> int:
             args.time_type,
             args.year,
             period,
+            checkpoint_file=chk_national_file,
             timeout=args.timeout,
             max_retries=args.max_retries,
             delay_min=args.delay_min,
@@ -989,11 +1020,12 @@ def main() -> int:
         )
         pbar.update(1, status="National Scores OK")
 
-        # Fetch Child Units Group Scores Maps across all 5 criteria endpoints (Parallel partition & assembly)
+        # Fetch Child Units Group Scores Maps across all 5 criteria endpoints (Parallel partition & assembly with checkpoint resume)
         child_group_maps = fetch_child_units_group_scores_maps(
             args.time_type,
             args.year,
             period,
+            checkpoint_file=chk_group_maps_file,
             timeout=args.timeout,
             max_retries=args.max_retries,
             delay_min=args.delay_min,
@@ -1002,22 +1034,44 @@ def main() -> int:
             pbar=pbar,
         )
 
+        # Fetch Current Period Main Data (with smart cache check & fallback)
+        raw_curr_data = None
+        if raw_curr_file.exists():
+            cached_raw = load_json(raw_curr_file)
+            if isinstance(cached_raw, dict) and cached_raw.get("data"):
+                raw_curr_data = cached_raw
+                print(f"  ℹ️ Đã tái sử dụng dữ liệu RAW hôm nay từ đĩa ({raw_curr_file.name}).")
+                pbar.update(1, status="Main Service Results (Cached) OK")
 
-        # Fetch Current Period Main Data
-        pbar.set_postfix_str("Fetching Gia Lai Main Service Results...")
-        raw_curr_data = fetch_dvc_endpoint(
-            ENDPOINT_SERVICE_RESULTS,
-            args.time_type,
-            args.year,
-            period,
-            timeout=args.timeout,
-            max_retries=args.max_retries,
-            delay_min=args.delay_min,
-            delay_max=args.delay_max,
-        )
+        if raw_curr_data is None:
+            pbar.set_postfix_str("Fetching Gia Lai Main Service Results...")
+            try:
+                raw_curr_data = fetch_dvc_endpoint(
+                    ENDPOINT_SERVICE_RESULTS,
+                    args.time_type,
+                    args.year,
+                    period,
+                    timeout=args.timeout,
+                    max_retries=args.max_retries,
+                    delay_min=args.delay_min,
+                    delay_max=args.delay_max,
+                )
+                write_json(raw_curr_file, raw_curr_data)
+                pbar.update(1, status="Main Service Results OK")
+            except Exception as exc:
+                print(f"\n⚠️ Lỗi mạng khi tải Main Service Results từ DVCQG: {exc}", file=sys.stderr)
+                # Fallback: check if we have any previous raw file for today or recent raw files
+                if raw_curr_file.exists():
+                    raw_curr_data = load_json(raw_curr_file)
+                    print(f"🔄 [Fallback] Khôi phục dữ liệu từ file RAW hôm nay ({raw_curr_file.name}).")
+                else:
+                    latest_raw = sorted((args.raw_dir / str(args.year) / "gia_lai").glob("raw_GiaLai_*.json"))
+                    if latest_raw:
+                        raw_curr_data = load_json(latest_raw[-1])
+                        print(f"🔄 [Fallback Resume] Khôi phục từ file RAW gần nhất ({latest_raw[-1].name}) để tránh exit code 1.")
+                    else:
+                        raise exc
 
-        write_json(raw_curr_file, raw_curr_data)
-        pbar.update(1, status="Main Service Results OK")
         pbar.close()
 
         curr_score_data = extract_score_data(
