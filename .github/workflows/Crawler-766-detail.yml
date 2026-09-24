@@ -70,9 +70,9 @@ jobs:
         run: |
           python tools/bootstrap_catalog_api.py --year ${{ github.event.inputs.year || '2026' }} --allow-fail --skip-if-exists
 
-      - name: Run Gia Lai Detailed Crawler - All Units & Criteria (crawl_gl.py)
+      - name: Run Gia Lai Detailed Component Indicators Crawler (crawl_gl_detail.py)
         run: |
-          python tools/crawl_gl.py \
+          python tools/crawl_gl_detail.py \
             --time-type ${{ github.event.inputs.time_type || 'year' }} \
             --year ${{ github.event.inputs.year || '2026' }} \
             --period ${{ github.event.inputs.period || '3' }} \
