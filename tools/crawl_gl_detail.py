@@ -5,7 +5,7 @@ Tool crawl_gl_detail.py: Trích xuất Dữ liệu Chi tiết Tất cả Chỉ t
 Endpoint API công khai DVCQG:
 1. API Dữ liệu tổng hợp : https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-results
 2. API Công khai minh bạch : https://dichvucong.gov.vn/api/v1/reporting/evaluation/transparency (hoặc /formalities)
-3. API Mức độ hài lòng    : https://dichvucong.gov.vn/api/v1/reporting/evaluation/transparency
+3. API Mức độ hài lòng    : https://dichvucong.gov.vn/api/v1/reporting/evaluation/handling-satisfaction
 4. API Số hóa hồ sơ       : https://dichvucong.gov.vn/api/v1/reporting/evaluation/dossier-digitized
 5. API Tiến độ giải quyết  : https://dichvucong.gov.vn/api/v1/reporting/evaluation/dvc-progress-tree
 6. API Dịch vụ công trực tuyến : https://dichvucong.gov.vn/api/v1/reporting/evaluation/provide-online-tree
@@ -47,6 +47,7 @@ ENDPOINT_DIGITIZED = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/doss
 ENDPOINT_PROGRESS = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/dvc-progress-tree"
 ENDPOINT_ONLINE = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/provide-online-tree"
 ENDPOINT_PAYMENT = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/formality-online-payment-tree"
+ENDPOINT_HANDLING_SATISFACTION = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/handling-satisfaction"
 
 GIA_LAI_ROOT_ID = "019d2be3-6a85-74ec-a346-6489e82ae4c7"
 GIA_LAI_CODE = "H21"
@@ -299,6 +300,7 @@ def fetch_all_detailed_endpoints(
         "PROGRESS": {},
         "ONLINE": {},
         "PAYMENT": {},
+        "HANDLING_SATISFACTION": {},
     }
 
     if checkpoint_file and checkpoint_file.exists():
@@ -315,6 +317,7 @@ def fetch_all_detailed_endpoints(
         ("PROGRESS", ENDPOINT_PROGRESS, ["children"]),
         ("ONLINE", ENDPOINT_ONLINE, ["children"]),
         ("PAYMENT", ENDPOINT_PAYMENT, ["children"]),
+        ("HANDLING_SATISFACTION", ENDPOINT_HANDLING_SATISFACTION, ["evaluation"]),
     ]
 
     pending_tasks = [t for t in tasks if not raw_endpoints[t[0]]]
@@ -365,6 +368,7 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
     prog_raw = raw_endpoints.get("PROGRESS", {}).get("data", {})
     online_raw = raw_endpoints.get("ONLINE", {}).get("data", {})
     pay_raw = raw_endpoints.get("PAYMENT", {}).get("data", {})
+    sat_raw = raw_endpoints.get("HANDLING_SATISFACTION", {}).get("data", {})
 
     overview = sr_raw.get("overview") or {}
     evaluation_list = sr_raw.get("evaluation") or []
@@ -375,6 +379,7 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
     prog_map = {item["departmentId"]: item for item in prog_raw.get("children", []) if isinstance(item, dict) and item.get("departmentId")}
     online_map = {item["departmentId"]: item for item in online_raw.get("children", []) if isinstance(item, dict) and item.get("departmentId")}
     pay_map = {item["departmentId"]: item for item in pay_raw.get("children", []) if isinstance(item, dict) and item.get("departmentId")}
+    sat_map = {item["departmentId"]: item for item in sat_raw.get("evaluation", []) if isinstance(item, dict) and item.get("departmentId")}
 
     units_detail: list[dict[str, Any]] = []
     agencies_detail: list[dict[str, Any]] = []
@@ -398,6 +403,7 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
         p_info = prog_map.get(did, {})
         o_info = online_map.get(did, {})
         pay_info = pay_map.get(did, {})
+        sat_info = sat_map.get(did, {})
 
         ckmb_score = round(float(t_info.get("totalScore", 0.0)), 2)
         tdgq_score = round(float(p_info.get("score", p_info.get("totalScore", 0.0))), 2)
@@ -405,8 +411,11 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
         tttt_score = round(float(pay_info.get("totalScore", 0.0)), 2)
         mdsh_score = round(float(d_info.get("totalScore", 0.0)), 2)
         
-        known_sum = round(ckmb_score + tdgq_score + online_score + tttt_score + mdsh_score, 2)
-        mdhl_score = max(0.0, round(total_score - known_sum, 2)) if total_score > 0 else 0.0
+        if sat_info.get("totalScore") is not None:
+            mdhl_score = round(float(sat_info.get("totalScore", 0.0)), 2)
+        else:
+            known_sum = round(ckmb_score + tdgq_score + online_score + tttt_score + mdsh_score, 2)
+            mdhl_score = max(0.0, round(total_score - known_sum, 2)) if total_score > 0 else 0.0
 
         unit_record = {
             "departmentId": did,
@@ -462,7 +471,13 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
                 },
                 "MDHL_MucDoHaiLong": {
                     "score": mdhl_score,
-                    "maxScore": 18,
+                    "maxScore": sat_info.get("totalMaxScore", 18),
+                    "ratio": sat_info.get("ratio"),
+                    "totalPetitions": sat_info.get("totalPetitions"),
+                    "classifiedPetitions": sat_info.get("classifiedPetitions"),
+                    "totalDossiers": sat_info.get("totalDossiers"),
+                    "averageScore": sat_info.get("averageScore"),
+                    "metrics": sat_info.get("metrics", []),
                 }
             }
         }
@@ -716,7 +731,7 @@ def main() -> int:
     print(f"⚡ Chế độ thực thi: Multi-Threaded Partition ({args.concurrency} workers) | Jitter: {args.delay_min}s-{args.delay_max}s | Retries: {args.max_retries}")
     print(f"💾 Checkpoint File: {chk_detail_file}")
 
-    pbar = CrawlerProgressBar(total=6, desc="Trích xuất 6 API Chi tiết Gia Lai", unit="endpoint")
+    pbar = CrawlerProgressBar(total=7, desc="Trích xuất 7 API Chi tiết Gia Lai", unit="endpoint")
 
     try:
         raw_endpoints = fetch_all_detailed_endpoints(

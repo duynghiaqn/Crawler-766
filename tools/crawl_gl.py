@@ -41,6 +41,7 @@ ENDPOINT_PROGRESS = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/dvc-p
 ENDPOINT_ONLINE = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/provide-online-tree"
 ENDPOINT_PAYMENT = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/formality-online-payment-tree"
 ENDPOINT_DIGITIZED = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/dossier-digitized"
+ENDPOINT_HANDLING_SATISFACTION = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/handling-satisfaction"
 
 GIA_LAI_ROOT_ID = "019d2be3-6a85-74ec-a346-6489e82ae4c7"
 GIA_LAI_CODE = "H21"
@@ -342,13 +343,14 @@ def fetch_child_units_group_scores_maps(
     concurrency: int = 5,
     pbar: CrawlerProgressBar | None = None,
 ) -> dict[str, dict[str, float]]:
-    """Fetch all 5 criteria group endpoints with User-Agent rotation, checkpoint resume, and multi-threaded partition assembly."""
+    """Fetch all 6 criteria group endpoints with User-Agent rotation, checkpoint resume, and multi-threaded partition assembly."""
     maps: dict[str, dict[str, float]] = {
         "CKMB": {},
         "TDGQ": {},
         "ONLINE": {},
         "TTTT": {},
         "MDSH": {},
+        "MDHL": {},
     }
 
     if checkpoint_file and checkpoint_file.exists():
@@ -364,6 +366,7 @@ def fetch_child_units_group_scores_maps(
         ("ONLINE", ENDPOINT_ONLINE, "children"),
         ("TTTT", ENDPOINT_PAYMENT, "children"),
         ("MDSH", ENDPOINT_DIGITIZED, "evaluation"),
+        ("MDHL", ENDPOINT_HANDLING_SATISFACTION, "evaluation"),
     ]
 
     pending_tasks = [t for t in tasks if not maps[t[0]]]
@@ -371,8 +374,8 @@ def fetch_child_units_group_scores_maps(
 
     if completed_count > 0:
         if pbar:
-            pbar.update(completed_count, status=f"Checkpoint {completed_count}/5 OK")
-        print(f"  ℹ️ Đã tự động khôi phục {completed_count}/5 nhóm chỉ tiêu từ mốc checkpoint đĩa (bỏ qua fetch lại).")
+            pbar.update(completed_count, status=f"Checkpoint {completed_count}/6 OK")
+        print(f"  ℹ️ Đã tự động khôi phục {completed_count}/6 nhóm chỉ tiêu từ mốc checkpoint đĩa (bỏ qua fetch lại).")
 
     if not pending_tasks:
         return maps
@@ -468,9 +471,13 @@ def extract_score_data(
         online_val = cg_maps.get("ONLINE", {}).get(did, 0.0)
         tttt_val = cg_maps.get("TTTT", {}).get(did, 0.0)
         mdsh_val = cg_maps.get("MDSH", {}).get(did, 0.0)
+        mdhl_fetched = cg_maps.get("MDHL", {}).get(did)
 
-        known_sum = round(ckmb_val + tdgq_val + online_val + tttt_val + mdsh_val, 2)
-        mdhl_val = max(0.0, round(tot_val - known_sum, 2)) if tot_val > 0 else 0.0
+        if mdhl_fetched is not None:
+            mdhl_val = round(float(mdhl_fetched), 2)
+        else:
+            known_sum = round(ckmb_val + tdgq_val + online_val + tttt_val + mdsh_val, 2)
+            mdhl_val = max(0.0, round(tot_val - known_sum, 2)) if tot_val > 0 else 0.0
 
         item_group_scores = item.get("groupScores") or {
             "CKMB": ckmb_val,

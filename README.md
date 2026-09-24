@@ -38,6 +38,7 @@ graph TD
         API_ONLINE["/api/v1/.../provide-online-tree (ONLINE)"]
         API_TTTT["/api/v1/.../formality-online-payment-tree (TTTT)"]
         API_MDSH["/api/v1/.../dossier-digitized (MDSH)"]
+        API_MDHL["/api/v1/.../handling-satisfaction (MDHL)"]
     end
 
     subgraph CoreEngine["🛡️ CRAWLER ENGINE (SINGLE-THREADED & ANTI-BLOCK)"]
