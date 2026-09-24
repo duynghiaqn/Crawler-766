@@ -21,7 +21,8 @@ Hệ thống tự động trích xuất, phân loại, build API Index và so s�
 - **📈 Engine So sánh Điểm Đồng bộ theo Ngày (Daily Comparison Engine)**: Tự động so sánh chênh lệch điểm số (`scoreDeltaDaily`), biến động thứ hạng (`rankChangeDaily`) và sự thay đổi từng nhóm chỉ tiêu giữa mốc ngày hiện tại với mốc ngày trước đó.
 - **🧹 Tự động Clean Dữ liệu Cũ (`Auto-Clean > 3 ngày`)**: Quét và tự động xóa sạch các file snapshot và bản ghi trong index có tuổi thọ lớn hơn 3 ngày (72 giờ) để đảm bảo bộ nhớ và tính cập nhật.
 - **🛡️ Cơ chế Đảo User-Agent & Evasion (Anti-Blocking)**: Xoay vòng User-Agent hiện đại (Chrome 124/125, Edge, Firefox, Safari), ngẫu nhiên hóa request headers và độ trễ jitter (0.2s - 0.5s) chống chặn IP/WAF rate-limit từ DVCQG.
-- **⏰ Tự động hóa CI/CD GitHub Actions**: Tự động chạy task crawler lúc **01:00 sáng hàng ngày (Giờ Việt Nam)** qua workflow `.github/workflows/Crawler-766.yml`.
+- **🏛️ Trích xuất & Xếp hạng Tỉnh / Thành phố (`tools/crawl_province.py`)**: Tự động trích xuất tổng điểm, xếp hạng (Rank 1..N) và 6 nhóm chỉ tiêu thành phần cho tất cả UBND tỉnh / thành phố toàn quốc, duy trì file database `data/provinces/index.json`.
+- **⏰ Tự động hóa CI/CD GitHub Actions**: Tự động chạy task crawler Gia Lai (01:00 AM VN) qua `.github/workflows/Crawler-766.yml`, crawler chi tiết (`Crawler-766-detail.yml`) và crawler Tỉnh/Thành phố toàn quốc lúc 02:00 AM VN qua `.github/workflows/Crawler-766-province.yml`.
 
 ---
 
@@ -134,21 +135,27 @@ flowchart TD
 ```text
 data/
 ├── config/
-│   ├── provinces.json                     # Danh mục 34 Tỉnh/Thành phố
+│   ├── provinces.json                     # Danh mục các Tỉnh/Thành phố
 │   └── departments.json                   # Danh mục các đơn vị hành chính
 ├── gia_lai/
-│   ├── index.json                         # API Index Database tổng hợp cho client lookup
-│   ├── index_detail.json                  # API Detailed Index Database gốc duy nhất chứa toàn bộ chỉ tiêu con
-│   ├── scores_GiaLai_DDMMYYYY.json        # Dữ liệu điểm số tổng hợp 149 đơn vị
-│   ├── agencies_GiaLai_DDMMYYYY.json      # Dữ liệu điểm số Khối Sở/Ban/Ngành
-│   ├── communes_GiaLai_DDMMYYYY.json      # Dữ liệu điểm số Khối UBND Xã/Phường
-│   ├── details_GiaLai_DDMMYYYY.json       # Dữ liệu chi tiết toàn bộ các chỉ tiêu con & thành phần đơn vị
-│   └── comparison_GiaLai_DDMMYYYY.json    # File so sánh điểm số & xu hướng theo ngày
+│   ├── index.json                         # API Index Database tổng hợp cho client lookup Gia Lai
+│   ├── index_detail.json                  # API Detailed Index Database chứa chỉ tiêu con Gia Lai
+│   ├── scores_GiaLai_DDMMYYYY.json        # Dữ liệu điểm số tổng hợp 149 đơn vị Gia Lai
+│   ├── agencies_GiaLai_DDMMYYYY.json      # Dữ liệu điểm số Khối Sở/Ban/Ngành Gia Lai
+│   ├── communes_GiaLai_DDMMYYYY.json      # Dữ liệu điểm số Khối UBND Xã/Phường Gia Lai
+│   ├── details_GiaLai_DDMMYYYY.json       # Dữ liệu chi tiết chỉ tiêu con các đơn vị Gia Lai
+│   └── comparison_GiaLai_DDMMYYYY.json    # File so sánh điểm số & xu hướng Gia Lai theo ngày
+├── provinces/
+│   ├── index.json                         # API Master Index tổng hợp xếp hạng, lịch sử & các bản so sánh kỳ liền Tỉnh/TP
+│   └── index_detail.json                  # API Detailed Master Index chứa toàn bộ chỉ số thành phần & sub-metrics chi tiết Tỉnh/TP
 └── raw/
     └── 2026/
-        └── gia_lai/
-            ├── raw_GiaLai_DDMMYYYY.json   # Dữ liệu RAW JSON nguyên bản từ DVCQG API
-            └── checkpoints/               # Dữ liệu checkpoint tự động lưu vết chống lỗi mạng
+        ├── gia_lai/
+        │   ├── raw_GiaLai_DDMMYYYY.json   # Dữ liệu RAW JSON nguyên bản Gia Lai
+        │   └── checkpoints/               # Dữ liệu checkpoint tự động lưu vết chống lỗi mạng
+        └── provinces/
+            ├── raw_Provinces_DDMMYYYY.json# Dữ liệu RAW JSON nguyên bản tất cả Tỉnh/TP
+            └── checkpoints/               # Checkpoint lưu vết chỉ số thành phần các Tỉnh/TP
 ```
 
 ---
@@ -190,6 +197,24 @@ python3 tools/crawl_gl.py --clean-days 3
 Hoặc gọi trực tiếp qua wrapper CLI script:
 ```bash
 ./tools/crawl-gl --time-type month --year 2026 --period 3
+```
+
+### 3. Thực thi Tool Crawler Tất cả UBND Tỉnh / Thành phố (`tools/crawl_province.py`)
+
+```bash
+# Trích xuất dữ liệu xếp hạng & 6 chỉ số thành phần tất cả Tỉnh/TP theo Năm
+python3 tools/crawl_province.py --time-type year --year 2026
+
+# Trích xuất dữ liệu Tỉnh/TP theo Tháng
+python3 tools/crawl_province.py --time-type month --year 2026 --period 3
+
+# Tự động clean snapshot Tỉnh/TP cũ quá N ngày (Mặc định: 3 ngày)
+python3 tools/crawl_province.py --clean-days 3
+```
+
+Hoặc gọi trực tiếp qua wrapper CLI script:
+```bash
+./tools/crawl-province --time-type year --year 2026
 ```
 
 ---
