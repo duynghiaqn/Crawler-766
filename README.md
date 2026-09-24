@@ -136,7 +136,8 @@ data/
 │   ├── provinces.json                     # Danh mục 34 Tỉnh/Thành phố
 │   └── departments.json                   # Danh mục các đơn vị hành chính
 ├── gia_lai/
-│   ├── index.json                         # API Index Database duy nhất cho client lookup
+│   ├── index.json                         # API Index Database tổng hợp cho client lookup
+│   ├── index_detail.json                  # API Detailed Index Database gốc duy nhất chứa toàn bộ chỉ tiêu con
 │   ├── scores_GiaLai_DDMMYYYY.json        # Dữ liệu điểm số tổng hợp 149 đơn vị
 │   ├── agencies_GiaLai_DDMMYYYY.json      # Dữ liệu điểm số Khối Sở/Ban/Ngành
 │   ├── communes_GiaLai_DDMMYYYY.json      # Dữ liệu điểm số Khối UBND Xã/Phường

@@ -494,6 +494,158 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
     }
 
 
+def update_api_index_detail(
+    output_dir: Path,
+    processed: dict[str, Any],
+    metadata: dict[str, Any],
+    date_str: str,
+) -> tuple[Path, Path]:
+    """
+    Build & update both master index files:
+    1. index.json (Primary root index - updated with latest detailed indicators)
+    2. index_detail.json (Master detailed lookup database index)
+    """
+    index_path = output_dir / "index.json"
+    index_detail_path = output_dir / "index_detail.json"
+
+    # --- 1. Update master index.json ---
+    index_data = load_json(index_path) or {}
+    if not isinstance(index_data, dict):
+        index_data = {}
+
+    index_data["schemaVersion"] = 1
+    index_data["updatedAt"] = utc_now()
+    index_data["latestDate"] = date_str
+
+    province_info = index_data.setdefault("province", {})
+    province_info["name"] = GIA_LAI_NAME
+    province_info["code"] = GIA_LAI_CODE
+    province_info["id"] = GIA_LAI_ROOT_ID
+
+    avail_dates = set(index_data.get("availableDates") or [])
+    avail_dates.add(date_str)
+    index_data["availableDates"] = sorted(list(avail_dates))
+
+    ov_hist = index_data.setdefault("overviewHistory", {})
+    ov_hist[date_str] = {
+        "date": date_str,
+        "periodLabel": metadata["periodLabel"],
+        "totalScore": processed["overview"].get("totalScore"),
+        "ratio": processed["overview"].get("ratio"),
+        "scoreDelta": processed["overview"].get("scoreDelta"),
+        "groupScores": processed["overview"].get("groupScores"),
+        "totalUnitsCount": len(processed["units"]),
+        "agencyCount": len(processed["agencies"]),
+        "communeCount": len(processed["communes"]),
+    }
+
+    dept_index = index_data.setdefault("departmentsIndex", {})
+    for unit in processed.get("units", []):
+        code = unit.get("departmentCode")
+        did = unit.get("departmentId")
+        if not code or not did:
+            continue
+
+        d_entry = dept_index.setdefault(code, {
+            "departmentId": did,
+            "departmentName": unit["departmentName"],
+            "departmentCode": code,
+            "childGroup": unit["childGroup"],
+            "latest": {},
+            "history": {},
+        })
+
+        unit_record = {
+            "date": date_str,
+            "periodLabel": metadata["periodLabel"],
+            "totalScore": unit.get("totalScore"),
+            "ratio": unit.get("ratio"),
+            "scoreDelta": unit.get("scoreDelta"),
+            "rank": unit.get("rank"),
+            "groupRank": unit.get("groupRank"),
+            "groupScores": unit.get("groupScores"),
+            "componentIndicators": unit.get("componentIndicators"),
+        }
+
+        d_entry["latest"] = unit_record
+        d_entry.setdefault("history", {})[date_str] = unit_record
+
+    write_json(index_path, index_data)
+
+    # --- 2. Update master index_detail.json ---
+    detail_index_data = load_json(index_detail_path) or {}
+    if not isinstance(detail_index_data, dict):
+        detail_index_data = {}
+
+    detail_index_data["schemaVersion"] = 1
+    detail_index_data["updatedAt"] = utc_now()
+    detail_index_data["latestDate"] = date_str
+    detail_index_data["province"] = province_info
+    detail_index_data["availableDates"] = sorted(list(avail_dates))
+    detail_index_data["overviewHistory"] = ov_hist
+
+    detail_index_data["agenciesList"] = [
+        {
+            "code": a["departmentCode"],
+            "id": a["departmentId"],
+            "name": a["departmentName"],
+            "rank": a.get("groupRank"),
+            "score": a.get("totalScore"),
+            "groupScores": a.get("groupScores"),
+            "componentIndicators": a.get("componentIndicators"),
+        }
+        for a in processed.get("agencies", [])
+    ]
+
+    detail_index_data["communesList"] = [
+        {
+            "code": c["departmentCode"],
+            "id": c["departmentId"],
+            "name": c["departmentName"],
+            "rank": c.get("groupRank"),
+            "score": c.get("totalScore"),
+            "groupScores": c.get("groupScores"),
+            "componentIndicators": c.get("componentIndicators"),
+        }
+        for c in processed.get("communes", [])
+    ]
+
+    dept_detail_idx = detail_index_data.setdefault("departmentsDetailIndex", {})
+    for unit in processed.get("units", []):
+        code = unit.get("departmentCode")
+        did = unit.get("departmentId")
+        if not code or not did:
+            continue
+
+        d_entry = dept_detail_idx.setdefault(code, {
+            "departmentId": did,
+            "departmentName": unit["departmentName"],
+            "departmentCode": code,
+            "childGroup": unit["childGroup"],
+            "latest": {},
+            "history": {},
+        })
+
+        unit_detail_record = {
+            "date": date_str,
+            "periodLabel": metadata["periodLabel"],
+            "totalScore": unit.get("totalScore"),
+            "ratio": unit.get("ratio"),
+            "scoreDelta": unit.get("scoreDelta"),
+            "rank": unit.get("rank"),
+            "groupRank": unit.get("groupRank"),
+            "groupScores": unit.get("groupScores"),
+            "componentIndicators": unit.get("componentIndicators"),
+        }
+
+        d_entry["latest"] = unit_detail_record
+        d_entry.setdefault("history", {})[date_str] = unit_detail_record
+
+    write_json(index_detail_path, detail_index_data)
+
+    return index_path, index_detail_path
+
+
 def clean_old_snapshots(output_dir: Path, raw_dir: Path, retention_days: int = 3) -> int:
     cutoff_date = datetime.now() - timedelta(days=retention_days)
     deleted_files = 0
@@ -624,6 +776,8 @@ def main() -> int:
             "communesDetail": processed["communes"],
         })
 
+        index_file, index_detail_file = update_api_index_detail(args.output_dir, processed, metadata, run_date_str)
+
         print("\n" + "=" * 115)
         print(f"📊 BÁO CÁO CHI TIẾT TẤT CẢ CHỈ TIÊU THÀNH PHẦN - {GIA_LAI_NAME.upper()} (Mốc ngày: {run_date_str})")
         print("=" * 115)
@@ -631,6 +785,8 @@ def main() -> int:
         print(f"✅ Đã lưu JSON Chi tiết 149 Đơn vị: {details_file}")
         print(f"✅ Đã lưu JSON Chi tiết Khối Sở/Ngành: {agencies_detail_file}")
         print(f"✅ Đã lưu JSON Chi tiết Khối Xã/Phường: {communes_detail_file}")
+        print(f"🚀 Đã Cập nhật Master API Index File: {index_file}")
+        print(f"🚀 Đã Cập nhật Master Detailed API Index Database: {index_detail_file}")
         print("=" * 115 + "\n")
 
     except Exception as exc:
