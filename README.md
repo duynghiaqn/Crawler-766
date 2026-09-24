@@ -245,8 +245,8 @@ Hệ thống được trang bị 2 Workflows CI/CD tự động:
    - Tự động trích xuất điểm số, build API Index & so sánh biến động ngày.
 
 2. **Workflow Trích xuất Chi tiết Chỉ tiêu Con & Thành phần** ([`.github/workflows/Crawler-766-detail.yml`](.github/workflows/Crawler-766-detail.yml)):
-   - **Schedule Cron**: `30 18 * * *` (01:30 AM Việt Nam).
-   - Tự động trích xuất chuyên sâu 6 nhóm chỉ tiêu con thành phần cho toàn bộ 149 đơn vị con (`details_GiaLai_DDMMYYYY.json`).
+   - **Schedule Cron**: `0 17 * * *` (00:00 AM / 0 giờ Việt Nam).
+   - Tự động trích xuất chuyên sâu các nhóm chỉ tiêu con thành phần cho toàn bộ 149 đơn vị con (`details_GiaLai_DDMMYYYY.json`).
 
 ---
 
