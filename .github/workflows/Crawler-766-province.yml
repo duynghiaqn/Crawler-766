@@ -2,7 +2,7 @@ name: Crawl DVCQG Data - All Provinces & Cities
 
 on:
   schedule:
-    - cron: '0 19 * * *'
+    - cron: '0 19 * * *' # 02:00 AM Việt Nam (19:00 UTC)
   workflow_dispatch:
     inputs:
       year:
@@ -36,8 +36,11 @@ concurrency:
 
 jobs:
   crawl-provinces:
-    runs-on: macos-latest
-    timeout-minutes: 25
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository

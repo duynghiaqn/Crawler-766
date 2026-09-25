@@ -21,7 +21,7 @@ Hệ thống tự động trích xuất, phân loại, build API Index và so s�
 - **📈 Engine So sánh Điểm Đồng bộ theo Ngày (Daily Comparison Engine)**: Tự động so sánh chênh lệch điểm số (`scoreDeltaDaily`), biến động thứ hạng (`rankChangeDaily`) và sự thay đổi từng nhóm chỉ tiêu giữa mốc ngày hiện tại với mốc ngày trước đó.
 - **🧹 Tự động Clean Dữ liệu Cũ (`Auto-Clean > 3 ngày`)**: Quét và tự động xóa sạch các file snapshot và bản ghi trong index có tuổi thọ lớn hơn 3 ngày (72 giờ) để đảm bảo bộ nhớ và tính cập nhật.
 - **🛡️ Cơ chế Đảo User-Agent & Evasion (Anti-Blocking)**: Xoay vòng User-Agent hiện đại (Chrome 124/125, Edge, Firefox, Safari), ngẫu nhiên hóa request headers và độ trễ jitter (0.2s - 0.5s) chống chặn IP/WAF rate-limit từ DVCQG.
-- **🏛️ Trích xuất & Xếp hạng Tỉnh / Thành phố (`tools/crawl_province.py`)**: Tự động trích xuất tổng điểm, xếp hạng (Rank 1..N) và 6 nhóm chỉ tiêu thành phần cho tất cả UBND tỉnh / thành phố toàn quốc, duy trì file database `data/provinces/index.json`.
+- **🏛️ Trích xuất & Xếp hạng Tỉnh / Thành phố (`tools/crawl_province.py`)**: Tự động trích xuất tổng điểm, xếp hạng (Rank 1..N) và 6 nhóm chỉ tiêu thành phần cho tất cả UBND tỉnh / thành phố toàn quốc, duy trì các file index `data/provinces/index.json`, `index_detail.json` và file so sánh theo ngày `comparison_Provinces_DDMMYYYY.json`.
 - **⏰ Tự động hóa CI/CD GitHub Actions**: Tự động chạy task crawler Gia Lai (01:00 AM VN) qua `.github/workflows/Crawler-766.yml`, crawler chi tiết (`Crawler-766-detail.yml`) và crawler Tỉnh/Thành phố toàn quốc lúc 02:00 AM VN qua `.github/workflows/Crawler-766-province.yml`.
 
 ---
@@ -147,7 +147,10 @@ data/
 │   └── comparison_GiaLai_DDMMYYYY.json    # File so sánh điểm số & xu hướng Gia Lai theo ngày
 ├── provinces/
 │   ├── index.json                         # API Master Index tổng hợp xếp hạng, lịch sử & các bản so sánh kỳ liền Tỉnh/TP
-│   └── index_detail.json                  # API Detailed Master Index chứa toàn bộ chỉ số thành phần & sub-metrics chi tiết Tỉnh/TP
+│   ├── index_detail.json                  # API Detailed Master Index chứa toàn bộ chỉ số thành phần & sub-metrics chi tiết Tỉnh/TP
+│   ├── scores_Provinces_DDMMYYYY.json     # Dữ liệu điểm số tổng hợp các tỉnh/thành phố theo ngày
+│   ├── details_Provinces_DDMMYYYY.json    # Dữ liệu chi tiết 6 nhóm chỉ tiêu & sub-metrics các tỉnh/thành phố theo ngày
+│   └── comparison_Provinces_DDMMYYYY.json # File so sánh điểm số & xu hướng các tỉnh/thành phố theo ngày
 └── raw/
     └── 2026/
         ├── gia_lai/
@@ -265,7 +268,7 @@ File `data/gia_lai/index.json` được thiết kế tối ưu cho các dịch v
 
 ## 🤖 Tự Động Hóa Với GitHub Actions
 
-Hệ thống được trang bị 2 Workflows CI/CD tự động:
+Hệ thống được trang bị 3 Workflows CI/CD tự động:
 
 1. **Workflow Tổng hợp Hàng ngày** ([`.github/workflows/Crawler-766.yml`](.github/workflows/Crawler-766.yml)):
    - **Schedule Cron**: `0 18 * * *` (01:00 AM Việt Nam).
@@ -274,6 +277,10 @@ Hệ thống được trang bị 2 Workflows CI/CD tự động:
 2. **Workflow Trích xuất Chi tiết Chỉ tiêu Con & Thành phần** ([`.github/workflows/Crawler-766-detail.yml`](.github/workflows/Crawler-766-detail.yml)):
    - **Schedule Cron**: `0 17 * * *` (00:00 AM / 0 giờ Việt Nam).
    - Tự động trích xuất chuyên sâu các nhóm chỉ tiêu con thành phần cho toàn bộ 149 đơn vị con (`details_GiaLai_DDMMYYYY.json`).
+
+3. **Workflow Trích xuất Tất cả UBND Tỉnh / Thành phố** ([`.github/workflows/Crawler-766-province.yml`](.github/workflows/Crawler-766-province.yml)):
+   - **Schedule Cron**: `0 19 * * *` (02:00 AM Việt Nam).
+   - Tự động trích xuất tổng điểm, xếp hạng & chỉ số thành phần tất cả các Tỉnh/TP toàn quốc, duy trì Master API Index Database và file so sánh theo ngày (`comparison_Provinces_DDMMYYYY.json`).
 
 ---
 

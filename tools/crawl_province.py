@@ -13,10 +13,11 @@ Endpoint API công khai DVCQG:
 
 Tính năng chính:
 1. Trích xuất đầy đủ điểm số tổng hợp, xếp hạng (Rank 1..N) và 6 nhóm chỉ tiêu thành phần (CKMB, TDGQ, ONLINE, TTTT, MDSH, MDHL) của tất cả UBND Tỉnh/Thành phố toàn quốc.
-2. Lưu duy nhất 2 file CSDL Master Index Database trong data/provinces/:
-   - index.json        : API Index Database tổng hợp điểm số & xếp hạng cho client lookup.
-   - index_detail.json : API Detailed Index Database chứa toàn bộ số liệu chi tiết các chỉ số thành phần (componentIndicators).
-3. Engine So sánh Điểm & Thứ hạng Kỳ Liền (Consecutive Period Comparison): Tự động so sánh chênh lệch điểm số, thứ hạng và 6 chỉ số thành phần giữa mốc ngày hiện tại với ngày chạy trước đó và lưu trữ vào phần `comparisons` trong cả index.json và index_detail.json.
+2. Lưu file CSDL Master Index Database và file so sánh snapshot theo mốc ngày DDMMYYYY trong data/provinces/:
+   - index.json                      : API Index Database tổng hợp điểm số & xếp hạng cho client lookup.
+   - index_detail.json               : API Detailed Index Database chứa toàn bộ số liệu chi tiết các chỉ số thành phần (componentIndicators).
+   - comparison_Provinces_DDMMYYYY.json : File so sánh điểm số, xếp hạng & xu hướng các tỉnh/thành phố theo ngày.
+3. Engine So sánh Điểm & Thứ hạng Kỳ Liền (Consecutive Period Comparison): Tự động so sánh chênh lệch điểm số, thứ hạng và 6 chỉ số thành phần giữa mốc ngày hiện tại với ngày chạy trước đó, xuất ra file comparison_Provinces_DDMMYYYY.json và lưu trữ vào phần `comparisons` trong cả index.json và index_detail.json.
 4. Cơ chế chống WAF/Firewall: User-Agent Rotation Pool, Header ngẫu nhiên & Randomized Sleep Jitter (0.5s - 1.5s).
 5. Khôi phục điểm ngắt lỗi (Checkpoint Resumption) chống gián đoạn đường truyền mạng tại data/raw/<year>/provinces/checkpoints/.
 6. Engine Tự động dọn dẹp Snapshot & Index cũ (> N ngày, mặc định: 3 ngày / 72 giờ).
@@ -924,24 +925,24 @@ def update_and_save_master_indexes(
 
 
 def clean_provinces_directory_and_old_records(output_dir: Path, raw_dir: Path, max_days: int = 3) -> None:
-    """Ensure data/provinces/ contains ONLY index.json and index_detail.json, and clean records older than max_days."""
+    """Ensure data/provinces/ contains ONLY index.json, index_detail.json, and valid snapshot/comparison files, and clean records older than max_days."""
     cutoff_dt = datetime.now() - timedelta(days=max_days)
     cutoff_date_int = int(cutoff_dt.strftime("%Y%m%d"))
 
-    print(f"\n🧹 Auto-Clean: Scanning and ensuring index files in {output_dir} (Cutoff < {cutoff_dt.strftime('%d/%m/%Y')})...")
+    print(f"\n🧹 Auto-Clean: Scanning and ensuring index & snapshot files in {output_dir} (Cutoff < {cutoff_dt.strftime('%d/%m/%Y')})...")
 
-    # Remove any non-index files in output_dir (e.g. legacy scores_Provinces_*.json)
-    if output_dir.exists():
-        for file_path in output_dir.glob("*"):
-            if file_path.is_file() and file_path.name not in ("index.json", "index_detail.json"):
-                file_path.unlink()
-                print(f"   🗑️ Removed non-index file: {file_path.name}")
-
-    # Remove old raw files and checkpoints
     removed_dates: set[str] = set()
+
+    # Remove old comparison, scores, details, raw files and checkpoints older than max_days
     raw_patterns = [
-        (raw_dir, "raw_Provinces_*.json"),
-        (raw_dir / "checkpoints", "checkpoint_Provinces_*.json"),
+        (output_dir, "scores_Provinces_*.json"),
+        (output_dir, "details_Provinces_*.json"),
+        (output_dir, "comparison_Provinces_*.json"),
+        (output_dir, "scores_Province_*.json"),
+        (output_dir, "details_Province_*.json"),
+        (output_dir, "comparison_Province_*.json"),
+        (raw_dir / "2026" / "provinces", "raw_Provinces_*.json"),
+        (raw_dir / "2026" / "provinces" / "checkpoints", "checkpoint_Provinces_*.json"),
     ]
 
     for base_dir, pattern in raw_patterns:
@@ -957,9 +958,25 @@ def clean_provinces_directory_and_old_records(output_dir: Path, raw_dir: Path, m
                     if file_date_int < cutoff_date_int:
                         file_path.unlink()
                         removed_dates.add(date_str)
-                        print(f"   🗑️ Deleted old raw/checkpoint file: {file_path.name}")
+                        print(f"   🗑️ Deleted old snapshot/comparison file: {file_path.name}")
                 except ValueError:
                     pass
+
+    # Remove any unneeded non-index non-snapshot files in output_dir
+    valid_prefixes = (
+        "comparison_Provinces_", "comparison_Province_",
+        "scores_Provinces_", "scores_Province_",
+        "details_Provinces_", "details_Province_",
+    )
+    if output_dir.exists():
+        for file_path in output_dir.glob("*"):
+            if file_path.is_file():
+                if file_path.name in ("index.json", "index_detail.json"):
+                    continue
+                if file_path.name.startswith(valid_prefixes) and file_path.name.endswith(".json"):
+                    continue
+                file_path.unlink()
+                print(f"   🗑️ Removed unneeded file: {file_path.name}")
 
     # Prune old dates inside both index.json and index_detail.json
     for idx_filename in ("index.json", "index_detail.json"):
@@ -1003,7 +1020,7 @@ def clean_provinces_directory_and_old_records(output_dir: Path, raw_dir: Path, m
                     write_json(index_path, index_data)
                     print(f"   📌 Pruned {len(all_remove)} old date entries from {index_path.name}")
 
-    print(f"   ✅ Clean complete: {output_dir} contains index.json and index_detail.json.")
+    print(f"   ✅ Clean complete: {output_dir} contains index.json, index_detail.json and snapshot comparison files.")
 
 
 def print_province_scores_table(score_data: dict[str, Any], comparison_data: dict[str, Any] | None = None) -> None:
@@ -1173,6 +1190,30 @@ def main() -> int:
         run_date_str=run_date_str,
     )
 
+    # Save scores and details snapshot files for tracking
+    summary_provinces = []
+    for p in score_data.get("provinces", []):
+        p_sub = {k: v for k, v in p.items() if k != "componentIndicators"}
+        summary_provinces.append(p_sub)
+
+    scores_file_data = {
+        "metadata": score_data["metadata"],
+        "overview": score_data["overview"],
+        "provinces": summary_provinces,
+    }
+
+    scores_file = output_dir / f"scores_Provinces_{run_date_str}.json"
+    scores_file_alt = output_dir / f"scores_Province_{run_date_str}.json"
+    write_json(scores_file, scores_file_data)
+    write_json(scores_file_alt, scores_file_data)
+    print(f"✅ Đã tạo & lưu file Điểm số tổng hợp Tỉnh/TP theo Ngày: {scores_file}")
+
+    details_file = output_dir / f"details_Provinces_{run_date_str}.json"
+    details_file_alt = output_dir / f"details_Province_{run_date_str}.json"
+    write_json(details_file, score_data)
+    write_json(details_file_alt, score_data)
+    print(f"✅ Đã tạo & lưu file Chi tiết chỉ số Tỉnh/TP theo Ngày: {details_file}")
+
     # Step 5: Consecutive Period Daily comparison engine from index.json
     prev_date_str = find_previous_daily_date_from_index(index_data, run_date_str, explicit_compare_date=args.compare_date)
     comparison_data = None
@@ -1182,13 +1223,36 @@ def main() -> int:
         if prev_score_data:
             print(f"📈 Engine So sánh Điểm Đồng bộ Kỳ Liền ({run_date_str} vs {prev_date_str})...")
             comparison_data = compare_province_scores(score_data, prev_score_data)
+        else:
+            print(f"ℹ️  Không tìm thấy dữ liệu mốc ngày {prev_date_str}. Khởi tạo dữ liệu so sánh kỳ đầu tiên.")
+            prev_score_data = {
+                "metadata": {"runDateStr": "N/A", "periodLabel": "N/A"},
+                "overview": {},
+                "provinces": [],
+            }
+            comparison_data = compare_province_scores(score_data, prev_score_data)
+    else:
+        print("ℹ️  Chưa tìm thấy mốc ngày chạy trước đó. Khởi tạo dữ liệu so sánh kỳ đầu tiên.")
+        prev_score_data = {
+            "metadata": {"runDateStr": "N/A", "periodLabel": "N/A"},
+            "overview": {},
+            "provinces": [],
+        }
+        comparison_data = compare_province_scores(score_data, prev_score_data)
+
+    comparison_file = output_dir / f"comparison_Provinces_{run_date_str}.json"
+    comparison_file_alt = output_dir / f"comparison_Province_{run_date_str}.json"
+    if comparison_data:
+        write_json(comparison_file, comparison_data)
+        write_json(comparison_file_alt, comparison_data)
+        print(f"✅ Đã tạo & lưu file So sánh Điểm số Tỉnh/TP theo Ngày: {comparison_file}")
 
     # Step 6: Save into Master Index files (index.json and index_detail.json)
     master_index_file, master_detail_file = update_and_save_master_indexes(output_dir, score_data, comparison_data, run_date_str)
     print(f"🚀 Saved Master API Index Database (Summary) : {master_index_file}")
     print(f"🚀 Saved Master API Index Database (Detailed): {master_detail_file}")
 
-    # Ensure no extra scores files remain in output_dir
+    # Ensure clean output directory and purge old records
     clean_provinces_directory_and_old_records(output_dir, raw_dir, max_days=args.clean_days)
 
     # Step 7: Print console summary table
