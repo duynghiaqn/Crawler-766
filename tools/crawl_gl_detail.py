@@ -39,6 +39,12 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
+# Ensure UTF-8 encoding for console output on Windows / non-UTF-8 terminals
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 # Default Configuration Constants
 ENDPOINT_SERVICE_RESULTS = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-results"
 ENDPOINT_FORMALITIES = "https://dichvucong.gov.vn/api/v1/reporting/formalities"

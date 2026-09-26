@@ -117,9 +117,16 @@ python3 "${SCRIPT_DIR}/crawl_gl_detail.py" "${COMMON_ARGS[@]}"
 # 3. Run All Provinces & Cities Crawler
 echo ""
 echo "------------------------------------------------------------------------------"
-echo "🏛️ [3/3] Thực thi Crawler UBND Tất cả Tỉnh / Thành phố (crawl_province.py)..."
+echo "🏛️ [3/4] Thực thi Crawler UBND Tất cả Tỉnh / Thành phố (crawl_province.py)..."
 echo "------------------------------------------------------------------------------"
 python3 "${SCRIPT_DIR}/crawl_province.py" "${COMMON_ARGS[@]}"
+
+# 4. Auto Clean Old Data Snapshots
+echo ""
+echo "------------------------------------------------------------------------------"
+echo "🧹 [4/4] Dọn dẹp dữ liệu cũ quá ${CLEAN_DAYS} ngày (clean_data.py)..."
+echo "------------------------------------------------------------------------------"
+python3 "${SCRIPT_DIR}/clean_data.py" --clean-days "${CLEAN_DAYS}"
 
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))
