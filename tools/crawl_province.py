@@ -805,12 +805,18 @@ def update_and_save_master_indexes(
     # 1. Update index.json (Summary index)
     index_data["schemaVersion"] = 1
     index_data["updatedAt"] = utc_now()
-    index_data["latestDate"] = date_str
 
     avail_dates = set(index_data.get("availableDates") or [])
     avail_dates.add(date_str)
     sorted_avail = sorted(list(avail_dates))
     index_data["availableDates"] = sorted_avail
+
+    latest_date = date_str
+    dates_before = [d for d in sorted_avail if d < latest_date]
+    prev_date = dates_before[-1] if dates_before else None
+
+    index_data["latestDate"] = latest_date
+    index_data["previousDate"] = prev_date
 
     overview_history = index_data.setdefault("overviewHistory", {})
     overview_history[date_str] = {
@@ -833,6 +839,7 @@ def update_and_save_master_indexes(
         summary_rankings.append(p_summary)
 
     index_data["latestOverview"] = overview
+    index_data["previousOverview"] = overview_history.get(prev_date) if prev_date else None
     index_data["latestRankings"] = summary_rankings
 
     provinces_index = index_data.setdefault("provinces", {})
@@ -850,6 +857,8 @@ def update_and_save_master_indexes(
             "departmentName": name,
             "shortName": short_n,
             "departmentCode": code,
+            "latest": {},
+            "previous": None,
             "history": {},
         })
 
@@ -866,7 +875,10 @@ def update_and_save_master_indexes(
             "groupScores": prov.get("groupScores"),
         }
 
-        entry["latest"] = history[date_str]
+    for code, entry in provinces_index.items():
+        hist = entry.get("history", {})
+        entry["latest"] = hist.get(latest_date)
+        entry["previous"] = hist.get(prev_date) if prev_date else None
 
     if comparison_data:
         comparisons = index_data.setdefault("comparisons", {})
@@ -877,13 +889,15 @@ def update_and_save_master_indexes(
     # 2. Update index_detail.json (Detailed index with full componentIndicators sub-metrics)
     index_detail_data["schemaVersion"] = 1
     index_detail_data["updatedAt"] = utc_now()
-    index_detail_data["latestDate"] = date_str
+    index_detail_data["latestDate"] = latest_date
+    index_detail_data["previousDate"] = prev_date
     index_detail_data["availableDates"] = sorted_avail
 
     overview_history_detail = index_detail_data.setdefault("overviewHistory", {})
     overview_history_detail[date_str] = overview_history[date_str]
 
     index_detail_data["latestOverview"] = overview
+    index_detail_data["previousOverview"] = overview_history_detail.get(prev_date) if prev_date else None
     index_detail_data["latestRankings"] = score_data.get("provinces", [])
 
     provinces_detail_index = index_detail_data.setdefault("provinces", {})
@@ -901,6 +915,8 @@ def update_and_save_master_indexes(
             "departmentName": name,
             "shortName": short_n,
             "departmentCode": code,
+            "latest": {},
+            "previous": None,
             "history": {},
         })
 
@@ -918,7 +934,10 @@ def update_and_save_master_indexes(
             "componentIndicators": prov.get("componentIndicators"),
         }
 
-        entry["latest"] = history[date_str]
+    for code, entry in provinces_detail_index.items():
+        hist = entry.get("history", {})
+        entry["latest"] = hist.get(latest_date)
+        entry["previous"] = hist.get(prev_date) if prev_date else None
 
     if comparison_data:
         comparisons_detail = index_detail_data.setdefault("comparisons", {})
@@ -1003,11 +1022,20 @@ def clean_provinces_directory_and_old_records(output_dir: Path, raw_dir: Path, m
                 if all_remove:
                     new_avail = [d for d in avail if d not in all_remove]
                     index_data["availableDates"] = new_avail
+                    latest_d = new_avail[-1] if new_avail else None
+                    dates_before = [d for d in new_avail if d < latest_d] if latest_d else []
+                    prev_d = dates_before[-1] if dates_before else None
+
+                    index_data["latestDate"] = latest_d
+                    index_data["previousDate"] = prev_d
 
                     overview_hist = index_data.get("overviewHistory", {})
                     if isinstance(overview_hist, dict):
                         for d in all_remove:
                             overview_hist.pop(d, None)
+
+                    index_data["latestOverview"] = overview_hist.get(latest_d) if latest_d else None
+                    index_data["previousOverview"] = overview_hist.get(prev_d) if prev_d else None
 
                     comparisons = index_data.get("comparisons", {})
                     if isinstance(comparisons, dict):
@@ -1021,6 +1049,8 @@ def clean_provinces_directory_and_old_records(output_dir: Path, raw_dir: Path, m
                             if isinstance(history, dict):
                                 for d in all_remove:
                                     history.pop(d, None)
+                            p_data["latest"] = history.get(latest_d) if latest_d else None
+                            p_data["previous"] = history.get(prev_d) if prev_d else None
 
                     write_json(index_path, index_data)
                     print(f"   📌 Pruned {len(all_remove)} old date entries from {index_path.name}")

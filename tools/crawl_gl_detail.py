@@ -530,7 +530,6 @@ def update_api_index_detail(
 
     index_data["schemaVersion"] = 1
     index_data["updatedAt"] = utc_now()
-    index_data["latestDate"] = date_str
 
     province_info = index_data.setdefault("province", {})
     province_info["name"] = GIA_LAI_NAME
@@ -539,7 +538,15 @@ def update_api_index_detail(
 
     avail_dates = set(index_data.get("availableDates") or [])
     avail_dates.add(date_str)
-    index_data["availableDates"] = sorted(list(avail_dates))
+    sorted_avail = sorted(list(avail_dates))
+    index_data["availableDates"] = sorted_avail
+
+    latest_date = date_str
+    dates_before = [d for d in sorted_avail if d < latest_date]
+    prev_date = dates_before[-1] if dates_before else None
+
+    index_data["latestDate"] = latest_date
+    index_data["previousDate"] = prev_date
 
     ov_hist = index_data.setdefault("overviewHistory", {})
     ov_hist[date_str] = {
@@ -554,6 +561,9 @@ def update_api_index_detail(
         "communeCount": len(processed["communes"]),
     }
 
+    index_data["latestOverview"] = ov_hist.get(latest_date)
+    index_data["previousOverview"] = ov_hist.get(prev_date) if prev_date else None
+
     dept_index = index_data.setdefault("departmentsIndex", {})
     for unit in processed.get("units", []):
         code = unit.get("departmentCode")
@@ -567,6 +577,7 @@ def update_api_index_detail(
             "departmentCode": code,
             "childGroup": unit["childGroup"],
             "latest": {},
+            "previous": None,
             "history": {},
         })
 
@@ -582,8 +593,12 @@ def update_api_index_detail(
             "componentIndicators": unit.get("componentIndicators"),
         }
 
-        d_entry["latest"] = unit_record
         d_entry.setdefault("history", {})[date_str] = unit_record
+
+    for code, d_entry in dept_index.items():
+        hist = d_entry.get("history", {})
+        d_entry["latest"] = hist.get(latest_date)
+        d_entry["previous"] = hist.get(prev_date) if prev_date else None
 
     write_json(index_path, index_data)
 
@@ -594,10 +609,13 @@ def update_api_index_detail(
 
     detail_index_data["schemaVersion"] = 1
     detail_index_data["updatedAt"] = utc_now()
-    detail_index_data["latestDate"] = date_str
+    detail_index_data["latestDate"] = latest_date
+    detail_index_data["previousDate"] = prev_date
     detail_index_data["province"] = province_info
-    detail_index_data["availableDates"] = sorted(list(avail_dates))
+    detail_index_data["availableDates"] = sorted_avail
     detail_index_data["overviewHistory"] = ov_hist
+    detail_index_data["latestOverview"] = ov_hist.get(latest_date)
+    detail_index_data["previousOverview"] = ov_hist.get(prev_date) if prev_date else None
 
     detail_index_data["agenciesList"] = [
         {
@@ -638,6 +656,7 @@ def update_api_index_detail(
             "departmentCode": code,
             "childGroup": unit["childGroup"],
             "latest": {},
+            "previous": None,
             "history": {},
         })
 
@@ -653,8 +672,12 @@ def update_api_index_detail(
             "componentIndicators": unit.get("componentIndicators"),
         }
 
-        d_entry["latest"] = unit_detail_record
         d_entry.setdefault("history", {})[date_str] = unit_detail_record
+
+    for code, d_entry in dept_detail_idx.items():
+        hist = d_entry.get("history", {})
+        d_entry["latest"] = hist.get(latest_date)
+        d_entry["previous"] = hist.get(prev_date) if prev_date else None
 
     write_json(index_detail_path, detail_index_data)
 

@@ -1,0 +1,36 @@
+name: Purge jsDelivr CDN Cache
+
+on:
+  schedule:
+    - cron: '0 21 * * *' # 04:00 AM Việt Nam / ICT (21:00 UTC)
+  workflow_dispatch:
+
+concurrency:
+  group: purge-jsdelivr-cache
+  cancel-in-progress: true
+
+jobs:
+  purge:
+    name: Purge jsDelivr Cache
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Send Purge Requests to jsDelivr
+        run: |
+          URLS=(
+            "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index.json"
+            "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index_detail.json"
+            "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index.json"
+            "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
+          )
+
+          echo "🚀 Purging jsDelivr CDN cache at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')..."
+          for url in "${URLS[@]}"; do
+            echo "--------------------------------------------------"
+            echo "🔄 Requesting purge for: $url"
+            response=$(curl -s -X GET "$url")
+            echo "📩 Response: $response"
+          done
+          echo "--------------------------------------------------"
+          echo "✅ All purge requests sent successfully at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')."

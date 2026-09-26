@@ -739,7 +739,6 @@ def update_api_index(output_dir: Path, score_data: dict[str, Any], date_str: str
 
     index_data["schemaVersion"] = 1
     index_data["updatedAt"] = utc_now()
-    index_data["latestDate"] = date_str
 
     province_info = index_data.setdefault("province", {})
     province_info["name"] = GIA_LAI_NAME
@@ -748,7 +747,15 @@ def update_api_index(output_dir: Path, score_data: dict[str, Any], date_str: str
 
     avail_dates = set(index_data.get("availableDates") or [])
     avail_dates.add(date_str)
-    index_data["availableDates"] = sorted(list(avail_dates))
+    sorted_avail = sorted(list(avail_dates))
+    index_data["availableDates"] = sorted_avail
+
+    latest_date = date_str
+    dates_before = [d for d in sorted_avail if d < latest_date]
+    prev_date = dates_before[-1] if dates_before else None
+
+    index_data["latestDate"] = latest_date
+    index_data["previousDate"] = prev_date
 
     ov_hist = index_data.setdefault("overviewHistory", {})
     ov_hist[date_str] = {
@@ -762,6 +769,9 @@ def update_api_index(output_dir: Path, score_data: dict[str, Any], date_str: str
         "agencyCount": score_data["overview"].get("agencyCount"),
         "communeCount": score_data["overview"].get("communeCount"),
     }
+
+    index_data["latestOverview"] = ov_hist.get(latest_date)
+    index_data["previousOverview"] = ov_hist.get(prev_date) if prev_date else None
 
     index_data["agenciesList"] = [
         {"code": a["departmentCode"], "id": a["departmentId"], "name": a["departmentName"], "rank": a.get("groupRank"), "score": a.get("totalScore"), "groupScores": a.get("groupScores")}
@@ -785,6 +795,7 @@ def update_api_index(output_dir: Path, score_data: dict[str, Any], date_str: str
             "departmentCode": code,
             "childGroup": unit["childGroup"],
             "latest": {},
+            "previous": None,
             "history": {},
         })
 
@@ -799,8 +810,12 @@ def update_api_index(output_dir: Path, score_data: dict[str, Any], date_str: str
             "groupScores": unit.get("groupScores"),
         }
 
-        d_entry["latest"] = unit_record
         d_entry.setdefault("history", {})[date_str] = unit_record
+
+    for code, d_entry in dept_index.items():
+        hist = d_entry.get("history", {})
+        d_entry["latest"] = hist.get(latest_date)
+        d_entry["previous"] = hist.get(prev_date) if prev_date else None
 
     write_json(index_path, index_data)
     return index_path
@@ -866,10 +881,20 @@ def clean_old_snapshots(output_dir: Path, raw_dir: Path, retention_days: int = 3
 
         if purged_set:
             index_data["availableDates"] = valid_dates
+            latest_d = valid_dates[-1] if valid_dates else None
+            dates_before = [d for d in valid_dates if d < latest_d] if latest_d else []
+            prev_d = dates_before[-1] if dates_before else None
+
+            index_data["latestDate"] = latest_d
+            index_data["previousDate"] = prev_d
+
             ov_hist = index_data.get("overviewHistory", {})
             for d in list(ov_hist.keys()):
                 if d in purged_set:
                     ov_hist.pop(d, None)
+
+            index_data["latestOverview"] = ov_hist.get(latest_d) if latest_d else None
+            index_data["previousOverview"] = ov_hist.get(prev_d) if prev_d else None
 
             dept_idx = index_data.get("departmentsIndex", {})
             for dept_info in dept_idx.values():
@@ -877,8 +902,12 @@ def clean_old_snapshots(output_dir: Path, raw_dir: Path, retention_days: int = 3
                 for d in list(hist.keys()):
                     if d in purged_set:
                         hist.pop(d, None)
+                dept_info["latest"] = hist.get(latest_d) if latest_d else None
+                dept_info["previous"] = hist.get(prev_d) if prev_d else None
 
             write_json(index_path, index_data)
+
+    return {"deletedFiles": deleted_files, "purgedDates": len(purged_dates)}
 
     return {"deletedFiles": deleted_files, "purgedDates": len(purged_dates)}
 
