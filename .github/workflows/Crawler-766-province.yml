@@ -41,6 +41,9 @@ jobs:
       run:
         shell: bash
     timeout-minutes: 30
+    env:
+      PYTHONIOENCODING: "utf-8"
+      PYTHONUTF8: "1"
 
     steps:
       - name: Checkout repository
@@ -75,7 +78,9 @@ jobs:
             --time-type ${{ github.event.inputs.time_type || 'year' }} \
             --year ${{ github.event.inputs.year || '2026' }} \
             --period ${{ github.event.inputs.period || '3' }} \
-            --clean-days ${{ github.event.inputs.clean_days || '3' }}
+            --clean-days ${{ github.event.inputs.clean_days || '3' }} \
+            --timeout 90 \
+            --max-retries 8
 
       - name: Show generated province files
         if: always()

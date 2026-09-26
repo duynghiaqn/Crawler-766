@@ -31,9 +31,11 @@ Sử dụng:
 from __future__ import annotations
 
 import argparse
+import http.cookiejar
 import json
 import random
 import re
+import ssl
 import sys
 import threading
 import time
@@ -50,6 +52,15 @@ if hasattr(sys.stdout, "reconfigure"):
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
+# Global Session, CookieJar and SSL context for connection reuse & anti-WAF
+COOKIE_JAR = http.cookiejar.CookieJar()
+SSL_CONTEXT = ssl.create_default_context()
+OPENER = urllib.request.build_opener(
+    urllib.request.HTTPCookieProcessor(COOKIE_JAR),
+    urllib.request.HTTPSHandler(context=SSL_CONTEXT),
+)
+_SESSION_WARMED_UP = False
+
 # Default Configuration Constants
 ENDPOINT_SERVICE_RESULTS = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-results"
 ENDPOINT_TRANSPARENCY = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/transparency"
@@ -64,20 +75,16 @@ DATA_DIR = ROOT_DIR / "data"
 DEFAULT_OUTPUT_DIR = DATA_DIR / "provinces"
 DEFAULT_RAW_DIR = DATA_DIR / "raw"
 
-# User-Agent Pool for Evasion / Anti-Blocking
+# User-Agent Pool for Evasion / Anti-Blocking (Standard Desktop Chrome/Chromium)
 USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4.1 Safari/605.1.15",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:125.0) Gecko/20100101 Firefox/125.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:126.0) Gecko/20100101 Firefox/126.0",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36 Edg/123.0.0.0",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
 ]
 
 try:
@@ -175,6 +182,15 @@ def load_json(path: Path) -> dict[str, Any] | None:
 def get_random_headers() -> dict[str, str]:
     """Generate randomized stealth headers to prevent WAF / bot detection."""
     ua = random.choice(USER_AGENTS)
+    ver_match = re.search(r"Chrome/(\d+)", ua)
+    ver = ver_match.group(1) if ver_match else "125"
+    if "Windows" in ua:
+        platform = '"Windows"'
+    elif "Macintosh" in ua:
+        platform = '"macOS"'
+    else:
+        platform = '"Linux"'
+
     headers = {
         "Accept": "application/json, text/plain, */*",
         "Content-Type": "application/json",
@@ -182,15 +198,32 @@ def get_random_headers() -> dict[str, str]:
         "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
         "Referer": "https://dichvucong.gov.vn/danh-gia-chat-luong-phuc-vu",
         "Origin": "https://dichvucong.gov.vn",
+        "Sec-Ch-Ua": f'"Chromium";v="{ver}", "Google Chrome";v="{ver}", "Not-A.Brand";v="99"',
         "Sec-Ch-Ua-Mobile": "?0",
+        "Sec-Ch-Ua-Platform": platform,
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Site": "same-origin",
     }
-    if "Chrome" in ua:
-        headers["Sec-Ch-Ua"] = '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"'
-        headers["Sec-Ch-Ua-Platform"] = '"Windows"' if "Windows" in ua else '"macOS"'
     return headers
+
+
+def warmup_session(timeout: int = 15) -> bool:
+    """Warmup cookies and TLS session by visiting public evaluation page."""
+    global _SESSION_WARMED_UP
+    try:
+        headers = get_random_headers()
+        req = urllib.request.Request(
+            "https://dichvucong.gov.vn/danh-gia-chat-luong-phuc-vu",
+            headers=headers,
+            method="GET",
+        )
+        with OPENER.open(req, timeout=timeout) as resp:
+            resp.read(512)
+        _SESSION_WARMED_UP = True
+        return True
+    except Exception:
+        return False
 
 
 def province_short_name(name: str) -> str:
@@ -207,12 +240,13 @@ def fetch_dvc_endpoint(
     time_type: str,
     year: int,
     period: int | None = None,
-    timeout: int = 45,
-    max_retries: int = 6,
+    timeout: int = 90,
+    max_retries: int = 8,
     delay_min: float = 0.5,
     delay_max: float = 1.5,
 ) -> dict[str, Any]:
     """Send POST request to DVCQG administrative unit endpoints with anti-blocking & exponential backoff."""
+    global _SESSION_WARMED_UP
     payload: dict[str, Any] = {
         "timeType": time_type,
         "year": year,
@@ -233,11 +267,15 @@ def fetch_dvc_endpoint(
     sleep_sec = random.uniform(delay_min, delay_max) + random.uniform(0.05, 0.25)
     time.sleep(sleep_sec)
 
+    if not _SESSION_WARMED_UP:
+        warmup_session(timeout=min(20, timeout))
+
     for attempt in range(1, max_retries + 1):
         headers = get_random_headers()
         request = urllib.request.Request(url, data=body, method="POST", headers=headers)
+        current_timeout = timeout + (attempt - 1) * 15
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with OPENER.open(request, timeout=current_timeout) as response:
                 status = response.status
                 raw_text = response.read().decode("utf-8", errors="replace")
                 parsed = json.loads(raw_text)
@@ -247,7 +285,7 @@ def fetch_dvc_endpoint(
         except urllib.error.HTTPError as exc:
             err_body = exc.read().decode("utf-8", errors="replace")
             if exc.code in (429, 403, 500, 502, 503, 504) and attempt < max_retries:
-                retry_wait = (3.0 * (1.4 ** (attempt - 1))) + random.uniform(1.0, 3.0)
+                retry_wait = (4.0 * (1.5 ** (attempt - 1))) + random.uniform(1.5, 4.0)
                 print(f"\n⚠️ [Thử lại {attempt}/{max_retries}] HTTP {exc.code} từ DVCQG. Đợi {retry_wait:.1f}s...", file=sys.stderr)
                 time.sleep(retry_wait)
                 continue
@@ -255,8 +293,9 @@ def fetch_dvc_endpoint(
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             reason = getattr(exc, "reason", str(exc))
             if attempt < max_retries:
-                retry_wait = (3.0 * (1.4 ** (attempt - 1))) + random.uniform(1.0, 3.0)
-                print(f"\n⚠️ [Thử lại {attempt}/{max_retries}] Lỗi kết nối DVCQG ({reason}). Tự động thử lại sau {retry_wait:.1f}s...", file=sys.stderr)
+                retry_wait = (4.0 * (1.5 ** (attempt - 1))) + random.uniform(2.0, 5.0)
+                print(f"\n⚠️ [Thử lại {attempt}/{max_retries}] Lỗi kết nối DVCQG ({reason}). Tự động thử lại sau {retry_wait:.1f}s (timeout: {current_timeout + 15}s)...", file=sys.stderr)
+                warmup_session(timeout=min(20, timeout))
                 time.sleep(retry_wait)
                 continue
             raise RuntimeError(f"Network error connecting to DVCQG: {reason}") from exc
@@ -264,22 +303,83 @@ def fetch_dvc_endpoint(
     raise RuntimeError(f"Failed to fetch DVCQG endpoint after {max_retries} attempts")
 
 
+def fetch_service_results_via_playwright(
+    time_type: str,
+    year: int,
+    period: int | None = None,
+    timeout_sec: int = 60,
+) -> dict[str, Any] | None:
+    """Fallback fetch national service-results using real Chromium browser via Playwright."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return None
+
+    payload: dict[str, Any] = {
+        "timeType": time_type,
+        "year": year,
+        "departmentType": "ADMINISTRATIVE_UNIT",
+    }
+    if time_type == "quarter" and period:
+        payload["quarter"] = period
+    elif time_type == "month" and period:
+        payload["month"] = period
+
+    print("\n🌐 [Playwright Fallback] Khởi tạo Playwright Chromium để bypass WAF & lấy dữ liệu National Service Results...", file=sys.stderr)
+    try:
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            context = browser.new_context(locale="vi-VN")
+            page = context.new_page()
+            page.goto("https://dichvucong.gov.vn/danh-gia-chat-luong-phuc-vu", timeout=45000, wait_until="commit")
+            time.sleep(2)
+            resp_data = page.evaluate(
+                """async ([url, payload]) => {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json, text/plain, */*'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return await res.json();
+                }""",
+                [ENDPOINT_SERVICE_RESULTS, payload],
+            )
+            browser.close()
+            if resp_data and isinstance(resp_data, dict) and "data" in resp_data:
+                print("✅ [Playwright Fallback] Lấy dữ liệu thành công qua Chromium!", file=sys.stderr)
+                return resp_data
+    except Exception as exc:
+        print(f"⚠️ [Playwright Fallback Error]: {exc}", file=sys.stderr)
+    return None
+
+
 def fetch_all_provinces_service_results(
     time_type: str,
     year: int,
     period: int | None = None,
-    timeout: int = 45,
-    max_retries: int = 6,
+    timeout: int = 90,
+    max_retries: int = 8,
 ) -> dict[str, Any]:
-    """Fetch national service-results overview containing all provinces."""
-    return fetch_dvc_endpoint(
-        ENDPOINT_SERVICE_RESULTS,
-        time_type,
-        year,
-        period,
-        timeout=timeout,
-        max_retries=max_retries,
-    )
+    """Fetch national service-results overview containing all provinces, with Playwright fallback."""
+    try:
+        return fetch_dvc_endpoint(
+            ENDPOINT_SERVICE_RESULTS,
+            time_type,
+            year,
+            period,
+            timeout=timeout,
+            max_retries=max_retries,
+        )
+    except Exception as exc:
+        print(f"\n⚠️ Direct HTTP fetch failed ({exc}). Trying Playwright Chromium fallback...", file=sys.stderr)
+        pw_result = fetch_service_results_via_playwright(time_type, year, period, timeout_sec=timeout)
+        if pw_result:
+            return pw_result
+        raise
 
 
 def _fetch_group_map_for_provinces(
@@ -1149,8 +1249,8 @@ def main() -> int:
     parser.add_argument("--output-dir", type=str, default=str(DEFAULT_OUTPUT_DIR), help="Output directory for province JSON files")
     parser.add_argument("--raw-dir", type=str, default=str(DEFAULT_RAW_DIR), help="Raw output directory")
     parser.add_argument("--concurrency", type=int, default=3, help="Concurrent threads for fetching 6 component groups (default: 3)")
-    parser.add_argument("--timeout", type=int, default=45, help="HTTP request timeout in seconds (default: 45)")
-    parser.add_argument("--max-retries", type=int, default=6, help="Max retries for HTTP requests (default: 6)")
+    parser.add_argument("--timeout", type=int, default=90, help="HTTP request timeout in seconds (default: 90)")
+    parser.add_argument("--max-retries", type=int, default=8, help="Max retries for HTTP requests (default: 8)")
     parser.add_argument("--skip-clean", action="store_true", help="Skip auto-cleaning old snapshot files")
     args = parser.parse_args()
 
