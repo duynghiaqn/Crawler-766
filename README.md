@@ -220,6 +220,21 @@ Hoặc gọi trực tiếp qua wrapper CLI script:
 ./tools/crawl-province --time-type year --year 2026
 ```
 
+### 4. Thực thi Master Auto Script Tự Động Toàn Bộ Pipelines (`tools/Auto_all.sh`)
+
+Tự động gọi thực hiện tuần tự tất cả 3 crawler pipelines (Gia Lai tổng hợp, Gia Lai chi tiết chỉ tiêu con & UBND các Tỉnh/Thành phố toàn quốc):
+
+```bash
+# Chạy tự động tất cả các crawler theo Năm (Mặc định: Năm 2026)
+./tools/Auto_all.sh --time-type year --year 2026
+
+# Chạy tự động tất cả các crawler theo Tháng
+./tools/Auto_all.sh --time-type month --year 2026 --period 3
+
+# Tự động dọn dẹp dữ liệu cũ quá N ngày (Mặc định: 3 ngày)
+./tools/Auto_all.sh --clean-days 3
+```
+
 ---
 
 ## 🔍 Cấu Trúc File Index API (`data/gia_lai/index.json`)
