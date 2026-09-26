@@ -240,18 +240,24 @@ def fetch_dvc_endpoint(
     time_type: str,
     year: int,
     period: int | None = None,
-    timeout: int = 90,
-    max_retries: int = 8,
-    delay_min: float = 0.5,
-    delay_max: float = 1.5,
+    department_type: str | None = "ADMINISTRATIVE_UNIT",
+    page_size: int = 100,
+    current_page: int = 1,
+    timeout: int = 45,
+    max_retries: int = 6,
+    delay_min: float = 1.0,
+    delay_max: float = 2.5,
 ) -> dict[str, Any]:
-    """Send POST request to DVCQG administrative unit endpoints with anti-blocking & exponential backoff."""
+    """Fetch DVCQG API endpoint with header rotation, random delay jitter, longer timeout, and smart exponential backoff retries."""
     global _SESSION_WARMED_UP
     payload: dict[str, Any] = {
         "timeType": time_type,
         "year": year,
-        "departmentType": "ADMINISTRATIVE_UNIT",
+        "pageSize": page_size,
+        "currentPage": current_page,
     }
+    if department_type:
+        payload["departmentType"] = department_type
 
     if time_type == "quarter":
         if period is None or not (1 <= period <= 4):
@@ -264,18 +270,18 @@ def fetch_dvc_endpoint(
 
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
 
+    # Anti-blocking: Add randomized jitter delay (uniform + gaussian-like jitter) like crawl_gl
     sleep_sec = random.uniform(delay_min, delay_max) + random.uniform(0.05, 0.25)
     time.sleep(sleep_sec)
-
-    if not _SESSION_WARMED_UP:
-        warmup_session(timeout=min(20, timeout))
 
     for attempt in range(1, max_retries + 1):
         headers = get_random_headers()
         request = urllib.request.Request(url, data=body, method="POST", headers=headers)
-        current_timeout = timeout + (attempt - 1) * 15
+        current_timeout = timeout + (attempt - 1) * 10
         try:
-            with OPENER.open(request, timeout=current_timeout) as response:
+            # First attempts use direct urlopen for maximum speed; fallback to OPENER if challenged
+            runner = OPENER.open if attempt > 2 else urllib.request.urlopen
+            with runner(request, timeout=current_timeout) as response:
                 status = response.status
                 raw_text = response.read().decode("utf-8", errors="replace")
                 parsed = json.loads(raw_text)
@@ -285,7 +291,7 @@ def fetch_dvc_endpoint(
         except urllib.error.HTTPError as exc:
             err_body = exc.read().decode("utf-8", errors="replace")
             if exc.code in (429, 403, 500, 502, 503, 504) and attempt < max_retries:
-                retry_wait = (4.0 * (1.5 ** (attempt - 1))) + random.uniform(1.5, 4.0)
+                retry_wait = (3.0 * (1.4 ** (attempt - 1))) + random.uniform(1.0, 3.5)
                 print(f"\n⚠️ [Thử lại {attempt}/{max_retries}] HTTP {exc.code} từ DVCQG. Đợi {retry_wait:.1f}s...", file=sys.stderr)
                 time.sleep(retry_wait)
                 continue
@@ -293,9 +299,10 @@ def fetch_dvc_endpoint(
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             reason = getattr(exc, "reason", str(exc))
             if attempt < max_retries:
-                retry_wait = (4.0 * (1.5 ** (attempt - 1))) + random.uniform(2.0, 5.0)
-                print(f"\n⚠️ [Thử lại {attempt}/{max_retries}] Lỗi kết nối DVCQG ({reason}). Tự động thử lại sau {retry_wait:.1f}s (timeout: {current_timeout + 15}s)...", file=sys.stderr)
-                warmup_session(timeout=min(20, timeout))
+                retry_wait = (3.0 * (1.4 ** (attempt - 1))) + random.uniform(1.0, 3.5)
+                print(f"\n⚠️ [Thử lại {attempt}/{max_retries}] Lỗi kết nối DVCQG ({reason}). Tự động thử lại sau {retry_wait:.1f}s...", file=sys.stderr)
+                if not _SESSION_WARMED_UP:
+                    warmup_session(timeout=min(20, timeout))
                 time.sleep(retry_wait)
                 continue
             raise RuntimeError(f"Network error connecting to DVCQG: {reason}") from exc
@@ -319,6 +326,8 @@ def fetch_service_results_via_playwright(
         "timeType": time_type,
         "year": year,
         "departmentType": "ADMINISTRATIVE_UNIT",
+        "pageSize": 100,
+        "currentPage": 1,
     }
     if time_type == "quarter" and period:
         payload["quarter"] = period
@@ -361,25 +370,92 @@ def fetch_all_provinces_service_results(
     time_type: str,
     year: int,
     period: int | None = None,
-    timeout: int = 90,
-    max_retries: int = 8,
+    checkpoint_file: Path | None = None,
+    raw_file: Path | None = None,
+    timeout: int = 45,
+    max_retries: int = 6,
+    delay_min: float = 1.0,
+    delay_max: float = 2.5,
 ) -> dict[str, Any]:
-    """Fetch national service-results overview containing all provinces, with Playwright fallback."""
+    """Fetch national service-results overview containing all provinces with checkpoint resume, multi-strategy fallback & Playwright evasion."""
+    # 1. Check if checkpoint or raw_file exists with valid data
+    if checkpoint_file and checkpoint_file.exists():
+        cached = load_json(checkpoint_file)
+        if isinstance(cached, dict) and cached.get("data", {}).get("evaluation"):
+            print("  ℹ️ Khôi phục Dữ liệu Tổng quan Tỉnh/TP từ Checkpoint đĩa.")
+            return cached
+    if raw_file and raw_file.exists():
+        cached = load_json(raw_file)
+        if isinstance(cached, dict) and cached.get("data", {}).get("evaluation"):
+            print("  ℹ️ Khôi phục Dữ liệu Tổng quan Tỉnh/TP từ file Raw đĩa.")
+            return cached
+
+    # 2. Strategy 1: Fast direct API with departmentType="ADMINISTRATIVE_UNIT", pageSize=100
     try:
-        return fetch_dvc_endpoint(
+        data = fetch_dvc_endpoint(
             ENDPOINT_SERVICE_RESULTS,
             time_type,
             year,
             period,
+            department_type="ADMINISTRATIVE_UNIT",
+            page_size=100,
+            current_page=1,
             timeout=timeout,
             max_retries=max_retries,
+            delay_min=delay_min,
+            delay_max=delay_max,
         )
+        eval_items = data.get("data", {}).get("evaluation", [])
+        if isinstance(eval_items, list) and len(eval_items) > 0:
+            if checkpoint_file:
+                write_json(checkpoint_file, data)
+            return data
     except Exception as exc:
-        print(f"\n⚠️ Direct HTTP fetch failed ({exc}). Trying Playwright Chromium fallback...", file=sys.stderr)
-        pw_result = fetch_service_results_via_playwright(time_type, year, period, timeout_sec=timeout)
-        if pw_result:
-            return pw_result
-        raise
+        print(f"\n⚠️ [Chiến lược 1] Truy vấn ADMINISTRATIVE_UNIT chưa thành công: {exc}", file=sys.stderr)
+
+    # 3. Strategy 2: Query without departmentType (Global National Overview) and filter provinces
+    print("\n🔄 [Chiến lược 2] Chuyển đổi sang truy vấn tổng hợp quốc gia (Global National Overview)...", file=sys.stderr)
+    try:
+        data = fetch_dvc_endpoint(
+            ENDPOINT_SERVICE_RESULTS,
+            time_type,
+            year,
+            period,
+            department_type=None,
+            page_size=200,
+            current_page=1,
+            timeout=timeout,
+            max_retries=max_retries,
+            delay_min=delay_min,
+            delay_max=delay_max,
+        )
+        eval_list = data.get("data", {}).get("evaluation", [])
+        if isinstance(eval_list, list) and len(eval_list) > 0:
+            prov_items = [
+                row for row in eval_list
+                if isinstance(row, dict) and (
+                    str(row.get("departmentCode", "")).startswith("H")
+                    or str(row.get("departmentName", "")).startswith("UBND")
+                )
+            ]
+            if len(prov_items) >= 20:
+                print(f"✅ [Chiến lược 2] Lấy thành công {len(prov_items)} Tỉnh/Thành phố từ dữ liệu tổng hợp!", file=sys.stderr)
+                data["data"]["evaluation"] = prov_items
+                if checkpoint_file:
+                    write_json(checkpoint_file, data)
+                return data
+    except Exception as exc:
+        print(f"⚠️ [Chiến lược 2] Truy vấn tổng hợp quốc gia không thành công: {exc}", file=sys.stderr)
+
+    # 4. Strategy 3: Playwright Chromium browser fallback
+    print("\n🌐 [Chiến lược 3] Khởi chạy Playwright Chromium để render & bypass WAF...", file=sys.stderr)
+    pw_result = fetch_service_results_via_playwright(time_type, year, period, timeout_sec=timeout)
+    if pw_result and isinstance(pw_result.get("data", {}).get("evaluation"), list) and len(pw_result["data"]["evaluation"]) > 0:
+        if checkpoint_file:
+            write_json(checkpoint_file, pw_result)
+        return pw_result
+
+    raise RuntimeError("Tất cả các cơ chế kết nối DVCQG (Direct API, Global Strategy, Playwright) đều không thành công.")
 
 
 def _fetch_group_map_for_provinces(
@@ -391,6 +467,8 @@ def _fetch_group_map_for_provinces(
     period: int | None,
     timeout: int,
     max_retries: int,
+    delay_min: float = 1.0,
+    delay_max: float = 2.0,
     pbar: CrawlerProgressBar | None = None,
 ) -> tuple[str, dict[str, float], dict[str, dict[str, Any]]]:
     """Worker function to fetch a single component indicator endpoint across all provinces."""
@@ -404,8 +482,13 @@ def _fetch_group_map_for_provinces(
             time_type,
             year,
             period,
+            department_type="ADMINISTRATIVE_UNIT",
+            page_size=100,
+            current_page=1,
             timeout=timeout,
             max_retries=max_retries,
+            delay_min=delay_min,
+            delay_max=delay_max,
         )
         data = resp.get("data", {}) if isinstance(resp, dict) else {}
         items = data.get(data_key, [])
@@ -441,6 +524,8 @@ def fetch_provinces_component_groups_maps(
     timeout: int = 45,
     max_retries: int = 6,
     concurrency: int = 3,
+    delay_min: float = 1.0,
+    delay_max: float = 2.0,
     pbar: CrawlerProgressBar | None = None,
 ) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, dict[str, Any]]]]:
     """Fetch all 6 component criteria group endpoints concurrently for all provinces, returning score maps and item detail maps."""
@@ -495,15 +580,17 @@ def fetch_provinces_component_groups_maps(
     lock = threading.Lock()
 
     def _worker(group_code: str, url: str, data_key: str) -> tuple[str, dict[str, float], dict[str, dict[str, Any]]]:
+        # Slight thread stagger to prevent thundering herd spike on server
+        time.sleep(random.uniform(0.1, 0.6))
         g_code, g_map, g_items = _fetch_group_map_for_provinces(
-            group_code, url, data_key, time_type, year, period, timeout, max_retries, pbar
+            group_code, url, data_key, time_type, year, period, timeout, max_retries, delay_min, delay_max, pbar
         )
         with lock:
             if g_map:
                 maps[g_code] = g_map
                 item_maps[g_code] = g_items
                 if checkpoint_file:
-                    write_json(checkpoint_file, {"maps": maps, "item_maps": item_maps})
+                    write_json(checkpoint_file, {"maps": maps, "item_maps": item_maps, "updatedAt": utc_now()})
         return g_code, g_map, g_items
 
     if concurrency <= 1 or len(pending_tasks) == 1:
@@ -1272,6 +1359,8 @@ def main() -> int:
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     checkpoint_file = checkpoint_dir / f"checkpoint_Provinces_{run_date_str}.json"
+    checkpoint_national = checkpoint_dir / f"checkpoint_national_{run_date_str}.json"
+    raw_file = raw_dir / f"raw_Provinces_{run_date_str}.json"
 
     # Step 1: Clean old files and ensure index.json & index_detail.json in data/provinces/
     if not args.skip_clean and args.clean_days > 0:
@@ -1292,6 +1381,8 @@ def main() -> int:
             args.time_type,
             args.year,
             args.period,
+            checkpoint_file=checkpoint_national,
+            raw_file=raw_file,
             timeout=args.timeout,
             max_retries=args.max_retries,
         )
@@ -1302,8 +1393,8 @@ def main() -> int:
         return 1
 
     # Save RAW national response
-    raw_file = raw_dir / f"raw_Provinces_{run_date_str}.json"
     write_json(raw_file, raw_national)
+    write_json(checkpoint_national, raw_national)
 
     # Step 3: Fetch 6 component group score maps for all provinces
     group_maps, group_item_maps = fetch_provinces_component_groups_maps(
