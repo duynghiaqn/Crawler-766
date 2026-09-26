@@ -36,7 +36,7 @@ concurrency:
 
 jobs:
   crawl-provinces:
-    runs-on: windows-latest
+    runs-on: macos-latest
     defaults:
       run:
         shell: bash
@@ -92,7 +92,8 @@ jobs:
           if git diff --staged --quiet; then
             echo "No province data changes to commit"
           else
-            git commit -m "📊 Update DVCQG All Provinces & Cities Data Score [skip ci]"
+            NOW=$(TZ='Asia/Ho_Chi_Minh' date +'%d/%m/%Y %H:%M:%S')
+            git commit -m "📊 Update DVCQG All Provinces & Cities Data Score ($NOW)"
             for i in 1 2 3; do
               git pull --rebase --autostash -X ours origin main && git push origin main && echo "✅ Province data successfully updated and pushed." && break || sleep 3
             done

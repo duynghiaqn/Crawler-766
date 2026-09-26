@@ -95,7 +95,8 @@ jobs:
           if git diff --staged --quiet; then
             echo "No detailed data changes to commit"
           else
-            git commit -m "📊 Update DVCQG Detailed Component Criteria & Units Score Data (${{ github.event.inputs.province || 'H21' }}) [skip ci]"
+            NOW=$(TZ='Asia/Ho_Chi_Minh' date +'%d/%m/%Y %H:%M:%S')
+            git commit -m "📊 Update DVCQG Detailed & Units Score Data Gia Lai ($NOW) [skip ci]"
             for i in 1 2 3; do
               git pull --rebase --autostash -X ours origin main && git push origin main && echo "✅ Detailed data successfully updated and pushed." && break || sleep 3
             done
