@@ -42,6 +42,9 @@ jobs:
   crawl-detail:
     runs-on: macos-latest
     timeout-minutes: 30
+    env:
+      PYTHONIOENCODING: "utf-8"
+      PYTHONUTF8: "1"
 
     steps:
       - name: Checkout repository
@@ -101,3 +104,72 @@ jobs:
               git pull --rebase --autostash -X ours origin main && git push origin main && echo "✅ Detailed data successfully updated and pushed." && break || sleep 3
             done
           fi
+
+  notify:
+    name: Gửi thông báo qua Telegram
+    needs: [crawl-detail]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gửi thông báo qua Telegram
+        env:
+          GAS_WEBHOOK_URL: ${{ secrets.GAS_WEBHOOK_URL }}
+          GAS_SECRET_KEY: ${{ secrets.GAS_SECRET_KEY }}
+          STATUS: ${{ needs.crawl-detail.result }}
+        run: |
+          if [ -z "$GAS_WEBHOOK_URL" ]; then
+            echo "⚠️ GAS_WEBHOOK_URL is not set. Skipping Telegram notification."
+            exit 0
+          fi
+
+          TIME_VN=$(TZ='Asia/Ho_Chi_Minh' date +'%d/%m/%Y %H:%M:%S')
+
+          if [ "$STATUS" = "success" ]; then
+            EMOJI="✅"
+            STATUS_TEXT="THÀNH CÔNG (SUCCESS)"
+          elif [ "$STATUS" = "failure" ]; then
+            EMOJI="❌"
+            STATUS_TEXT="THẤT BẠI (FAILURE)"
+          else
+            EMOJI="⚠️"
+            STATUS_TEXT="ĐÃ HỦY (CANCELLED)"
+          fi
+
+          MESSAGE=$(printf "%s *[Crawler Chi tiết Đơn vị Gia Lai]*\n📌 *Trạng thái:* %s\n📂 *Workflow:* \`%s\`\n🏢 *Repository:* [%s](https://github.com/%s)\n⏰ *Thời gian:* %s (Giờ VN)\n👤 *Trigger:* \`%s\` (bởi %s)\n🔗 *Chi tiết:* [Xem log GitHub Action](https://github.com/%s/actions/runs/%s)" \
+            "$EMOJI" "$STATUS_TEXT" "${{ github.workflow }}" "${{ github.repository }}" "${{ github.repository }}" "$TIME_VN" "${{ github.event_name }}" "${{ github.actor }}" "${{ github.repository }}" "${{ github.run_id }}")
+
+          PAYLOAD=$(jq -n \
+            --arg secret_key "$GAS_SECRET_KEY" \
+            --arg secret "$GAS_SECRET_KEY" \
+            --arg status "$STATUS" \
+            --arg status_text "$STATUS_TEXT" \
+            --arg workflow "${{ github.workflow }}" \
+            --arg repository "${{ github.repository }}" \
+            --arg actor "${{ github.actor }}" \
+            --arg event_name "${{ github.event_name }}" \
+            --arg run_id "${{ github.run_id }}" \
+            --arg run_url "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg time "$TIME_VN" \
+            --arg message "$MESSAGE" \
+            --arg text "$MESSAGE" \
+            '{
+              secret_key: $secret_key,
+              secret: $secret,
+              status: $status,
+              status_text: $status_text,
+              workflow: $workflow,
+              repository: $repository,
+              actor: $actor,
+              event_name: $event_name,
+              run_id: $run_id,
+              run_url: $run_url,
+              time: $time,
+              message: $message,
+              text: $text
+            }')
+
+          echo "📤 Gửi thông báo tới GAS Webhook ($STATUS)..."
+          response=$(curl -s -L -X POST "$GAS_WEBHOOK_URL" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD")
+          echo "📩 Phản hồi từ GAS: $response"
