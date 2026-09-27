@@ -1,0 +1,7 @@
+- name: Kiểm tra thực tế
+        env:
+          MY_URL: ${{ secrets.GAS_WEBHOOK_URL }}
+          MY_KEY: ${{ secrets.GAS_SECRET_KEY }}
+        run: |
+          echo "Độ dài URL nhận được: ${#MY_URL}"
+          echo "Độ dài Key nhận được: ${#MY_KEY}"
