@@ -1,26 +1,30 @@
 #!/usr/bin/env python3
 """
-Tool crawl_province.py: Trích xuất, xếp hạng & duy trì CSDL Master Index (index.json) cho tất cả UBND Tỉnh / Thành phố từ DVCQG.
+Tool crawl_province_detail.py: Trích xuất 6 nhóm chỉ số thành phần & sub-metrics chi tiết, duy trì CSDL Master Index Detail (index_detail.json) cho tất cả UBND Tỉnh / Thành phố từ DVCQG.
 
 Endpoint API công khai DVCQG:
 1. API Dữ liệu tổng hợp : https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-results
+2. API Công khai minh bạch : https://dichvucong.gov.vn/api/v1/reporting/evaluation/transparency
+3. API Tiến độ giải quyết  : https://dichvucong.gov.vn/api/v1/reporting/evaluation/dvc-progress-tree
+4. API Dịch vụ công trực tuyến : https://dichvucong.gov.vn/api/v1/reporting/evaluation/provide-online-tree
+5. API Thanh toán trực tuyến   : https://dichvucong.gov.vn/api/v1/reporting/evaluation/formality-online-payment-tree
+6. API Số hóa hồ sơ       : https://dichvucong.gov.vn/api/v1/reporting/evaluation/dossier-digitized
+7. API Mức độ hài lòng    : https://dichvucong.gov.vn/api/v1/reporting/evaluation/handling-satisfaction
 
 Tính năng chính:
-1. Trích xuất đầy đủ điểm số tổng hợp, xếp hạng (Rank 1..N) và điểm 6 nhóm chỉ tiêu của tất cả UBND Tỉnh/Thành phố toàn quốc.
-2. Lưu file CSDL Master Index Database (index.json), snapshot điểm số và file so sánh theo mốc ngày DDMMYYYY trong data/provinces/:
-   - index.json                      : API Index Database tổng hợp điểm số & xếp hạng cho client lookup.
-   - scores_Provinces_DDMMYYYY.json  : Dữ liệu điểm số tổng hợp các tỉnh/thành phố theo ngày.
-   - comparison_Provinces_DDMMYYYY.json : File so sánh điểm số, xếp hạng & xu hướng các tỉnh/thành phố theo ngày.
-3. Engine So sánh Điểm & Thứ hạng Kỳ Liền (Consecutive Period Comparison): Tự động so sánh chênh lệch điểm số, thứ hạng và 6 nhóm chỉ số giữa mốc ngày hiện tại với ngày chạy trước đó.
-4. Tối ưu kết nối: Chỉ gọi duy nhất API tổng hợp service-results để trích xuất điểm số nhanh chóng, khắc phục triệt để lỗi kết nối/timeout.
-5. Cơ chế chống WAF/Firewall: User-Agent Rotation Pool, Header ngẫu nhiên & Randomized Sleep Jitter (0.5s - 1.5s).
-6. Khôi phục điểm ngắt lỗi (Checkpoint Resumption) tại data/raw/<year>/provinces/checkpoints/.
-7. Engine Tự động dọn dẹp Snapshot & Index cũ (> N ngày, mặc định: 3 ngày / 72 giờ).
+1. Trích xuất chi tiết 6 nhóm chỉ tiêu thành phần (CKMB, TDGQ, ONLINE, TTTT, MDSH, MDHL) & sub-metrics của tất cả UBND Tỉnh/Thành phố toàn quốc.
+2. Lưu file CSDL Master Index Detail (index_detail.json) và file chi tiết snapshot theo mốc ngày DDMMYYYY trong data/provinces/:
+   - index_detail.json               : API Detailed Index Database chứa toàn bộ số liệu chi tiết các chỉ số thành phần (componentIndicators).
+   - details_Provinces_DDMMYYYY.json  : Dữ liệu chi tiết 6 nhóm chỉ tiêu & sub-metrics các tỉnh/thành phố theo ngày.
+3. Engine So sánh Điểm & Thứ hạng Kỳ Liền (Consecutive Period Comparison): Tự động so sánh chênh lệch điểm số, thứ hạng và 6 chỉ số thành phần giữa mốc ngày hiện tại với ngày chạy trước đó.
+4. Cơ chế chống WAF/Firewall: User-Agent Rotation Pool, Header ngẫu nhiên & Randomized Sleep Jitter (0.5s - 1.5s).
+5. Khôi phục điểm ngắt lỗi (Checkpoint Resumption) tại data/raw/<year>/provinces/checkpoints/.
+6. Engine Tự động dọn dẹp Snapshot & Index cũ (> N ngày, mặc định: 3 ngày / 72 giờ).
 
 Sử dụng:
-  python tools/crawl_province.py --time-type year --year 2026
-  python tools/crawl_province.py --time-type month --year 2026 --period 3
-  python tools/crawl_province.py --clean-days 3
+  python tools/crawl_province_detail.py --time-type year --year 2026
+  python tools/crawl_province_detail.py --time-type month --year 2026 --period 3
+  python tools/crawl_province_detail.py --clean-days 3
 """
 
 from __future__ import annotations
@@ -36,6 +40,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -57,6 +62,12 @@ _SESSION_WARMED_UP = False
 
 # Default Configuration Constants
 ENDPOINT_SERVICE_RESULTS = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-results"
+ENDPOINT_TRANSPARENCY = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/transparency"
+ENDPOINT_PROGRESS = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/dvc-progress-tree"
+ENDPOINT_ONLINE = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/provide-online-tree"
+ENDPOINT_PAYMENT = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/formality-online-payment-tree"
+ENDPOINT_DIGITIZED = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/dossier-digitized"
+ENDPOINT_HANDLING_SATISFACTION = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/handling-satisfaction"
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
@@ -85,7 +96,7 @@ except ImportError:
 class CrawlerProgressBar:
     """Flexible thread-safe progress bar supporting tqdm with fallback to clean standard console output."""
 
-    def __init__(self, total: int, desc: str = "Crawling All Provinces Index", unit: str = "step"):
+    def __init__(self, total: int, desc: str = "Crawling All Provinces Detail", unit: str = "step"):
         self.total = total
         self.desc = desc
         self.unit = unit
@@ -443,14 +454,166 @@ def fetch_all_provinces_service_results(
     raise RuntimeError("Tất cả các cơ chế kết nối DVCQG (Direct API, Global Strategy, Playwright) đều không thành công.")
 
 
+def _fetch_group_map_for_provinces(
+    group_code: str,
+    url: str,
+    data_key: str,
+    time_type: str,
+    year: int,
+    period: int | None,
+    timeout: int,
+    max_retries: int,
+    delay_min: float = 1.0,
+    delay_max: float = 2.0,
+    pbar: CrawlerProgressBar | None = None,
+) -> tuple[str, dict[str, float], dict[str, dict[str, Any]]]:
+    """Worker function to fetch a single component indicator endpoint across all provinces."""
+    result_map: dict[str, float] = {}
+    item_map: dict[str, dict[str, Any]] = {}
+    try:
+        if pbar:
+            pbar.set_postfix_str(f"Fetching {group_code}...")
+        resp = fetch_dvc_endpoint(
+            url,
+            time_type,
+            year,
+            period,
+            department_type="ADMINISTRATIVE_UNIT",
+            page_size=100,
+            current_page=1,
+            timeout=timeout,
+            max_retries=max_retries,
+            delay_min=delay_min,
+            delay_max=delay_max,
+        )
+        data = resp.get("data", {}) if isinstance(resp, dict) else {}
+        items = data.get(data_key, [])
+        if not isinstance(items, list):
+            items = data.get("evaluation", [])
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, dict):
+                    did = item.get("departmentId") or item.get("departmentCode")
+                    score_val = item.get("score") if item.get("score") is not None else item.get("totalScore", 0)
+                    if did:
+                        result_map[did] = round(float(score_val), 2)
+                        item_map[did] = item
+                        code = item.get("departmentCode")
+                        if code:
+                            result_map[code] = round(float(score_val), 2)
+                            item_map[code] = item
+        if pbar:
+            pbar.update(1, status=f"{group_code} OK")
+    except Exception as exc:
+        print(f"\n⚠️ Warning fetching {group_code} group scores: {exc}", file=sys.stderr)
+        if pbar:
+            pbar.update(1, status=f"{group_code} Warn")
+
+    return group_code, result_map, item_map
+
+
+def fetch_provinces_component_groups_maps(
+    time_type: str,
+    year: int,
+    period: int | None = None,
+    checkpoint_file: Path | None = None,
+    timeout: int = 45,
+    max_retries: int = 6,
+    concurrency: int = 3,
+    delay_min: float = 1.0,
+    delay_max: float = 2.0,
+    pbar: CrawlerProgressBar | None = None,
+) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, dict[str, Any]]]]:
+    """Fetch all 6 component criteria group endpoints concurrently for all provinces, returning score maps and item detail maps."""
+    maps: dict[str, dict[str, float]] = {
+        "CKMB": {},
+        "TDGQ": {},
+        "ONLINE": {},
+        "TTTT": {},
+        "MDSH": {},
+        "MDHL": {},
+    }
+    item_maps: dict[str, dict[str, dict[str, Any]]] = {
+        "CKMB": {},
+        "TDGQ": {},
+        "ONLINE": {},
+        "TTTT": {},
+        "MDSH": {},
+        "MDHL": {},
+    }
+
+    if checkpoint_file and checkpoint_file.exists():
+        cached = load_json(checkpoint_file)
+        if isinstance(cached, dict) and "maps" in cached:
+            c_maps = cached.get("maps", {})
+            c_items = cached.get("item_maps", {})
+            for k in maps:
+                if k in c_maps and isinstance(c_maps[k], dict) and len(c_maps[k]) > 0:
+                    maps[k] = c_maps[k]
+                if k in c_items and isinstance(c_items[k], dict) and len(c_items[k]) > 0:
+                    item_maps[k] = c_items[k]
+
+    tasks = [
+        ("CKMB", ENDPOINT_TRANSPARENCY, "evaluation"),
+        ("TDGQ", ENDPOINT_PROGRESS, "children"),
+        ("ONLINE", ENDPOINT_ONLINE, "children"),
+        ("TTTT", ENDPOINT_PAYMENT, "children"),
+        ("MDSH", ENDPOINT_DIGITIZED, "evaluation"),
+        ("MDHL", ENDPOINT_HANDLING_SATISFACTION, "evaluation"),
+    ]
+
+    pending_tasks = [t for t in tasks if not maps[t[0]]]
+    completed_count = len(tasks) - len(pending_tasks)
+
+    if completed_count > 0:
+        if pbar:
+            pbar.update(completed_count, status=f"Checkpoint {completed_count}/6 OK")
+        print(f"  ℹ️ Khôi phục {completed_count}/6 nhóm chỉ tiêu từ mốc checkpoint đĩa.")
+
+    if not pending_tasks:
+        return maps, item_maps
+
+    lock = threading.Lock()
+
+    def _worker(group_code: str, url: str, data_key: str) -> tuple[str, dict[str, float], dict[str, dict[str, Any]]]:
+        time.sleep(random.uniform(0.1, 0.6))
+        g_code, g_map, g_items = _fetch_group_map_for_provinces(
+            group_code, url, data_key, time_type, year, period, timeout, max_retries, delay_min, delay_max, pbar
+        )
+        with lock:
+            if g_map:
+                maps[g_code] = g_map
+                item_maps[g_code] = g_items
+                if checkpoint_file:
+                    write_json(checkpoint_file, {"maps": maps, "item_maps": item_maps, "updatedAt": utc_now()})
+        return g_code, g_map, g_items
+
+    if concurrency <= 1 or len(pending_tasks) == 1:
+        for group_code, url, data_key in pending_tasks:
+            _worker(group_code, url, data_key)
+    else:
+        max_workers = min(concurrency, len(pending_tasks))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(_worker, g_code, url, d_key) for g_code, url, d_key in pending_tasks]
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception as exc:
+                    print(f"\n⚠️ Thread partition error: {exc}", file=sys.stderr)
+
+    return maps, item_maps
+
+
 def extract_province_score_data(
     raw_response: dict[str, Any],
     time_type: str,
     year: int,
     period: int | None = None,
+    component_group_maps: dict[str, dict[str, float]] | None = None,
+    component_group_item_maps: dict[str, dict[str, dict[str, Any]]] | None = None,
     run_date_str: str | None = None,
 ) -> dict[str, Any]:
-    """Extract, rank, and normalize evaluation summary scores for all provinces."""
+    """Extract, rank, and normalize evaluation scores & 6 detailed component indicators for all provinces."""
     data = raw_response.get("data")
     if not isinstance(data, dict):
         raise ValueError("Invalid response schema: missing 'data' dictionary")
@@ -459,6 +622,9 @@ def extract_province_score_data(
     evaluation_raw = data.get("evaluation") or []
     if not isinstance(evaluation_raw, list):
         evaluation_raw = []
+
+    cg_maps = component_group_maps or {}
+    ci_maps = component_group_item_maps or {}
 
     provinces: list[dict[str, Any]] = []
 
@@ -476,13 +642,18 @@ def extract_province_score_data(
 
         item_gs = item.get("groupScores") or {}
 
-        ckmb_val = item_gs.get("CKMB") or 0.0
-        tdgq_val = item_gs.get("TDGQ") or 0.0
-        online_val = item_gs.get("CLGQ") or item_gs.get("ONLINE") or 0.0
-        tttt_val = item_gs.get("TTTT") or 0.0
-        mdsh_val = item_gs.get("MDSH") or 0.0
+        ckmb_val = item_gs.get("CKMB") or cg_maps.get("CKMB", {}).get(did) or cg_maps.get("CKMB", {}).get(code, 0.0)
+        tdgq_val = item_gs.get("TDGQ") or cg_maps.get("TDGQ", {}).get(did) or cg_maps.get("TDGQ", {}).get(code, 0.0)
+        online_val = (
+            item_gs.get("CLGQ")
+            or item_gs.get("ONLINE")
+            or cg_maps.get("ONLINE", {}).get(did)
+            or cg_maps.get("ONLINE", {}).get(code, 0.0)
+        )
+        tttt_val = item_gs.get("TTTT") or cg_maps.get("TTTT", {}).get(did) or cg_maps.get("TTTT", {}).get(code, 0.0)
+        mdsh_val = item_gs.get("MDSH") or cg_maps.get("MDSH", {}).get(did) or cg_maps.get("MDSH", {}).get(code, 0.0)
 
-        mdhl_fetched = item_gs.get("MDHL")
+        mdhl_fetched = item_gs.get("MDHL") or cg_maps.get("MDHL", {}).get(did) or cg_maps.get("MDHL", {}).get(code)
         if mdhl_fetched is not None:
             mdhl_val = round(float(mdhl_fetched), 2)
         else:
@@ -498,6 +669,61 @@ def extract_province_score_data(
             "MDHL": round(float(mdhl_val), 2),
         }
 
+        t_item = ci_maps.get("CKMB", {}).get(did) or ci_maps.get("CKMB", {}).get(code) or {}
+        p_item = ci_maps.get("TDGQ", {}).get(did) or ci_maps.get("TDGQ", {}).get(code) or {}
+        o_item = ci_maps.get("ONLINE", {}).get(did) or ci_maps.get("ONLINE", {}).get(code) or {}
+        pay_item = ci_maps.get("TTTT", {}).get(did) or ci_maps.get("TTTT", {}).get(code) or {}
+        d_item = ci_maps.get("MDSH", {}).get(did) or ci_maps.get("MDSH", {}).get(code) or {}
+        sat_item = ci_maps.get("MDHL", {}).get(did) or ci_maps.get("MDHL", {}).get(code) or {}
+
+        component_indicators = {
+            "TDGQ_TienDoGiaiQuyet": {
+                "totalReceived": p_item.get("totalReceived"),
+                "totalOnTime": p_item.get("totalOnTime"),
+                "totalOverdue": p_item.get("totalOverdue"),
+                "avgProcessingDays": p_item.get("avgProcessingDays"),
+                "ratio": p_item.get("ratio"),
+                "score": group_scores["TDGQ"],
+                "maxScore": p_item.get("maxScore", 20),
+            },
+            "CKMB_CongKhaiMinhBach": {
+                "score": group_scores["CKMB"],
+                "maxScore": t_item.get("totalMaxScore", 18),
+                "ratio": t_item.get("ratio"),
+                "metrics": t_item.get("metrics", []),
+            },
+            "MDSH_SoHoaHoSo": {
+                "score": group_scores["MDSH"],
+                "maxScore": d_item.get("totalMaxScore", 22),
+                "ratio": d_item.get("ratio"),
+                "metrics": d_item.get("metrics", []),
+            },
+            "ONLINE_DichVuTrucTuyen": {
+                "score": group_scores["ONLINE"],
+                "maxScore": o_item.get("totalMaxScore", 12),
+                "ratio": o_item.get("ratio"),
+            },
+            "TTTT_ThanhToanTrucTuyen": {
+                "score": group_scores["TTTT"],
+                "maxScore": pay_item.get("totalMaxScore", 10),
+                "ratio": pay_item.get("ratio"),
+                "totalDossierOnlinePaymentSuccess": pay_item.get("totalDossierOnlinePaymentSuccess"),
+                "totalDossierFinancialObligation": pay_item.get("totalDossierFinancialObligation"),
+                "totalDossierOnlineFormalityPaymentSuccess": pay_item.get("totalDossierOnlineFormalityPaymentSuccess"),
+                "totalFeeFormality": pay_item.get("totalFeeFormality"),
+            },
+            "MDHL_MucDoHaiLong": {
+                "score": group_scores["MDHL"],
+                "maxScore": sat_item.get("totalMaxScore", 18),
+                "ratio": sat_item.get("ratio"),
+                "totalPetitions": sat_item.get("totalPetitions"),
+                "classifiedPetitions": sat_item.get("classifiedPetitions"),
+                "totalDossiers": sat_item.get("totalDossiers"),
+                "averageScore": sat_item.get("averageScore"),
+                "metrics": sat_item.get("metrics", []),
+            },
+        }
+
         short_n = province_short_name(name)
 
         prov_info = {
@@ -510,14 +736,13 @@ def extract_province_score_data(
             "ratio": round(float(ratio), 2) if ratio is not None else None,
             "scoreDelta": round(float(score_delta), 2) if score_delta is not None else None,
             "groupScores": group_scores,
+            "componentIndicators": component_indicators,
         }
 
         provinces.append(prov_info)
 
-    # Sort provinces by totalScore descending
     provinces.sort(key=lambda p: (p["totalScore"] is not None, p["totalScore"] or 0), reverse=True)
 
-    # Assign ranks 1..N
     for idx, prov in enumerate(provinces, 1):
         prov["rank"] = idx
 
@@ -530,7 +755,7 @@ def extract_province_score_data(
 
     return {
         "metadata": {
-            "scope": "Provinces",
+            "scope": "ProvincesDetail",
             "runDateStr": date_str,
             "timeType": time_type,
             "year": year,
@@ -552,12 +777,12 @@ def extract_province_score_data(
     }
 
 
-def find_previous_daily_date_from_index(index_data: dict[str, Any], current_date_str: str, explicit_compare_date: str | None = None) -> str | None:
-    """Find the previous daily date string (DDMMYYYY) from index_data['availableDates']."""
+def find_previous_daily_date_from_index(index_detail_data: dict[str, Any], current_date_str: str, explicit_compare_date: str | None = None) -> str | None:
+    """Find the previous daily date string (DDMMYYYY) from index_detail_data['availableDates']."""
     if explicit_compare_date:
         return explicit_compare_date
 
-    avail = index_data.get("availableDates", [])
+    avail = index_detail_data.get("availableDates", [])
     if isinstance(avail, list) and current_date_str in avail:
         idx = avail.index(current_date_str)
         if idx > 0:
@@ -570,10 +795,10 @@ def find_previous_daily_date_from_index(index_data: dict[str, Any], current_date
     return None
 
 
-def extract_previous_score_data_from_index(index_data: dict[str, Any], prev_date_str: str) -> dict[str, Any] | None:
-    """Reconstruct score_data structure for a past date from index_data historical records."""
-    overview_hist = index_data.get("overviewHistory", {}).get(prev_date_str, {})
-    provs_dict = index_data.get("provinces", {})
+def extract_previous_score_data_from_index(index_detail_data: dict[str, Any], prev_date_str: str) -> dict[str, Any] | None:
+    """Reconstruct score_data structure for a past date from index_detail_data historical records."""
+    overview_hist = index_detail_data.get("overviewHistory", {}).get(prev_date_str, {})
+    provs_dict = index_detail_data.get("provinces", {})
 
     if not isinstance(provs_dict, dict) or not provs_dict:
         return None
@@ -594,6 +819,7 @@ def extract_previous_score_data_from_index(index_data: dict[str, Any], prev_date
             "ratio": hist.get("ratio"),
             "scoreDelta": hist.get("scoreDelta"),
             "groupScores": hist.get("groupScores") or {},
+            "componentIndicators": hist.get("componentIndicators"),
         })
 
     if not provinces:
@@ -711,7 +937,7 @@ def compare_province_scores(
 
     return {
         "metadata": {
-            "scope": "ProvincesComparison",
+            "scope": "ProvincesDetailComparison",
             "currentRunDate": curr_meta.get("runDateStr"),
             "previousRunDate": prev_meta.get("runDateStr", "N/A"),
             "currentPeriod": curr_meta.get("periodLabel", ""),
@@ -740,41 +966,40 @@ def compare_province_scores(
     }
 
 
-def update_and_save_summary_index(
+def update_and_save_detail_index(
     output_dir: Path,
     score_data: dict[str, Any],
     comparison_data: dict[str, Any] | None,
     date_str: str,
 ) -> Path:
-    """Build and update data/provinces/index.json (summary index)."""
-    index_path = output_dir / "index.json"
-    index_data = load_json(index_path) or {}
+    """Build and update data/provinces/index_detail.json (detailed index)."""
+    index_detail_path = output_dir / "index_detail.json"
+    index_detail_data = load_json(index_detail_path) or {}
 
-    if not isinstance(index_data, dict):
-        index_data = {}
+    if not isinstance(index_detail_data, dict):
+        index_detail_data = {}
 
     meta = score_data["metadata"]
     overview = score_data["overview"]
 
-    index_data["schemaVersion"] = 1
-    index_data["updatedAt"] = utc_now()
-
-    avail_dates = set(index_data.get("availableDates") or [])
+    avail_dates = set(index_detail_data.get("availableDates") or [])
     avail_dates.add(date_str)
     sorted_avail = sorted(list(avail_dates), key=lambda d: datetime.strptime(d, "%d%m%Y") if len(d) == 8 else d)
 
-    allowed_index_dates = sorted_avail[-3:]
-    index_data["availableDates"] = allowed_index_dates
+    allowed_detail_dates = sorted_avail[-2:]
 
     latest_date = date_str
-    dates_before = [d for d in allowed_index_dates if d < latest_date]
+    dates_before = [d for d in allowed_detail_dates if d < latest_date]
     prev_date = dates_before[-1] if dates_before else None
 
-    index_data["latestDate"] = latest_date
-    index_data["previousDate"] = prev_date
+    index_detail_data["schemaVersion"] = 1
+    index_detail_data["updatedAt"] = utc_now()
+    index_detail_data["latestDate"] = latest_date
+    index_detail_data["previousDate"] = prev_date
+    index_detail_data["availableDates"] = allowed_detail_dates
 
-    overview_history = index_data.setdefault("overviewHistory", {})
-    overview_history[date_str] = {
+    overview_history_detail = index_detail_data.setdefault("overviewHistory", {})
+    overview_history_detail[date_str] = {
         "date": date_str,
         "periodLabel": meta.get("periodLabel"),
         "timeType": meta.get("timeType"),
@@ -786,19 +1011,13 @@ def update_and_save_summary_index(
         "scoreDelta": overview.get("scoreDelta"),
         "totalProvincesCount": overview.get("totalProvincesCount"),
     }
+    index_detail_data["overviewHistory"] = {d: overview_history_detail[d] for d in allowed_detail_dates if d in overview_history_detail}
 
-    index_data["overviewHistory"] = {d: overview_history[d] for d in allowed_index_dates if d in overview_history}
+    index_detail_data["latestOverview"] = overview
+    index_detail_data["previousOverview"] = index_detail_data["overviewHistory"].get(prev_date) if prev_date else None
+    index_detail_data["latestRankings"] = score_data.get("provinces", [])
 
-    summary_rankings = []
-    for p in score_data.get("provinces", []):
-        p_summary = {k: v for k, v in p.items() if k != "componentIndicators"}
-        summary_rankings.append(p_summary)
-
-    index_data["latestOverview"] = overview
-    index_data["previousOverview"] = index_data["overviewHistory"].get(prev_date) if prev_date else None
-    index_data["latestRankings"] = summary_rankings
-
-    provinces_index = index_data.setdefault("provinces", {})
+    provinces_detail_index = index_detail_data.setdefault("provinces", {})
 
     for prov in score_data.get("provinces", []):
         code = prov.get("departmentCode")
@@ -808,7 +1027,7 @@ def update_and_save_summary_index(
         name = prov.get("departmentName")
         short_n = prov.get("shortName") or province_short_name(name)
 
-        entry = provinces_index.setdefault(code, {
+        entry = provinces_detail_index.setdefault(code, {
             "departmentId": did,
             "departmentName": name,
             "shortName": short_n,
@@ -829,27 +1048,28 @@ def update_and_save_summary_index(
             "ratio": prov.get("ratio"),
             "scoreDelta": prov.get("scoreDelta"),
             "groupScores": prov.get("groupScores"),
+            "componentIndicators": prov.get("componentIndicators"),
         }
 
-    for code, entry in provinces_index.items():
+    for code, entry in provinces_detail_index.items():
         hist = entry.get("history", {})
-        pruned_hist = {d: hist[d] for d in allowed_index_dates if d in hist}
+        pruned_hist = {d: hist[d] for d in allowed_detail_dates if d in hist}
         entry["history"] = pruned_hist
         entry["latest"] = pruned_hist.get(latest_date)
         entry["previous"] = pruned_hist.get(prev_date) if prev_date else None
 
     if comparison_data:
-        comparisons = index_data.setdefault("comparisons", {})
-        comparisons[date_str] = comparison_data
-        index_data["comparisons"] = {d: comparisons[d] for d in allowed_index_dates if d in comparisons}
+        comparisons_detail = index_detail_data.setdefault("comparisons", {})
+        comparisons_detail[date_str] = comparison_data
+        index_detail_data["comparisons"] = {d: comparisons_detail[d] for d in allowed_detail_dates if d in comparisons_detail}
 
-    write_json(index_path, index_data)
+    write_json(index_detail_path, index_detail_data)
 
-    return index_path
+    return index_detail_path
 
 
 def clean_provinces_directory_and_old_records(output_dir: Path, raw_dir: Path, max_days: int = 3) -> None:
-    """Ensure data/provinces/ contains ONLY index.json, index_detail.json, and valid snapshot/comparison files, and clean records older than max_days."""
+    """Ensure data/provinces/ contains ONLY index.json, index_detail.json, and valid snapshot files, and clean records older than max_days."""
     cutoff_dt = datetime.now() - timedelta(days=max_days)
     cutoff_date_int = int(cutoff_dt.strftime("%Y%m%d"))
 
@@ -901,10 +1121,10 @@ def clean_provinces_directory_and_old_records(output_dir: Path, raw_dir: Path, m
                 file_path.unlink()
                 print(f"   🗑️ Removed unneeded file: {file_path.name}")
 
-    index_path = output_dir / "index.json"
-    index_data = load_json(index_path)
-    if index_data and isinstance(index_data, dict):
-        avail = index_data.get("availableDates", [])
+    index_detail_path = output_dir / "index_detail.json"
+    index_detail_data = load_json(index_detail_path)
+    if index_detail_data and isinstance(index_detail_data, dict):
+        avail = index_detail_data.get("availableDates", [])
         if isinstance(avail, list):
             prune_dates = set()
             for d in avail:
@@ -916,7 +1136,7 @@ def clean_provinces_directory_and_old_records(output_dir: Path, raw_dir: Path, m
                     pass
 
             all_remove = removed_dates.union(prune_dates)
-            max_allowed = 3
+            max_allowed = 2
             potential_avail = [d for d in avail if d not in all_remove]
             if len(potential_avail) > max_allowed:
                 extra_remove = set(potential_avail[:-max_allowed])
@@ -924,28 +1144,28 @@ def clean_provinces_directory_and_old_records(output_dir: Path, raw_dir: Path, m
 
             if all_remove:
                 new_avail = [d for d in avail if d not in all_remove]
-                index_data["availableDates"] = new_avail
+                index_detail_data["availableDates"] = new_avail
                 latest_d = new_avail[-1] if new_avail else None
                 dates_before = [d for d in new_avail if d < latest_d] if latest_d else []
                 prev_d = dates_before[-1] if dates_before else None
 
-                index_data["latestDate"] = latest_d
-                index_data["previousDate"] = prev_d
+                index_detail_data["latestDate"] = latest_d
+                index_detail_data["previousDate"] = prev_d
 
-                overview_hist = index_data.get("overviewHistory", {})
+                overview_hist = index_detail_data.get("overviewHistory", {})
                 if isinstance(overview_hist, dict):
                     for d in all_remove:
                         overview_hist.pop(d, None)
 
-                index_data["latestOverview"] = overview_hist.get(latest_d) if latest_d else None
-                index_data["previousOverview"] = overview_hist.get(prev_d) if prev_d else None
+                index_detail_data["latestOverview"] = overview_hist.get(latest_d) if latest_d else None
+                index_detail_data["previousOverview"] = overview_hist.get(prev_d) if prev_d else None
 
-                comparisons = index_data.get("comparisons", {})
+                comparisons = index_detail_data.get("comparisons", {})
                 if isinstance(comparisons, dict):
                     for d in all_remove:
                         comparisons.pop(d, None)
 
-                provs_idx = index_data.get("provinces", {})
+                provs_idx = index_detail_data.get("provinces", {})
                 if isinstance(provs_idx, dict):
                     for code, p_data in provs_idx.items():
                         history = p_data.get("history", {})
@@ -955,20 +1175,20 @@ def clean_provinces_directory_and_old_records(output_dir: Path, raw_dir: Path, m
                         p_data["latest"] = history.get(latest_d) if latest_d else None
                         p_data["previous"] = history.get(prev_d) if prev_d else None
 
-                write_json(index_path, index_data)
-                print(f"   📌 Pruned {len(all_remove)} old date entries from {index_path.name}")
+                write_json(index_detail_path, index_detail_data)
+                print(f"   📌 Pruned {len(all_remove)} old date entries from {index_detail_path.name}")
 
-    print(f"   ✅ Clean complete: {output_dir} contains index.json and snapshot comparison files.")
+    print(f"   ✅ Clean complete: {output_dir} contains index_detail.json and snapshot comparison files.")
 
 
 def print_province_scores_table(score_data: dict[str, Any], comparison_data: dict[str, Any] | None = None) -> None:
-    """Print beautifully formatted ASCII/Unicode summary table of province rankings and group scores."""
+    """Print beautifully formatted ASCII/Unicode summary table of province rankings and component indicators."""
     meta = score_data["metadata"]
     overview = score_data["overview"]
     provinces = score_data["provinces"]
 
     print("\n" + "=" * 110)
-    print(f"📊 BẢNG XẾP HẠNG VÀ ĐIỂM SỐ DVCQG UBND TỈNH / THÀNH PHỐ TOÀN QUỐC ({meta['periodLabel']})")
+    print(f"📊 BẢNG XẾP HẠNG VÀ CHI TIẾT DVCQG UBND TỈNH / THÀNH PHỐ TOÀN QUỐC ({meta['periodLabel']})")
     print(f"📅 Mốc Ngày Trích Xuất: {meta['runDateStr']} | Tổng số Tỉnh/Thành phố: {overview['totalProvincesCount']}")
     print(f"🏆 Điểm Trung Bình Cả Nước: {overview.get('totalScore', 'N/A')}/100")
     print("=" * 110)
@@ -1046,7 +1266,7 @@ def main() -> int:
     parser.add_argument("--clean-days", type=int, default=3, help="Auto-clean snapshots older than N days (default: 3)")
     parser.add_argument("--output-dir", type=str, default=str(DEFAULT_OUTPUT_DIR), help="Output directory for province JSON files")
     parser.add_argument("--raw-dir", type=str, default=str(DEFAULT_RAW_DIR), help="Raw output directory")
-    parser.add_argument("--concurrency", type=int, default=3, help="Unused compatibility flag for concurrent workers")
+    parser.add_argument("--concurrency", type=int, default=3, help="Concurrent threads for fetching 6 component groups (default: 3)")
     parser.add_argument("--timeout", type=int, default=90, help="HTTP request timeout in seconds (default: 90)")
     parser.add_argument("--max-retries", type=int, default=8, help="Max retries for HTTP requests (default: 8)")
     parser.add_argument("--skip-clean", action="store_true", help="Skip auto-cleaning old snapshot files")
@@ -1072,10 +1292,12 @@ def main() -> int:
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     period_tag = f"year_{args.year}" if args.time_type == "year" else f"{args.time_type}_{args.period}_{args.year}"
+    checkpoint_file = checkpoint_dir / f"checkpoint_Provinces_{period_tag}_{run_date_str}.json"
     checkpoint_national = checkpoint_dir / f"checkpoint_national_{period_tag}_{run_date_str}.json"
     raw_file = raw_dir / f"raw_Provinces_{period_tag}_{run_date_str}.json"
 
     if args.force:
+        checkpoint_file.unlink(missing_ok=True)
         checkpoint_national.unlink(missing_ok=True)
         raw_file.unlink(missing_ok=True)
         print("⚡ Chế độ --force: Đã làm mới cache, bắt buộc tải dữ liệu mới nhất từ Cổng DVCQG.")
@@ -1084,12 +1306,12 @@ def main() -> int:
     if not args.skip_clean and args.clean_days > 0:
         clean_provinces_directory_and_old_records(output_dir, raw_dir, max_days=args.clean_days)
 
-    index_path = output_dir / "index.json"
-    index_data = load_json(index_path) or {}
+    index_detail_path = output_dir / "index_detail.json"
+    index_detail_data = load_json(index_detail_path) or {}
 
-    print(f"\n🚀 Khởi động trích xuất Dữ liệu Điểm số UBND Tỉnh/Thành phố Index ({args.time_type.upper()} {args.period or ''}/{args.year})...")
+    print(f"\n🚀 Khởi động trích xuất Dữ liệu Chi tiết Chỉ số Thành phần UBND Tỉnh/Thành phố ({args.time_type.upper()} {args.period or ''}/{args.year})...")
 
-    pbar = CrawlerProgressBar(total=2, desc="Crawling All Provinces Index", unit="step")
+    pbar = CrawlerProgressBar(total=7, desc="Crawling All Provinces Detail", unit="step")
 
     # Step 2: Fetch national service-results
     pbar.set_postfix_str("Fetching National Service Results...")
@@ -1112,37 +1334,43 @@ def main() -> int:
     write_json(raw_file, raw_national)
     write_json(checkpoint_national, raw_national)
 
-    # Step 3: Extract score data
-    pbar.set_postfix_str("Processing summary score data...")
+    # Step 3: Fetch 6 component group score maps
+    group_maps, group_item_maps = fetch_provinces_component_groups_maps(
+        args.time_type,
+        args.year,
+        args.period,
+        checkpoint_file=checkpoint_file,
+        timeout=args.timeout,
+        max_retries=args.max_retries,
+        concurrency=args.concurrency,
+        pbar=pbar,
+    )
+    pbar.close()
+
+    # Step 4: Extract detailed score data
+    print("🧩 Ghép nối 6 nhóm chỉ tiêu thành phần & sub-metrics, tính toán Xếp hạng Rank Tỉnh/Thành phố...")
     score_data = extract_province_score_data(
         raw_national,
         args.time_type,
         args.year,
         args.period,
+        component_group_maps=group_maps,
+        component_group_item_maps=group_item_maps,
         run_date_str=run_date_str,
     )
-    pbar.update(1, status="Extract OK")
-    pbar.close()
 
-    summary_provinces = score_data.get("provinces", [])
-    scores_file_data = {
-        "metadata": score_data["metadata"],
-        "overview": score_data["overview"],
-        "provinces": summary_provinces,
-    }
+    details_file = output_dir / f"details_Provinces_{run_date_str}.json"
+    details_file_alt = output_dir / f"details_Province_{run_date_str}.json"
+    write_json(details_file, score_data)
+    write_json(details_file_alt, score_data)
+    print(f"✅ Đã tạo & lưu file Chi tiết chỉ số Tỉnh/TP theo Ngày: {details_file}")
 
-    scores_file = output_dir / f"scores_Provinces_{run_date_str}.json"
-    scores_file_alt = output_dir / f"scores_Province_{run_date_str}.json"
-    write_json(scores_file, scores_file_data)
-    write_json(scores_file_alt, scores_file_data)
-    print(f"✅ Đã tạo & lưu file Điểm số tổng hợp Tỉnh/TP theo Ngày: {scores_file}")
-
-    # Step 4: Comparison
-    prev_date_str = find_previous_daily_date_from_index(index_data, run_date_str, explicit_compare_date=args.compare_date)
+    # Step 5: Comparison
+    prev_date_str = find_previous_daily_date_from_index(index_detail_data, run_date_str, explicit_compare_date=args.compare_date)
     comparison_data = None
 
     if prev_date_str:
-        prev_score_data = extract_previous_score_data_from_index(index_data, prev_date_str)
+        prev_score_data = extract_previous_score_data_from_index(index_detail_data, prev_date_str)
         if prev_score_data:
             print(f"📈 Engine So sánh Điểm Đồng bộ Kỳ Liền ({run_date_str} vs {prev_date_str})...")
             comparison_data = compare_province_scores(score_data, prev_score_data)
@@ -1163,24 +1391,17 @@ def main() -> int:
         }
         comparison_data = compare_province_scores(score_data, prev_score_data)
 
-    comparison_file = output_dir / f"comparison_Provinces_{run_date_str}.json"
-    comparison_file_alt = output_dir / f"comparison_Province_{run_date_str}.json"
-    if comparison_data:
-        write_json(comparison_file, comparison_data)
-        write_json(comparison_file_alt, comparison_data)
-        print(f"✅ Đã tạo & lưu file So sánh Điểm số Tỉnh/TP theo Ngày: {comparison_file}")
+    # Step 6: Update index_detail.json
+    master_detail_file = update_and_save_detail_index(output_dir, score_data, comparison_data, run_date_str)
+    print(f"🚀 Saved Master API Index Database (Detailed): {master_detail_file}")
 
-    # Step 5: Save Master Index (index.json)
-    master_index_file = update_and_save_summary_index(output_dir, score_data, comparison_data, run_date_str)
-    print(f"🚀 Saved Master API Index Database (Summary): {master_index_file}")
-
-    # Step 6: Clean old records
+    # Step 7: Clean old records
     clean_provinces_directory_and_old_records(output_dir, raw_dir, max_days=args.clean_days)
 
-    # Step 7: Print table
+    # Step 8: Print console summary table
     print_province_scores_table(score_data, comparison_data)
 
-    print("🏁 Hoàn thành xuất sắc nhiệm vụ crawl dữ liệu điểm số Tỉnh / Thành phố cho index.json!")
+    print("🏁 Hoàn thành xuất sắc nhiệm vụ crawl dữ liệu chi tiết Tỉnh / Thành phố cho index_detail.json!")
     return 0
 
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Auto_all.sh - Automated Master Execution Script for Crawler 766
-# Runs all 3 main DVCQG crawler pipelines sequentially:
-#   1. Gia Lai General Scores & Indexer  (crawl_gl.py)
-#   2. Gia Lai Detailed Sub-Metrics      (crawl_gl_detail.py)
-#   3. All Provinces & Cities Nationwide (crawl_province.py)
+# Runs all 4 main DVCQG crawler pipelines sequentially:
+#   1. Gia Lai General Scores & Indexer         (crawl_gl.py)
+#   2. Gia Lai Detailed Sub-Metrics             (crawl_gl_detail.py)
+#   3. All Provinces & Cities Index             (crawl_province.py)
+#   4. All Provinces & Cities Detailed Sub-Metrics (crawl_province_detail.py)
 # ==============================================================================
 
 set -eo pipefail
@@ -96,37 +97,46 @@ START_TIME=$(date +%s)
 # 0. Connectivity test (optional)
 if [[ "${SKIP_TEST}" != "true" && -f "${SCRIPT_DIR}/test_dvcqg_connectivity.py" ]]; then
   echo ""
-  echo "🔍 [0/3] Kiểm tra kết nối tới Cổng DVCQG (test_dvcqg_connectivity.py)..."
+  echo "🔍 [0/4] Kiểm tra kết nối tới Cổng DVCQG (test_dvcqg_connectivity.py)..."
   python3 "${SCRIPT_DIR}/test_dvcqg_connectivity.py" --allow-fail || true
 fi
 
 # 1. Run Gia Lai General Crawler
 echo ""
 echo "------------------------------------------------------------------------------"
-echo "📊 [1/3] Thực thi Crawler DVCQG Gia Lai (crawl_gl.py)..."
+echo "📊 [1/4] Thực thi Crawler DVCQG Gia Lai (crawl_gl.py)..."
 echo "------------------------------------------------------------------------------"
 python3 "${SCRIPT_DIR}/crawl_gl.py" "${COMMON_ARGS[@]}"
 
 # 2. Run Gia Lai Detailed Sub-Metrics Crawler
 echo ""
 echo "------------------------------------------------------------------------------"
-echo "🔬 [2/3] Thực thi Crawler Chi tiết Chỉ tiêu Con Gia Lai (crawl_gl_detail.py)..."
+echo "🔬 [2/4] Thực thi Crawler Chi tiết Chỉ tiêu Con Gia Lai (crawl_gl_detail.py)..."
 echo "------------------------------------------------------------------------------"
 python3 "${SCRIPT_DIR}/crawl_gl_detail.py" "${COMMON_ARGS[@]}"
 
-# 3. Run All Provinces & Cities Crawler
+# 3. Run All Provinces & Cities Index Crawler
 echo ""
 echo "------------------------------------------------------------------------------"
-echo "🏛️ [3/4] Thực thi Crawler UBND Tất cả Tỉnh / Thành phố (crawl_province.py)..."
+echo "🏛️ [3/4] Thực thi Crawler UBND Tất cả Tỉnh / Thành phố Index (crawl_province.py)..."
 echo "------------------------------------------------------------------------------"
 python3 "${SCRIPT_DIR}/crawl_province.py" "${COMMON_ARGS[@]}"
 
-# 4. Auto Clean Old Data Snapshots
+# 4. Run All Provinces & Cities Detailed Crawler
 echo ""
 echo "------------------------------------------------------------------------------"
-echo "🧹 [4/4] Dọn dẹp dữ liệu cũ quá ${CLEAN_DAYS} ngày (clean_data.py)..."
+echo "🔬 [4/4] Thực thi Crawler UBND Tất cả Tỉnh / Thành phố Chi tiết (crawl_province_detail.py)..."
 echo "------------------------------------------------------------------------------"
-python3 "${SCRIPT_DIR}/clean_data.py" --clean-days "${CLEAN_DAYS}"
+python3 "${SCRIPT_DIR}/crawl_province_detail.py" "${COMMON_ARGS[@]}"
+
+# 5. Auto Clean Old Data Snapshots
+echo ""
+echo "------------------------------------------------------------------------------"
+echo "🧹 Dọn dẹp dữ liệu cũ quá ${CLEAN_DAYS} ngày (clean_data.py)..."
+echo "------------------------------------------------------------------------------"
+if [[ -f "${SCRIPT_DIR}/clean_data.py" ]]; then
+  python3 "${SCRIPT_DIR}/clean_data.py" --clean-days "${CLEAN_DAYS}" || true
+fi
 
 END_TIME=$(date +%s)
 ELAPSED=$((END_TIME - START_TIME))

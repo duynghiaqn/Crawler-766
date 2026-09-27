@@ -1,8 +1,8 @@
-name: Crawl DVCQG Data - All Provinces & Cities (Index)
+name: Crawl DVCQG Detailed Data - All Provinces & Cities (Index Detail)
 
 on:
   schedule:
-    - cron: '0 17 * * *' # 00:00 AM Việt Nam (17:00 UTC)
+    - cron: '30 17 * * *' # 00:30 AM Việt Nam (17:30 UTC)
   workflow_dispatch:
     inputs:
       year:
@@ -18,11 +18,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: crawler-766-province-crawl
+  group: crawler-766-province-detail-crawl
   cancel-in-progress: true
 
 jobs:
-  crawl-provinces:
+  crawl-provinces-detail:
     runs-on: macos-latest
     defaults:
       run:
@@ -59,41 +59,42 @@ jobs:
         run: |
           python tools/bootstrap_catalog_api.py --year ${{ github.event.inputs.year || '2026' }} --allow-fail --skip-if-exists
 
-      - name: Run All Provinces Index crawler (crawl_province.py)
+      - name: Run All Provinces Detailed Component Indicators Crawler (crawl_province_detail.py)
         run: |
-          python tools/crawl_province.py \
+          python tools/crawl_province_detail.py \
             --time-type year \
             --year ${{ github.event.inputs.year || '2026' }} \
             --clean-days ${{ github.event.inputs.clean_days || '3' }} \
             --force \
             --timeout 90 \
-            --max-retries 8
+            --max-retries 8 \
+            --concurrency 3
 
-      - name: Show generated province files
+      - name: Show generated province detailed files
         if: always()
         run: |
-          echo "📁 Listing generated province data files:"
+          echo "📁 Listing generated province detailed data files:"
           find data/provinces -maxdepth 5 -type f -print 2>/dev/null || true
 
-      - name: Commit and push updated province index data
+      - name: Commit and push updated province detailed data
         if: success()
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add data/
           if git diff --staged --quiet; then
-            echo "No province index data changes to commit"
+            echo "No province detailed data changes to commit"
           else
             NOW=$(TZ='Asia/Ho_Chi_Minh' date +'%d/%m/%Y %H:%M:%S')
-            git commit -m "📊 Update DVCQG All Provinces & Cities Index Data Score ($NOW)"
+            git commit -m "📊 Update DVCQG All Provinces & Cities Detailed Data ($NOW)"
             for i in 1 2 3; do
-              git pull --rebase --autostash -X ours origin main && git push origin main && echo "✅ Province index data successfully updated and pushed." && break || sleep 3
+              git pull --rebase --autostash -X ours origin main && git push origin main && echo "✅ Province detailed data successfully updated and pushed." && break || sleep 3
             done
           fi
 
   notify:
     name: Gửi thông báo qua Telegram
-    needs: [crawl-provinces]
+    needs: [crawl-provinces-detail]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -101,7 +102,7 @@ jobs:
         env:
           GAS_WEBHOOK_URL: ${{ secrets.GAS_WEBHOOK_URL }}
           GAS_SECRET_KEY: ${{ secrets.GAS_SECRET_KEY }}
-          STATUS: ${{ needs.crawl-provinces.result }}
+          STATUS: ${{ needs.crawl-provinces-detail.result }}
         run: |
           if [ -z "$GAS_WEBHOOK_URL" ]; then
             echo "⚠️ GAS_WEBHOOK_URL is not set. Skipping Telegram notification."
@@ -121,7 +122,7 @@ jobs:
             STATUS_TEXT="ĐÃ HỦY (CANCELLED)"
           fi
 
-          MESSAGE=$(printf "%s *[Crawler Tất cả Tỉnh / Thành phố - Index]*\n📌 *Trạng thái:* %s\n📂 *Workflow:* \`%s\`\n🏢 *Repository:* [%s](https://github.com/%s)\n⏰ *Thời gian:* %s (Giờ VN)\n👤 *Trigger:* \`%s\` (bởi %s)\n🔗 *Chi tiết:* [Xem log GitHub Action](https://github.com/%s/actions/runs/%s)" \
+          MESSAGE=$(printf "%s *[Crawler Chi tiết Tỉnh / Thành phố - Index Detail]*\n📌 *Trạng thái:* %s\n📂 *Workflow:* \`%s\`\n🏢 *Repository:* [%s](https://github.com/%s)\n⏰ *Thời gian:* %s (Giờ VN)\n👤 *Trigger:* \`%s\` (bởi %s)\n🔗 *Chi tiết:* [Xem log GitHub Action](https://github.com/%s/actions/runs/%s)" \
             "$EMOJI" "$STATUS_TEXT" "${{ github.workflow }}" "${{ github.repository }}" "${{ github.repository }}" "$TIME_VN" "${{ github.event_name }}" "${{ github.actor }}" "${{ github.repository }}" "${{ github.run_id }}")
 
           PAYLOAD=$(jq -n \

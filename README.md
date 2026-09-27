@@ -202,27 +202,29 @@ Hoặc gọi trực tiếp qua wrapper CLI script:
 ./tools/crawl-gl --time-type month --year 2026 --period 3
 ```
 
-### 3. Thực thi Tool Crawler Tất cả UBND Tỉnh / Thành phố (`tools/crawl_province.py`)
+### 3. Thực thi Tool Crawler Tất cả UBND Tỉnh / Thành phố (`tools/crawl_province.py` & `tools/crawl_province_detail.py`)
 
 ```bash
-# Trích xuất dữ liệu xếp hạng & 6 chỉ số thành phần tất cả Tỉnh/TP theo Năm
+# Trích xuất dữ liệu xếp hạng & điểm số tổng hợp tất cả Tỉnh/TP cho index.json
 python3 tools/crawl_province.py --time-type year --year 2026
 
-# Trích xuất dữ liệu Tỉnh/TP theo Tháng
-python3 tools/crawl_province.py --time-type month --year 2026 --period 3
+# Trích xuất dữ liệu chi tiết 6 nhóm chỉ số thành phần & sub-metrics tất cả Tỉnh/TP cho index_detail.json
+python3 tools/crawl_province_detail.py --time-type year --year 2026
 
 # Tự động clean snapshot Tỉnh/TP cũ quá N ngày (Mặc định: 3 ngày)
 python3 tools/crawl_province.py --clean-days 3
+python3 tools/crawl_province_detail.py --clean-days 3
 ```
 
 Hoặc gọi trực tiếp qua wrapper CLI script:
 ```bash
 ./tools/crawl-province --time-type year --year 2026
+./tools/crawl-province-detail --time-type year --year 2026
 ```
 
 ### 4. Thực thi Master Auto Script Tự Động Toàn Bộ Pipelines (`tools/Auto_all.sh`)
 
-Tự động gọi thực hiện tuần tự tất cả 3 crawler pipelines (Gia Lai tổng hợp, Gia Lai chi tiết chỉ tiêu con & UBND các Tỉnh/Thành phố toàn quốc):
+Tự động gọi thực hiện tuần tự tất cả 4 crawler pipelines (Gia Lai tổng hợp, Gia Lai chi tiết chỉ tiêu con, UBND các Tỉnh/Thành phố tổng hợp & UBND các Tỉnh/Thành phố chi tiết):
 
 ```bash
 # Chạy tự động tất cả các crawler theo Năm (Mặc định: Năm 2026)
@@ -283,19 +285,24 @@ File `data/gia_lai/index.json` được thiết kế tối ưu cho các dịch v
 
 ## 🤖 Tự Động Hóa Với GitHub Actions
 
-Hệ thống được trang bị 3 Workflows CI/CD tự động:
+Hệ thống được trang bị 4 Workflows CI/CD tự động:
 
 1. **Workflow Tổng hợp Hàng ngày** ([`.github/workflows/Crawler-766.yml`](.github/workflows/Crawler-766.yml)):
    - **Schedule Cron**: `0 18 * * *` (01:00 AM Việt Nam).
    - Tự động trích xuất điểm số, build API Index & so sánh biến động ngày.
 
-2. **Workflow Trích xuất Chi tiết Chỉ tiêu Con & Thành phần** ([`.github/workflows/Crawler-766-detail.yml`](.github/workflows/Crawler-766-detail.yml)):
+2. **Workflow Trích xuất Chi tiết Chỉ tiêu Con Gia Lai** ([`.github/workflows/Crawler-766-detail.yml`](.github/workflows/Crawler-766-detail.yml)):
    - **Schedule Cron**: `0 17 * * *` (00:00 AM / 0 giờ Việt Nam).
-   - Tự động trích xuất chuyên sâu các nhóm chỉ tiêu con thành phần cho toàn bộ 149 đơn vị con (`details_GiaLai_DDMMYYYY.json`).
+   - Tự động trích xuất chuyên sâu các nhóm chỉ tiêu con thành phần cho toàn bộ 149 đơn vị con Gia Lai (`details_GiaLai_DDMMYYYY.json`).
 
-3. **Workflow Trích xuất Tất cả UBND Tỉnh / Thành phố** ([`.github/workflows/Crawler-766-province.yml`](.github/workflows/Crawler-766-province.yml)):
-   - **Schedule Cron**: `0 19 * * *` (02:00 AM Việt Nam).
-   - Tự động trích xuất tổng điểm, xếp hạng & chỉ số thành phần tất cả các Tỉnh/TP toàn quốc, duy trì Master API Index Database và file so sánh theo ngày (`comparison_Provinces_DDMMYYYY.json`).
+3. **Workflow Trích xuất Tổng hợp Tất cả UBND Tỉnh / Thành phố Index** ([`.github/workflows/Crawler-766-province.yml`](.github/workflows/Crawler-766-province.yml)):
+   - **Schedule Cron**: `0 17 * * *` (00:00 AM / 0 giờ Việt Nam).
+   - Tự động trích xuất tổng điểm, xếp hạng tất cả các Tỉnh/TP toàn quốc, duy trì API Index Database (`index.json`) và file so sánh theo ngày (`comparison_Provinces_DDMMYYYY.json`).
+
+4. **Workflow Trích xuất Chi tiết Tất cả UBND Tỉnh / Thành phố Index Detail** ([`.github/workflows/Crawler-766-province-detail.yml`](.github/workflows/Crawler-766-province-detail.yml)):
+   - **Schedule Cron**: `30 17 * * *` (00:30 AM Việt Nam).
+   - Tự động trích xuất đầy đủ 6 nhóm chỉ số thành phần & sub-metrics tất cả các Tỉnh/TP toàn quốc, duy trì Detailed API Index Database (`index_detail.json`).
+
 
 ---
 
