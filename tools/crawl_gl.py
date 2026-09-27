@@ -823,13 +823,26 @@ def update_api_index(output_dir: Path, score_data: dict[str, Any], date_str: str
 
         d_entry.setdefault("history", {})[date_str] = unit_record
 
-    # Giới hạn history trong departmentsIndex chỉ lưu tối đa 3 kỳ
+    # Giới hạn history trong departmentsIndex chỉ lưu tối đa 3 kỳ và CHỈ LƯU ĐIỂM SỐ (không lưu componentIndicators chi tiết)
     for code, d_entry in dept_index.items():
         hist = d_entry.get("history", {})
-        pruned_hist = {d: hist[d] for d in allowed_index_dates if d in hist}
+        pruned_hist = {}
+        for d in allowed_index_dates:
+            if d in hist and isinstance(hist[d], dict):
+                rec = dict(hist[d])
+                rec.pop("componentIndicators", None)
+                pruned_hist[d] = rec
         d_entry["history"] = pruned_hist
-        d_entry["latest"] = pruned_hist.get(latest_date)
-        d_entry["previous"] = pruned_hist.get(prev_date) if prev_date else None
+        latest_rec = pruned_hist.get(latest_date)
+        if latest_rec and isinstance(latest_rec, dict):
+            latest_rec = dict(latest_rec)
+            latest_rec.pop("componentIndicators", None)
+        prev_rec = pruned_hist.get(prev_date) if prev_date else None
+        if prev_rec and isinstance(prev_rec, dict):
+            prev_rec = dict(prev_rec)
+            prev_rec.pop("componentIndicators", None)
+        d_entry["latest"] = latest_rec
+        d_entry["previous"] = prev_rec
 
     write_json(index_path, index_data)
     return index_path
