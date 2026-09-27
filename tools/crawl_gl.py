@@ -14,7 +14,8 @@ Tính năng cao cấp:
 6. Tự động dọn dẹp (auto-clean) dữ liệu date cũ hơn 3 ngày (> 72 giờ).
 
 Sử dụng mẫu:
-  python tools/crawl_gl.py --time-type month --year 2026 --period 3
+  python tools/crawl_gl.py
+  python tools/crawl_gl.py --time-type year --year 2026
   python tools/crawl_gl.py --compare-date 22092026
 """
 
@@ -858,20 +859,21 @@ def parse_date_str(date_str: str) -> datetime | None:
         return None
 
 
-def clean_old_snapshots(output_dir: Path, raw_dir: Path, retention_days: int = 3) -> dict[str, int]:
+def clean_old_snapshots(output_dir: Path, raw_dir: Path, retention_days: int = 3, year: int | None = None) -> dict[str, int]:
     """Automatically remove snapshot files and index entries older than retention_days (default: 3 days)."""
     cutoff_date = datetime.now() - timedelta(days=retention_days)
     deleted_files = 0
     purged_dates: list[str] = []
 
+    year_str = str(year) if year else "*"
     patterns = [
         (output_dir, "scores_GiaLai_*.json"),
         (output_dir, "agencies_GiaLai_*.json"),
         (output_dir, "communes_GiaLai_*.json"),
         (output_dir, "comparison_GiaLai_*.json"),
         (output_dir, "details_GiaLai_*.json"),
-        (raw_dir / "2026" / "gia_lai", "raw_GiaLai_*.json"),
-        (raw_dir / "2026" / "gia_lai" / "checkpoints", "checkpoint_*.json"),
+        (raw_dir / year_str / "gia_lai", "raw_GiaLai_*.json"),
+        (raw_dir / year_str / "gia_lai" / "checkpoints", "checkpoint_*.json"),
     ]
 
     for parent_dir, pattern in patterns:
@@ -933,8 +935,6 @@ def clean_old_snapshots(output_dir: Path, raw_dir: Path, retention_days: int = 3
                 dept_info["previous"] = hist.get(prev_d) if prev_d else None
 
             write_json(index_path, index_data)
-
-    return {"deletedFiles": deleted_files, "purgedDates": len(purged_dates)}
 
     return {"deletedFiles": deleted_files, "purgedDates": len(purged_dates)}
 
@@ -1042,11 +1042,12 @@ def main() -> int:
     period = args.period if args.time_type in ("month", "quarter") else None
 
     # 1. Execute auto-clean for snapshots older than args.clean_days
-    clean_result = clean_old_snapshots(args.output_dir, args.raw_dir, retention_days=args.clean_days)
+    clean_result = clean_old_snapshots(args.output_dir, args.raw_dir, retention_days=args.clean_days, year=args.year)
     if clean_result["deletedFiles"] > 0:
         print(f"🧹 Đã auto-clean {clean_result['deletedFiles']} file snapshot cũ quá {args.clean_days} ngày.")
 
-    raw_curr_file = args.raw_dir / str(args.year) / "gia_lai" / f"raw_GiaLai_{run_date_str}.json"
+    period_tag = f"year_{args.year}" if args.time_type == "year" else f"{args.time_type}_{period}_{args.year}"
+    raw_curr_file = args.raw_dir / str(args.year) / "gia_lai" / f"raw_GiaLai_{period_tag}_{run_date_str}.json"
     scores_curr_file = args.output_dir / f"scores_GiaLai_{run_date_str}.json"
     agencies_curr_file = args.output_dir / f"agencies_GiaLai_{run_date_str}.json"
     communes_curr_file = args.output_dir / f"communes_GiaLai_{run_date_str}.json"
@@ -1055,10 +1056,10 @@ def main() -> int:
     # Checkpoint configuration
     chk_dir = args.raw_dir / str(args.year) / "gia_lai" / "checkpoints"
     chk_dir.mkdir(parents=True, exist_ok=True)
-    chk_national_file = chk_dir / f"checkpoint_national_{run_date_str}.json"
-    chk_group_maps_file = chk_dir / f"checkpoint_group_maps_{run_date_str}.json"
+    chk_national_file = chk_dir / f"checkpoint_national_{period_tag}_{run_date_str}.json"
+    chk_group_maps_file = chk_dir / f"checkpoint_group_maps_{period_tag}_{run_date_str}.json"
 
-    print(f"🔄 Đang khởi tạo trích xuất điểm số Gia Lai (Mốc ngày: {run_date_str})...")
+    print(f"🔄 Đang khởi tạo trích xuất điểm số Gia Lai (Mốc ngày: {run_date_str}, Kỳ: {period_tag})...")
     if args.concurrency > 1:
         print(f"⚡ Chế độ thực thi: Multi-Threaded Partition & Assembly ({args.concurrency} workers | Tự phân tách & ráp nối dữ liệu)")
     else:
@@ -1129,7 +1130,7 @@ def main() -> int:
                     raw_curr_data = load_json(raw_curr_file)
                     print(f"🔄 [Fallback] Khôi phục dữ liệu từ file RAW hôm nay ({raw_curr_file.name}).")
                 else:
-                    latest_raw = sorted((args.raw_dir / str(args.year) / "gia_lai").glob("raw_GiaLai_*.json"))
+                    latest_raw = sorted((args.raw_dir / str(args.year) / "gia_lai").glob(f"raw_GiaLai_{period_tag}_*.json"))
                     if latest_raw:
                         raw_curr_data = load_json(latest_raw[-1])
                         print(f"🔄 [Fallback Resume] Khôi phục từ file RAW gần nhất ({latest_raw[-1].name}) để tránh exit code 1.")

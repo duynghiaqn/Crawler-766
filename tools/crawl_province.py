@@ -1179,8 +1179,9 @@ def clean_provinces_directory_and_old_records(output_dir: Path, raw_dir: Path, m
         (output_dir, "scores_Province_*.json"),
         (output_dir, "details_Province_*.json"),
         (output_dir, "comparison_Province_*.json"),
-        (raw_dir / "2026" / "provinces", "raw_Provinces_*.json"),
-        (raw_dir / "2026" / "provinces" / "checkpoints", "checkpoint_Provinces_*.json"),
+        (raw_dir, "raw_Provinces_*.json"),
+        (raw_dir / "checkpoints", "checkpoint_Provinces_*.json"),
+        (raw_dir / "checkpoints", "checkpoint_national_*.json"),
     ]
 
     for base_dir, pattern in raw_patterns:
@@ -1353,9 +1354,10 @@ def print_province_scores_table(score_data: dict[str, Any], comparison_data: dic
 
 
 def main() -> int:
+    default_year = datetime.now().year
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--time-type", choices=["year", "month", "quarter"], default="year", help="Time type filter (default: year)")
-    parser.add_argument("--year", type=int, default=2026, help="Evaluation year (default: 2026)")
+    parser.add_argument("--year", type=int, default=default_year, help=f"Evaluation year (default: {default_year})")
     parser.add_argument("--period", type=int, default=None, help="Month (1-12) or Quarter (1-4) period")
     parser.add_argument("--date", type=str, default=None, help="Explicit run date string in DDMMYYYY format")
     parser.add_argument("--compare-date", type=str, default=None, help="Explicit previous date DDMMYYYY to compare against")
@@ -1366,10 +1368,13 @@ def main() -> int:
     parser.add_argument("--timeout", type=int, default=90, help="HTTP request timeout in seconds (default: 90)")
     parser.add_argument("--max-retries", type=int, default=8, help="Max retries for HTTP requests (default: 8)")
     parser.add_argument("--skip-clean", action="store_true", help="Skip auto-cleaning old snapshot files")
+    parser.add_argument("--force", action="store_true", help="Bắt buộc crawl mới từ DVCQG, bỏ qua cache/checkpoint trên đĩa để luôn lấy dữ liệu mới nhất")
     args = parser.parse_args()
 
     # Validate period according to time_type
-    if args.time_type == "month" and args.period is None:
+    if args.time_type == "year":
+        args.period = None
+    elif args.time_type == "month" and args.period is None:
         args.period = 3  # Default to month 3 if not specified
     elif args.time_type == "quarter" and args.period is None:
         args.period = 1  # Default to Q1 if not specified
@@ -1385,9 +1390,16 @@ def main() -> int:
     raw_dir.mkdir(parents=True, exist_ok=True)
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
-    checkpoint_file = checkpoint_dir / f"checkpoint_Provinces_{run_date_str}.json"
-    checkpoint_national = checkpoint_dir / f"checkpoint_national_{run_date_str}.json"
-    raw_file = raw_dir / f"raw_Provinces_{run_date_str}.json"
+    period_tag = f"year_{args.year}" if args.time_type == "year" else f"{args.time_type}_{args.period}_{args.year}"
+    checkpoint_file = checkpoint_dir / f"checkpoint_Provinces_{period_tag}_{run_date_str}.json"
+    checkpoint_national = checkpoint_dir / f"checkpoint_national_{period_tag}_{run_date_str}.json"
+    raw_file = raw_dir / f"raw_Provinces_{period_tag}_{run_date_str}.json"
+
+    if args.force:
+        checkpoint_file.unlink(missing_ok=True)
+        checkpoint_national.unlink(missing_ok=True)
+        raw_file.unlink(missing_ok=True)
+        print("⚡ Chế độ --force: Đã làm mới cache, bắt buộc tải dữ liệu mới nhất từ Cổng DVCQG.")
 
     # Step 1: Clean old files and ensure index.json & index_detail.json in data/provinces/
     if not args.skip_clean and args.clean_days > 0:

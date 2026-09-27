@@ -558,13 +558,14 @@ def update_api_index_detail(
     index_data["previousDate"] = prev_date
 
     ov_hist = index_data.setdefault("overviewHistory", {})
+    existing_ov = ov_hist.get(date_str, {})
     ov_hist[date_str] = {
         "date": date_str,
         "periodLabel": metadata["periodLabel"],
-        "totalScore": processed["overview"].get("totalScore"),
-        "ratio": processed["overview"].get("ratio"),
-        "scoreDelta": processed["overview"].get("scoreDelta"),
-        "groupScores": processed["overview"].get("groupScores"),
+        "totalScore": processed["overview"].get("totalScore", existing_ov.get("totalScore")),
+        "ratio": processed["overview"].get("ratio", existing_ov.get("ratio")),
+        "scoreDelta": processed["overview"].get("scoreDelta") or existing_ov.get("scoreDelta"),
+        "groupScores": processed["overview"].get("groupScores") or existing_ov.get("groupScores"),
         "totalUnitsCount": len(processed["units"]),
         "agencyCount": len(processed["agencies"]),
         "communeCount": len(processed["communes"]),
@@ -718,16 +719,17 @@ def update_api_index_detail(
     return index_path, index_detail_path
 
 
-def clean_old_snapshots(output_dir: Path, raw_dir: Path, retention_days: int = 3) -> int:
+def clean_old_snapshots(output_dir: Path, raw_dir: Path, retention_days: int = 3, year: int | None = None) -> int:
     cutoff_date = datetime.now() - timedelta(days=retention_days)
     deleted_files = 0
 
+    year_str = str(year) if year else "*"
     patterns = [
         (output_dir, "details_GiaLai_*.json"),
         (output_dir, "agencies_detail_GiaLai_*.json"),
         (output_dir, "communes_detail_GiaLai_*.json"),
-        (raw_dir / "2026" / "gia_lai", "raw_GiaLai_detail_*.json"),
-        (raw_dir / "2026" / "gia_lai" / "checkpoints", "checkpoint_detail_*.json"),
+        (raw_dir / year_str / "gia_lai", "raw_GiaLai_detail_*.json"),
+        (raw_dir / year_str / "gia_lai" / "checkpoints", "checkpoint_detail_*.json"),
     ]
 
     for parent_dir, pattern in patterns:
@@ -776,15 +778,16 @@ def main() -> int:
     period = args.period if args.time_type in ("month", "quarter") else None
 
     # Auto clean
-    deleted = clean_old_snapshots(args.output_dir, args.raw_dir, retention_days=args.clean_days)
+    deleted = clean_old_snapshots(args.output_dir, args.raw_dir, retention_days=args.clean_days, year=args.year)
     if deleted > 0:
         print(f"🧹 Đã auto-clean {deleted} file snapshot chi tiết cũ quá {args.clean_days} ngày.")
 
+    period_tag = f"year_{args.year}" if args.time_type == "year" else f"{args.time_type}_{period}_{args.year}"
     chk_dir = args.raw_dir / str(args.year) / "gia_lai" / "checkpoints"
     chk_dir.mkdir(parents=True, exist_ok=True)
-    chk_detail_file = chk_dir / f"checkpoint_detail_{run_date_str}.json"
+    chk_detail_file = chk_dir / f"checkpoint_detail_{period_tag}_{run_date_str}.json"
 
-    print(f"🔄 Đang khởi tạo trích xuất DỮ LIỆU CHI TIẾT TỪNG CHỈ TIÊU Gia Lai (Mốc ngày: {run_date_str})...")
+    print(f"🔄 Đang khởi tạo trích xuất DỮ LIỆU CHI TIẾT TỪNG CHỈ TIÊU Gia Lai (Mốc ngày: {run_date_str}, Kỳ: {period_tag})...")
     print(f"⚡ Chế độ thực thi: Multi-Threaded Partition ({args.concurrency} workers) | Jitter: {args.delay_min}s-{args.delay_max}s | Retries: {args.max_retries}")
     print(f"💾 Checkpoint File: {chk_detail_file}")
 
@@ -805,7 +808,7 @@ def main() -> int:
         )
         pbar.close()
 
-        raw_detail_file = args.raw_dir / str(args.year) / "gia_lai" / f"raw_GiaLai_detail_{run_date_str}.json"
+        raw_detail_file = args.raw_dir / str(args.year) / "gia_lai" / f"raw_GiaLai_detail_{period_tag}_{run_date_str}.json"
         write_json(raw_detail_file, raw_endpoints)
 
         processed = process_detailed_units(raw_endpoints)
