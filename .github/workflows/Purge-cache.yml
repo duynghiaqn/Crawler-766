@@ -40,6 +40,40 @@ jobs:
           echo "--------------------------------------------------"
           echo "✅ All purge requests sent successfully at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')."
 
+      - name: Warm-up jsDelivr CDN Cache (Tạo lại cache dữ liệu mới từ GitHub)
+        if: always()
+        run: |
+          # Ánh xạ từ các tệp trên GitHub (branch main):
+          # 1. https://github.com/duynghiaqn/Crawler-766/blob/main/data/gia_lai/index.json
+          # 2. https://github.com/duynghiaqn/Crawler-766/blob/main/data/gia_lai/index_detail.json
+          # 3. https://github.com/duynghiaqn/Crawler-766/blob/main/data/provinces/index.json
+          # 4. https://github.com/duynghiaqn/Crawler-766/blob/main/data/provinces/index_detail.json
+          CDN_URLS=(
+            "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index.json"
+            "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index_detail.json"
+            "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index.json"
+            "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
+          )
+
+          echo "⏳ Chờ 5 giây để jsDelivr hoàn tất xoá cache cũ..."
+          sleep 5
+
+          echo "🚀 Đang kích hoạt tạo lại cache dữ liệu mới qua jsDelivr CDN at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')..."
+          for url in "${CDN_URLS[@]}"; do
+            echo "--------------------------------------------------"
+            echo "🔥 Warm-up cache cho: $url"
+            http_code=$(curl -s -L -o /dev/null -w "%{http_code}" "$url")
+            echo "📩 HTTP Status Code: $http_code"
+            if [ "$http_code" -eq 200 ]; then
+              echo "✅ Cache mới đã được tạo thành công."
+            else
+              echo "⚠️ Cảnh báo: HTTP status code trả về $http_code"
+            fi
+          done
+          echo "--------------------------------------------------"
+          echo "✅ Hoàn tất tạo lại cache dữ liệu mới at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')."
+
+
   notify:
     name: Gửi thông báo qua Telegram
     needs: [purge]
@@ -55,6 +89,12 @@ jobs:
           if [ -z "$GAS_WEBHOOK_URL" ]; then
             echo "⚠️ GAS_WEBHOOK_URL is not set. Skipping Telegram notification."
             exit 0
+          fi
+
+          if [ -z "$GAS_SECRET_KEY" ]; then
+            echo "⚠️ CẢNH BÁO: 'GAS_SECRET_KEY' chưa được cấu hình hoặc bị rỗng trong GitHub Secrets!"
+          else
+            echo "🔑 Đã lấy thành công giá trị SECRET (Độ dài: ${#GAS_SECRET_KEY} ký tự)."
           fi
 
           TIME_VN=$(TZ='Asia/Ho_Chi_Minh' date +'%d/%m/%Y %H:%M:%S')
@@ -103,8 +143,20 @@ jobs:
               text: $text
             }')
 
+          # Kiểm tra giá trị secret đã được đưa vào payload thành công
+          CHECK_SECRET=$(echo "$PAYLOAD" | jq -r '.secret_key // empty')
+          if [ -z "$CHECK_SECRET" ]; then
+            echo "⚠️ CẢNH BÁO: Trường secret_key trong payload gửi tới Telegram đang bị rỗng!"
+          else
+            echo "🔒 Xác nhận: Payload đã được gán secret hợp lệ để xác thực gửi tin nhắn."
+          fi
+
           echo "📤 Gửi thông báo tới GAS Webhook ($STATUS)..."
           response=$(curl -s -L -X POST "$GAS_WEBHOOK_URL" \
             -H "Content-Type: application/json" \
             -d "$PAYLOAD")
           echo "📩 Phản hồi từ GAS: $response"
+
+          if echo "$response" | grep -qi "error\|unauthorized\|invalid"; then
+            echo "❌ Cảnh báo: Webhook phản hồi lỗi hoặc xác thực secret thất bại."
+          fi
