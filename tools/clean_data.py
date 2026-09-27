@@ -149,8 +149,14 @@ def prune_index_files(
                 except ValueError:
                     pass
 
-            if dates_to_remove:
+            if dates_to_remove or (idx_name == "index_detail.json" and len(avail) > 2):
                 new_avail = [d for d in avail if d not in dates_to_remove]
+                # index_detail.json chỉ lưu tối đa 2 kỳ (kỳ hiện tại và kỳ trước đó)
+                if idx_name == "index_detail.json" and len(new_avail) > 2:
+                    extra_remove = set(new_avail[:-2])
+                    dates_to_remove.update(extra_remove)
+                    new_avail = new_avail[-2:]
+
                 if len(new_avail) != len(avail):
                     data["availableDates"] = new_avail
                     latest_d = new_avail[-1] if new_avail else None
@@ -186,6 +192,18 @@ def prune_index_files(
                                     dept["latest"] = hist.get(latest_d) if latest_d else None
                                     dept["previous"] = hist.get(prev_d) if prev_d else None
 
+                    # Gia Lai departmentsDetailIndex (index_detail.json)
+                    depts_detail = data.get("departmentsDetailIndex", {})
+                    if isinstance(depts_detail, dict):
+                        for dept in depts_detail.values():
+                            if isinstance(dept, dict):
+                                hist = dept.get("history", {})
+                                if isinstance(hist, dict):
+                                    for d in dates_to_remove:
+                                        hist.pop(d, None)
+                                    dept["latest"] = hist.get(latest_d) if latest_d else None
+                                    dept["previous"] = hist.get(prev_d) if prev_d else None
+
                     # Provinces dictionary
                     provinces = data.get("provinces", {})
                     if isinstance(provinces, dict):
@@ -195,6 +213,8 @@ def prune_index_files(
                                 if isinstance(hist, dict):
                                     for d in dates_to_remove:
                                         hist.pop(d, None)
+                                    prov["latest"] = hist.get(latest_d) if latest_d else None
+                                    prov["previous"] = hist.get(prev_d) if prev_d else None
 
                     write_json(idx_path, data)
                     changed = True

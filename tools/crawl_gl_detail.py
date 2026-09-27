@@ -613,13 +613,18 @@ def update_api_index_detail(
     if not isinstance(detail_index_data, dict):
         detail_index_data = {}
 
+    # index_detail.json: Chỉ lưu dữ liệu kỳ hiện tại và kỳ trước đó (tối đa 2 kỳ)
+    allowed_detail_dates = [d for d in [prev_date, latest_date] if d]
+
     detail_index_data["schemaVersion"] = 1
     detail_index_data["updatedAt"] = utc_now()
     detail_index_data["latestDate"] = latest_date
     detail_index_data["previousDate"] = prev_date
     detail_index_data["province"] = province_info
-    detail_index_data["availableDates"] = sorted_avail
-    detail_index_data["overviewHistory"] = ov_hist
+    detail_index_data["availableDates"] = allowed_detail_dates
+
+    # Chỉ giữ tối đa 2 kỳ trong overviewHistory của index_detail.json
+    detail_index_data["overviewHistory"] = {d: ov_hist[d] for d in allowed_detail_dates if d in ov_hist}
     detail_index_data["latestOverview"] = ov_hist.get(latest_date)
     detail_index_data["previousOverview"] = ov_hist.get(prev_date) if prev_date else None
 
@@ -680,10 +685,13 @@ def update_api_index_detail(
 
         d_entry.setdefault("history", {})[date_str] = unit_detail_record
 
+    # Giới hạn history trong departmentsDetailIndex chỉ lưu tối đa 2 kỳ (kỳ hiện tại và kỳ trước đó)
     for code, d_entry in dept_detail_idx.items():
         hist = d_entry.get("history", {})
-        d_entry["latest"] = hist.get(latest_date)
-        d_entry["previous"] = hist.get(prev_date) if prev_date else None
+        pruned_hist = {d: hist[d] for d in allowed_detail_dates if d in hist}
+        d_entry["history"] = pruned_hist
+        d_entry["latest"] = pruned_hist.get(latest_date)
+        d_entry["previous"] = pruned_hist.get(prev_date) if prev_date else None
 
     write_json(index_detail_path, detail_index_data)
 
