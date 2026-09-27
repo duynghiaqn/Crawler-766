@@ -149,13 +149,14 @@ def prune_index_files(
                 except ValueError:
                     pass
 
-            if dates_to_remove or (idx_name == "index_detail.json" and len(avail) > 2):
+            max_allowed = 2 if idx_name == "index_detail.json" else 3
+            if dates_to_remove or len(avail) > max_allowed:
                 new_avail = [d for d in avail if d not in dates_to_remove]
-                # index_detail.json chỉ lưu tối đa 2 kỳ (kỳ hiện tại và kỳ trước đó)
-                if idx_name == "index_detail.json" and len(new_avail) > 2:
-                    extra_remove = set(new_avail[:-2])
+                # index.json tối đa 3 kỳ, index_detail.json tối đa 2 kỳ
+                if len(new_avail) > max_allowed:
+                    extra_remove = set(new_avail[:-max_allowed])
                     dates_to_remove.update(extra_remove)
-                    new_avail = new_avail[-2:]
+                    new_avail = new_avail[-max_allowed:]
 
                 if len(new_avail) != len(avail):
                     data["availableDates"] = new_avail

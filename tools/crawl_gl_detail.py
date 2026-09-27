@@ -544,11 +544,14 @@ def update_api_index_detail(
 
     avail_dates = set(index_data.get("availableDates") or [])
     avail_dates.add(date_str)
-    sorted_avail = sorted(list(avail_dates))
-    index_data["availableDates"] = sorted_avail
+    sorted_avail = sorted(list(avail_dates), key=lambda d: datetime.strptime(d, "%d%m%Y") if len(d) == 8 else d)
+
+    # index.json: Chỉ lưu dữ liệu kỳ hiện tại và 2 kỳ trước đó (tối đa 3 kỳ)
+    allowed_index_dates = sorted_avail[-3:]
+    index_data["availableDates"] = allowed_index_dates
 
     latest_date = date_str
-    dates_before = [d for d in sorted_avail if d < latest_date]
+    dates_before = [d for d in allowed_index_dates if d < latest_date]
     prev_date = dates_before[-1] if dates_before else None
 
     index_data["latestDate"] = latest_date
@@ -567,8 +570,10 @@ def update_api_index_detail(
         "communeCount": len(processed["communes"]),
     }
 
-    index_data["latestOverview"] = ov_hist.get(latest_date)
-    index_data["previousOverview"] = ov_hist.get(prev_date) if prev_date else None
+    # Chỉ giữ tối đa 3 kỳ trong overviewHistory của index.json
+    index_data["overviewHistory"] = {d: ov_hist[d] for d in allowed_index_dates if d in ov_hist}
+    index_data["latestOverview"] = index_data["overviewHistory"].get(latest_date)
+    index_data["previousOverview"] = index_data["overviewHistory"].get(prev_date) if prev_date else None
 
     dept_index = index_data.setdefault("departmentsIndex", {})
     for unit in processed.get("units", []):
@@ -601,10 +606,13 @@ def update_api_index_detail(
 
         d_entry.setdefault("history", {})[date_str] = unit_record
 
+    # Giới hạn history trong departmentsIndex chỉ lưu tối đa 3 kỳ
     for code, d_entry in dept_index.items():
         hist = d_entry.get("history", {})
-        d_entry["latest"] = hist.get(latest_date)
-        d_entry["previous"] = hist.get(prev_date) if prev_date else None
+        pruned_hist = {d: hist[d] for d in allowed_index_dates if d in hist}
+        d_entry["history"] = pruned_hist
+        d_entry["latest"] = pruned_hist.get(latest_date)
+        d_entry["previous"] = pruned_hist.get(prev_date) if prev_date else None
 
     write_json(index_path, index_data)
 

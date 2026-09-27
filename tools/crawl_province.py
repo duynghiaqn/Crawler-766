@@ -1001,11 +1001,14 @@ def update_and_save_master_indexes(
 
     avail_dates = set(index_data.get("availableDates") or [])
     avail_dates.add(date_str)
-    sorted_avail = sorted(list(avail_dates))
-    index_data["availableDates"] = sorted_avail
+    sorted_avail = sorted(list(avail_dates), key=lambda d: datetime.strptime(d, "%d%m%Y") if len(d) == 8 else d)
+
+    # index.json: Chỉ lưu dữ liệu kỳ hiện tại và 2 kỳ trước đó (tối đa 3 kỳ)
+    allowed_index_dates = sorted_avail[-3:]
+    index_data["availableDates"] = allowed_index_dates
 
     latest_date = date_str
-    dates_before = [d for d in sorted_avail if d < latest_date]
+    dates_before = [d for d in allowed_index_dates if d < latest_date]
     prev_date = dates_before[-1] if dates_before else None
 
     index_data["latestDate"] = latest_date
@@ -1025,6 +1028,9 @@ def update_and_save_master_indexes(
         "totalProvincesCount": overview.get("totalProvincesCount"),
     }
 
+    # Chỉ giữ tối đa 3 kỳ trong overviewHistory của index.json
+    index_data["overviewHistory"] = {d: overview_history[d] for d in allowed_index_dates if d in overview_history}
+
     # Summary latest rankings (strip componentIndicators for summary index.json)
     summary_rankings = []
     for p in score_data.get("provinces", []):
@@ -1032,7 +1038,7 @@ def update_and_save_master_indexes(
         summary_rankings.append(p_summary)
 
     index_data["latestOverview"] = overview
-    index_data["previousOverview"] = overview_history.get(prev_date) if prev_date else None
+    index_data["previousOverview"] = index_data["overviewHistory"].get(prev_date) if prev_date else None
     index_data["latestRankings"] = summary_rankings
 
     provinces_index = index_data.setdefault("provinces", {})
@@ -1068,14 +1074,19 @@ def update_and_save_master_indexes(
             "groupScores": prov.get("groupScores"),
         }
 
+    # Giới hạn history trong provinces_index chỉ lưu tối đa 3 kỳ
     for code, entry in provinces_index.items():
         hist = entry.get("history", {})
-        entry["latest"] = hist.get(latest_date)
-        entry["previous"] = hist.get(prev_date) if prev_date else None
+        pruned_hist = {d: hist[d] for d in allowed_index_dates if d in hist}
+        entry["history"] = pruned_hist
+        entry["latest"] = pruned_hist.get(latest_date)
+        entry["previous"] = pruned_hist.get(prev_date) if prev_date else None
 
     if comparison_data:
         comparisons = index_data.setdefault("comparisons", {})
         comparisons[date_str] = comparison_data
+        # Chỉ giữ tối đa 3 kỳ trong comparisons của index.json
+        index_data["comparisons"] = {d: comparisons[d] for d in allowed_index_dates if d in comparisons}
 
     write_json(index_path, index_data)
 
@@ -1222,11 +1233,11 @@ def clean_provinces_directory_and_old_records(output_dir: Path, raw_dir: Path, m
                         pass
                 
                 all_remove = removed_dates.union(prune_dates)
-                if idx_filename == "index_detail.json" and len(avail) > 2:
-                    potential_avail = [d for d in avail if d not in all_remove]
-                    if len(potential_avail) > 2:
-                        extra_remove = set(potential_avail[:-2])
-                        all_remove.update(extra_remove)
+                max_allowed = 2 if idx_filename == "index_detail.json" else 3
+                potential_avail = [d for d in avail if d not in all_remove]
+                if len(potential_avail) > max_allowed:
+                    extra_remove = set(potential_avail[:-max_allowed])
+                    all_remove.update(extra_remove)
 
                 if all_remove:
                     new_avail = [d for d in avail if d not in all_remove]
