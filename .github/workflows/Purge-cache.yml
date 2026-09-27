@@ -1,61 +1,24 @@
-name: Purge jsDelivr CDN Cache & Auto Clean Data
+name: Purge jsDelivr CDN Cache
 
 on:
   schedule:
     - cron: '0 21 * * *' # 04:00 AM Việt Nam / ICT (21:00 UTC)
   workflow_dispatch:
-    inputs:
-      clean_days:
-        description: 'Clean snapshot & comparison files older than N days'
-        required: false
-        default: '3'
 
 concurrency:
   group: purge-jsdelivr-cache
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   purge:
-    name: Auto Clean Data & Purge jsDelivr Cache
+    name: Purge jsDelivr CDN Cache
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    env:
-      PYTHONIOENCODING: "utf-8"
-      PYTHONUTF8: "1"
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Auto Clean Data (> 3 days)
-        run: |
-          python tools/clean_data.py --clean-days ${{ github.event.inputs.clean_days || '3' }}
-
-      - name: Commit and push cleaned data
-        if: success()
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add data/
-          if git diff --staged --quiet; then
-            echo "No old data files to commit"
-          else
-            NOW=$(TZ='Asia/Ho_Chi_Minh' date +'%d/%m/%Y %H:%M:%S')
-            git commit -m "🧹 Auto-clean old data snapshots older than 3 days ($NOW) [skip ci]"
-            for i in 1 2 3; do
-              git pull --rebase --autostash -X ours origin main && git push origin main && echo "✅ Cleaned data successfully updated and pushed." && break || sleep 3
-            done
-          fi
 
       - name: Send Purge Requests to jsDelivr
         if: always()
@@ -107,7 +70,7 @@ jobs:
             STATUS_TEXT="ĐÃ HỦY (CANCELLED)"
           fi
 
-          MESSAGE=$(printf "%s *[Purge Cache & Clean Data]*\n📌 *Trạng thái:* %s\n📂 *Workflow:* \`%s\`\n🏢 *Repository:* [%s](https://github.com/%s)\n⏰ *Thời gian:* %s (Giờ VN)\n👤 *Trigger:* \`%s\` (bởi %s)\n🔗 *Chi tiết:* [Xem log GitHub Action](https://github.com/%s/actions/runs/%s)" \
+          MESSAGE=$(printf "%s *[Purge jsDelivr Cache]*\n📌 *Trạng thái:* %s\n📂 *Workflow:* \`%s\`\n🏢 *Repository:* [%s](https://github.com/%s)\n⏰ *Thời gian:* %s (Giờ VN)\n👤 *Trigger:* \`%s\` (bởi %s)\n🔗 *Chi tiết:* [Xem log GitHub Action](https://github.com/%s/actions/runs/%s)" \
             "$EMOJI" "$STATUS_TEXT" "${{ github.workflow }}" "${{ github.repository }}" "${{ github.repository }}" "$TIME_VN" "${{ github.event_name }}" "${{ github.actor }}" "${{ github.repository }}" "${{ github.run_id }}")
 
           PAYLOAD=$(jq -n \
