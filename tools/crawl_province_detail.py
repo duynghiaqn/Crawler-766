@@ -30,26 +30,32 @@ Sử dụng:
 from __future__ import annotations
 
 import argparse
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from datetime import datetime, timedelta, timezone
+import gzip
 import http.cookiejar
 import json
+from pathlib import Path
 import random
 import re
+import socket
 import ssl
 import sys
 import threading
 import time
+from typing import Any
 import urllib.error
 import urllib.request
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from typing import Any
+import zlib
 
 # Ensure UTF-8 encoding for console output on Windows / non-UTF-8 terminals
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 if hasattr(sys.stderr, "reconfigure"):
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
+# Set sensible default socket timeout to prevent OS-level indefinite TCP hanging
+socket.setdefaulttimeout(120)
 
 # Global Session, CookieJar and SSL context for connection reuse & anti-WAF
 COOKIE_JAR = http.cookiejar.CookieJar()
@@ -59,6 +65,7 @@ OPENER = urllib.request.build_opener(
     urllib.request.HTTPSHandler(context=SSL_CONTEXT),
 )
 _SESSION_WARMED_UP = False
+_SESSION_LOCK = threading.Lock()
 
 # Default Configuration Constants
 ENDPOINT_SERVICE_RESULTS = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-results"
@@ -178,8 +185,25 @@ def load_json(path: Path) -> dict[str, Any] | None:
         return None
 
 
+def decode_response_content(response: Any) -> str:
+    """Read response bytes and decompress gzip/deflate if needed, returning decoded utf-8 text."""
+    raw_bytes = response.read()
+    content_encoding = (response.headers.get("Content-Encoding") or "").lower()
+    if "gzip" in content_encoding or raw_bytes.startswith(b"\x1f\x8b"):
+        try:
+            return gzip.decompress(raw_bytes).decode("utf-8", errors="replace")
+        except Exception:
+            pass
+    elif "deflate" in content_encoding:
+        try:
+            return zlib.decompress(raw_bytes).decode("utf-8", errors="replace")
+        except Exception:
+            pass
+    return raw_bytes.decode("utf-8", errors="replace")
+
+
 def get_random_headers() -> dict[str, str]:
-    """Generate randomized stealth headers to prevent WAF / bot detection."""
+    """Generate randomized stealth headers with Keep-Alive & Gzip to prevent WAF / bot detection."""
     ua = random.choice(USER_AGENTS)
     ver_match = re.search(r"Chrome/(\d+)", ua)
     ver = ver_match.group(1) if ver_match else "125"
@@ -192,6 +216,8 @@ def get_random_headers() -> dict[str, str]:
 
     headers = {
         "Accept": "application/json, text/plain, */*",
+        "Accept-Encoding": "gzip, deflate",
+        "Connection": "keep-alive",
         "Content-Type": "application/json",
         "User-Agent": ua,
         "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
@@ -207,22 +233,25 @@ def get_random_headers() -> dict[str, str]:
     return headers
 
 
-def warmup_session(timeout: int = 15) -> bool:
+def warmup_session(timeout: int = 15, force: bool = False) -> bool:
     """Warmup cookies and TLS session by visiting public evaluation page."""
     global _SESSION_WARMED_UP
-    try:
-        headers = get_random_headers()
-        req = urllib.request.Request(
-            "https://dichvucong.gov.vn/danh-gia-chat-luong-phuc-vu",
-            headers=headers,
-            method="GET",
-        )
-        with OPENER.open(req, timeout=timeout) as resp:
-            resp.read(512)
-        _SESSION_WARMED_UP = True
-        return True
-    except Exception:
-        return False
+    with _SESSION_LOCK:
+        if _SESSION_WARMED_UP and not force:
+            return True
+        try:
+            headers = get_random_headers()
+            req = urllib.request.Request(
+                "https://dichvucong.gov.vn/danh-gia-chat-luong-phuc-vu",
+                headers=headers,
+                method="GET",
+            )
+            with OPENER.open(req, timeout=timeout) as resp:
+                resp.read(512)
+            _SESSION_WARMED_UP = True
+            return True
+        except Exception:
+            return False
 
 
 def province_short_name(name: str) -> str:
@@ -247,7 +276,7 @@ def fetch_dvc_endpoint(
     delay_min: float = 1.0,
     delay_max: float = 2.5,
 ) -> dict[str, Any]:
-    """Fetch DVCQG API endpoint with header rotation, random delay jitter, longer timeout, and smart exponential backoff retries."""
+    """Fetch DVCQG API endpoint with session cookie reuse, adaptive staged timeout, gzip decompression, and smart backoff retries."""
     global _SESSION_WARMED_UP
     payload: dict[str, Any] = {
         "timeType": time_type,
@@ -269,37 +298,43 @@ def fetch_dvc_endpoint(
 
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
 
+    # Anti-blocking: Add randomized jitter delay
     sleep_sec = random.uniform(delay_min, delay_max) + random.uniform(0.05, 0.25)
     time.sleep(sleep_sec)
+
+    # Adaptive Staged Timeout: attempt đầu nhanh gọn để tránh treo lâu, sau đó tăng dần
+    base_timeout = min(timeout, 35)
+    step_timeout = max(5, int((timeout - base_timeout) / max(1, max_retries - 1)))
 
     for attempt in range(1, max_retries + 1):
         headers = get_random_headers()
         request = urllib.request.Request(url, data=body, method="POST", headers=headers)
-        current_timeout = timeout + (attempt - 1) * 10
+        current_timeout = min(timeout, base_timeout + (attempt - 1) * step_timeout)
         try:
-            runner = OPENER.open if attempt > 2 else urllib.request.urlopen
-            with runner(request, timeout=current_timeout) as response:
+            # LUÔN LUÔN dùng OPENER để giữ Cookie session TLS & Keep-Alive của DVCQG
+            with OPENER.open(request, timeout=current_timeout) as response:
                 status = response.status
-                raw_text = response.read().decode("utf-8", errors="replace")
+                raw_text = decode_response_content(response)
                 parsed = json.loads(raw_text)
                 if status not in (200, 201):
                     raise RuntimeError(f"API returned HTTP status {status}")
                 return parsed
         except urllib.error.HTTPError as exc:
-            err_body = exc.read().decode("utf-8", errors="replace")
+            err_body = decode_response_content(exc)
             if exc.code in (429, 403, 500, 502, 503, 504) and attempt < max_retries:
-                retry_wait = (3.0 * (1.4 ** (attempt - 1))) + random.uniform(1.0, 3.5)
+                retry_wait = (2.5 * (1.35 ** (attempt - 1))) + random.uniform(1.0, 3.0)
                 print(f"\n⚠️ [Thử lại {attempt}/{max_retries}] HTTP {exc.code} từ DVCQG. Đợi {retry_wait:.1f}s...", file=sys.stderr)
+                if exc.code == 403:
+                    warmup_session(timeout=min(20, timeout), force=True)
                 time.sleep(retry_wait)
                 continue
             raise RuntimeError(f"HTTP Error {exc.code}: {err_body[:500]}") from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             reason = getattr(exc, "reason", str(exc))
             if attempt < max_retries:
-                retry_wait = (3.0 * (1.4 ** (attempt - 1))) + random.uniform(1.0, 3.5)
+                retry_wait = (2.5 * (1.35 ** (attempt - 1))) + random.uniform(1.0, 3.0)
                 print(f"\n⚠️ [Thử lại {attempt}/{max_retries}] Lỗi kết nối DVCQG ({reason}). Tự động thử lại sau {retry_wait:.1f}s...", file=sys.stderr)
-                if not _SESSION_WARMED_UP:
-                    warmup_session(timeout=min(20, timeout))
+                warmup_session(timeout=min(20, timeout), force=True)
                 time.sleep(retry_wait)
                 continue
             raise RuntimeError(f"Network error connecting to DVCQG: {reason}") from exc
@@ -454,6 +489,65 @@ def fetch_all_provinces_service_results(
     raise RuntimeError("Tất cả các cơ chế kết nối DVCQG (Direct API, Global Strategy, Playwright) đều không thành công.")
 
 
+def fetch_group_via_playwright(
+    group_code: str,
+    url: str,
+    time_type: str,
+    year: int,
+    period: int | None = None,
+    timeout_sec: int = 60,
+) -> dict[str, Any] | None:
+    """Fallback fetch single component group via Playwright Chromium when direct API fails."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return None
+
+    payload: dict[str, Any] = {
+        "timeType": time_type,
+        "year": year,
+        "departmentType": "ADMINISTRATIVE_UNIT",
+        "pageSize": 100,
+        "currentPage": 1,
+    }
+    if time_type == "quarter" and period:
+        payload["quarter"] = period
+    elif time_type == "month" and period:
+        payload["month"] = period
+
+    endpoint_name = url.rstrip("/").split("/")[-1]
+    print(f"\n🌐 [Playwright Fallback] Khởi tạo Chromium để lấy dữ liệu nhóm {group_code} ({endpoint_name})...", file=sys.stderr)
+    try:
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            context = browser.new_context(locale="vi-VN")
+            page = context.new_page()
+            page.goto("https://dichvucong.gov.vn/danh-gia-chat-luong-phuc-vu", timeout=45000, wait_until="commit")
+            time.sleep(1.5)
+            resp_data = page.evaluate(
+                """async ([targetUrl, payload]) => {
+                    const res = await fetch(targetUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json, text/plain, */*'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return await res.json();
+                }""",
+                [url, payload],
+            )
+            browser.close()
+            if resp_data and isinstance(resp_data, dict) and "data" in resp_data:
+                print(f"✅ [Playwright Fallback] Lấy dữ liệu thành công cho nhóm {group_code} qua Chromium!", file=sys.stderr)
+                return resp_data
+    except Exception as exc:
+        print(f"⚠️ [Playwright Fallback Error - {group_code}]: {exc}", file=sys.stderr)
+    return None
+
+
 def _fetch_group_map_for_provinces(
     group_code: str,
     url: str,
@@ -467,9 +561,10 @@ def _fetch_group_map_for_provinces(
     delay_max: float = 2.0,
     pbar: CrawlerProgressBar | None = None,
 ) -> tuple[str, dict[str, float], dict[str, dict[str, Any]]]:
-    """Worker function to fetch a single component indicator endpoint across all provinces."""
+    """Worker function to fetch a single component indicator endpoint across all provinces with Playwright fallback."""
     result_map: dict[str, float] = {}
     item_map: dict[str, dict[str, Any]] = {}
+    resp = None
     try:
         if pbar:
             pbar.set_postfix_str(f"Fetching {group_code}...")
@@ -486,6 +581,11 @@ def _fetch_group_map_for_provinces(
             delay_min=delay_min,
             delay_max=delay_max,
         )
+    except Exception as exc:
+        print(f"\n⚠️ Direct API fetch failed for {group_code}: {exc}. Kích hoạt Playwright Fallback...", file=sys.stderr)
+        resp = fetch_group_via_playwright(group_code, url, time_type, year, period, timeout_sec=timeout)
+
+    if resp and isinstance(resp, dict):
         data = resp.get("data", {}) if isinstance(resp, dict) else {}
         items = data.get(data_key, [])
         if not isinstance(items, list):
@@ -504,8 +604,8 @@ def _fetch_group_map_for_provinces(
                             item_map[code] = item
         if pbar:
             pbar.update(1, status=f"{group_code} OK")
-    except Exception as exc:
-        print(f"\n⚠️ Warning fetching {group_code} group scores: {exc}", file=sys.stderr)
+    else:
+        print(f"\n⚠️ Không thể lấy dữ liệu cho nhóm chỉ tiêu {group_code}.", file=sys.stderr)
         if pbar:
             pbar.update(1, status=f"{group_code} Warn")
 
@@ -576,7 +676,7 @@ def fetch_provinces_component_groups_maps(
     lock = threading.Lock()
 
     def _worker(group_code: str, url: str, data_key: str) -> tuple[str, dict[str, float], dict[str, dict[str, Any]]]:
-        time.sleep(random.uniform(0.1, 0.6))
+        time.sleep(random.uniform(0.1, 0.5))
         g_code, g_map, g_items = _fetch_group_map_for_provinces(
             group_code, url, data_key, time_type, year, period, timeout, max_retries, delay_min, delay_max, pbar
         )
@@ -594,7 +694,10 @@ def fetch_provinces_component_groups_maps(
     else:
         max_workers = min(concurrency, len(pending_tasks))
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(_worker, g_code, url, d_key) for g_code, url, d_key in pending_tasks]
+            futures = []
+            for g_code, url, d_key in pending_tasks:
+                futures.append(executor.submit(_worker, g_code, url, d_key))
+                time.sleep(random.uniform(0.6, 1.2))  # Staggered launch to prevent bursting DVCQG WAF
             for future in as_completed(futures):
                 try:
                     future.result()
@@ -1310,6 +1413,13 @@ def main() -> int:
     index_detail_data = load_json(index_detail_path) or {}
 
     print(f"\n🚀 Khởi động trích xuất Dữ liệu Chi tiết Chỉ số Thành phần UBND Tỉnh/Thành phố ({args.time_type.upper()} {args.period or ''}/{args.year})...")
+
+    # Proactive Session Warmup & Anti-WAF TLS Handshake
+    print("🌐 Khởi tạo kết nối & nhận diện phiên làm việc DVCQG (Session Warmup)...")
+    if warmup_session(timeout=min(20, args.timeout)):
+        print("✅ Thiết lập phiên TLS & Cookie DVCQG thành công.")
+    else:
+        print("⚠️ Không thể warmup session trước; tiếp tục với direct request...")
 
     pbar = CrawlerProgressBar(total=7, desc="Crawling All Provinces Detail", unit="step")
 
