@@ -186,7 +186,7 @@ jobs:
         if: always()
         run: |
           URLS=(
-            "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
+            "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index_detail.json"
           )
 
           echo "🚀 Purging jsDelivr CDN cache at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')..."
@@ -203,9 +203,9 @@ jobs:
         if: always()
         run: |
           # Ánh xạ từ các tệp trên GitHub (branch main):
-          # https://github.com/duynghiaqn/Crawler-766/blob/main/data/provinces/index_detail.json
+          # https://github.com/duynghiaqn/Crawler-766/blob/main/data/gia_lai/index_detail.json
           CDN_URLS=(
-            "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
+            "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index_detail.json"
           )
 
           echo "⏳ Chờ 5 giây để jsDelivr hoàn tất xoá cache cũ..."
@@ -225,5 +225,6 @@ jobs:
           done
           echo "--------------------------------------------------"
           echo "✅ Hoàn tất tạo lại cache dữ liệu mới at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')."
+
 
 
