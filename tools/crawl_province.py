@@ -39,6 +39,7 @@ import time
 import urllib.error
 import urllib.request
 import zlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -64,23 +65,96 @@ _SESSION_LOCK = threading.Lock()
 
 # Default Configuration Constants
 ENDPOINT_SERVICE_RESULTS = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-results"
+ENDPOINT_TRANSPARENCY = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-transparency"
+ENDPOINT_PROGRESS = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-progress-results"
+ENDPOINT_ONLINE = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-online-public-results"
+ENDPOINT_PAYMENT = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-payment-results"
+ENDPOINT_DIGITIZED = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-digitized-records"
+ENDPOINT_HANDLING_SATISFACTION = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-handling-satisfaction-results"
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
 DEFAULT_OUTPUT_DIR = DATA_DIR / "provinces"
 DEFAULT_RAW_DIR = DATA_DIR / "raw"
 
-# User-Agent Pool for Evasion / Anti-Blocking (Standard Desktop Chrome/Chromium)
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-]
+def generate_random_user_agent(
+    device_type=None,
+    browser_type=None,
+    chrome_versions=(125, 138),
+    firefox_versions=(120, 135),
+) -> str:
+    """Generate a randomized desktop or mobile User-Agent string across OS and browser types."""
+    if not device_type:
+        device_type = random.choice(["android", "ios", "windows", "ubuntu"])
+
+    if not browser_type:
+        browser_type = random.choice(["chrome", "firefox"])
+
+    if browser_type == "chrome":
+        chrome_ver_list = list(range(chrome_versions[0], chrome_versions[1]))
+        major_version = random.choice(chrome_ver_list)
+        minor_version = random.randint(0, 9)
+        build_version = random.randint(1000, 9999)
+        patch_version = random.randint(0, 99)
+        browser_version = f"{major_version}.{minor_version}.{build_version}.{patch_version}"
+    elif browser_type == "firefox":
+        firefox_ver_list = list(range(firefox_versions[0], firefox_versions[1]))
+        browser_version = str(random.choice(firefox_ver_list))
+    else:
+        browser_version = "125.0.0.0"
+
+    if device_type == "android":
+        android_versions = ["10.0", "11.0", "12.0", "13.0", "14.0", "15.0", "16.0"]
+        android_device = random.choice([
+            "SM-G960F", "Pixel 5", "SM-A505F", "Pixel 4a", "Pixel 6 Pro", "SM-N975F",
+            "SM-G973F", "Pixel 3", "SM-G980F", "Pixel 5a", "SM-G998B", "Pixel 4",
+            "SM-G991B", "SM-G996B", "SM-F711B", "SM-F916B", "SM-G781B", "SM-N986B",
+            "SM-N981B", "Pixel 2", "Pixel 2 XL", "Pixel 3 XL", "Pixel 4 XL",
+            "Pixel 5 XL", "Pixel 6", "Pixel 6 XL", "Pixel 6a", "Pixel 7", "Pixel 7 Pro",
+            "OnePlus 8", "OnePlus 8 Pro", "OnePlus 9", "OnePlus 9 Pro", "OnePlus Nord", "OnePlus Nord 2", "OnePlus Nord CE", "OnePlus 10", "OnePlus 10 Pro", "OnePlus 10T", "OnePlus 10T Pro",
+            "Xiaomi Mi 9", "Xiaomi Mi 10", "Xiaomi Mi 11", "Xiaomi Redmi Note 8", "Xiaomi Redmi Note 9",
+            "Huawei P30", "Huawei P40", "Huawei Mate 30", "Huawei Mate 40", "Sony Xperia 1",
+            "Sony Xperia 5", "LG G8", "LG V50", "LG V60", "Nokia 8.3", "Nokia 9 PureView",
+        ])
+        android_version = random.choice(android_versions)
+        if browser_type == "chrome":
+            return f"Mozilla/5.0 (Linux; Android {android_version}; {android_device}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{browser_version} Mobile Safari/537.36"
+        elif browser_type == "firefox":
+            return f"Mozilla/5.0 (Android {android_version}; Mobile; rv:{browser_version}.0) Gecko/{browser_version}.0 Firefox/{browser_version}.0"
+
+    elif device_type == "ios":
+        ios_versions = ["13.0", "14.0", "15.0", "16.0"]
+        ios_device = random.choice([
+            "iPhone X", "iPhone 11", "iPhone 12", "iPhone 13", "iPad Pro", "iPad Mini",
+        ])
+        ios_version = random.choice(ios_versions)
+        if browser_type == "chrome":
+            return f"Mozilla/5.0 (iPhone; CPU iPhone OS {ios_version.replace('.', '_')} like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) CriOS/{browser_version} Mobile/15E148 Safari/604.1"
+        elif browser_type == "firefox":
+            return f"Mozilla/5.0 (iPhone; CPU iPhone OS {ios_version.replace('.', '_')} like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/{browser_version}.0 Mobile/15E148 Safari/605.1.15"
+
+    elif device_type == "windows":
+        windows_versions = ["10.0", "11.0"]
+        windows_version = random.choice(windows_versions)
+        if browser_type == "chrome":
+            return f"Mozilla/5.0 (Windows NT {windows_version}; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{browser_version} Safari/537.36"
+        elif browser_type == "firefox":
+            return f"Mozilla/5.0 (Windows NT {windows_version}; Win64; x64; rv:{browser_version}.0) Gecko/{browser_version}.0 Firefox/{browser_version}.0"
+
+    elif device_type == "ubuntu":
+        ubuntu_versions = ["20.04", "22.04"]
+        ubuntu_version = random.choice(ubuntu_versions)
+        if browser_type == "chrome":
+            return f"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:94.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{browser_version} Safari/537.36"
+        elif browser_type == "firefox":
+            return f"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:{browser_version}.0) Gecko/{browser_version}.0 Firefox/{browser_version}.0"
+
+    return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+
+
+# Backward-compatible module-level USER_AGENT property
+USER_AGENT = generate_random_user_agent()
+USER_AGENTS = [generate_random_user_agent() for _ in range(8)]
 
 try:
     from tqdm import tqdm
@@ -193,11 +267,14 @@ def decode_response_content(response: Any) -> str:
 
 def get_random_headers() -> dict[str, str]:
     """Generate randomized stealth headers with Keep-Alive & Gzip to prevent WAF / bot detection."""
-    ua = random.choice(USER_AGENTS)
-    ver_match = re.search(r"Chrome/(\d+)", ua)
-    ver = ver_match.group(1) if ver_match else "125"
+    ua = generate_random_user_agent()
+    is_mobile = "Mobile" in ua or "Android" in ua or "iPhone" in ua
     if "Windows" in ua:
         platform = '"Windows"'
+    elif "Android" in ua:
+        platform = '"Android"'
+    elif "iPhone" in ua or "iPad" in ua:
+        platform = '"iOS"'
     elif "Macintosh" in ua:
         platform = '"macOS"'
     else:
@@ -212,13 +289,16 @@ def get_random_headers() -> dict[str, str]:
         "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
         "Referer": "https://dichvucong.gov.vn/danh-gia-chat-luong-phuc-vu",
         "Origin": "https://dichvucong.gov.vn",
-        "Sec-Ch-Ua": f'"Chromium";v="{ver}", "Google Chrome";v="{ver}", "Not-A.Brand";v="99"',
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": platform,
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Site": "same-origin",
     }
+    if "Chrome" in ua or "CriOS" in ua:
+        ver_match = re.search(r"(?:Chrome|CriOS)/(\d+)", ua)
+        ver = ver_match.group(1) if ver_match else "125"
+        headers["Sec-Ch-Ua"] = f'"Chromium";v="{ver}", "Google Chrome";v="{ver}", "Not-A.Brand";v="99"'
+        headers["Sec-Ch-Ua-Mobile"] = "?1" if is_mobile else "?0"
+        headers["Sec-Ch-Ua-Platform"] = platform
     return headers
 
 
@@ -387,6 +467,224 @@ def fetch_service_results_via_playwright(
     return None
 
 
+def fetch_group_via_playwright(
+    group_code: str,
+    url: str,
+    time_type: str,
+    year: int,
+    period: int | None = None,
+    timeout_sec: int = 60,
+) -> dict[str, Any] | None:
+    """Fallback fetch single component group via Playwright Chromium when direct API fails."""
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        return None
+
+    payload: dict[str, Any] = {
+        "timeType": time_type,
+        "year": year,
+        "departmentType": "ADMINISTRATIVE_UNIT",
+        "pageSize": 100,
+        "currentPage": 1,
+    }
+    if time_type == "quarter" and period:
+        payload["quarter"] = period
+    elif time_type == "month" and period:
+        payload["month"] = period
+
+    endpoint_name = url.rstrip("/").split("/")[-1]
+    print(f"\n🌐 [Playwright Fallback] Khởi tạo Chromium để lấy dữ liệu nhóm {group_code} ({endpoint_name})...", file=sys.stderr)
+    try:
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            context = browser.new_context(locale="vi-VN")
+            page = context.new_page()
+            page.goto("https://dichvucong.gov.vn/danh-gia-chat-luong-phuc-vu", timeout=45000, wait_until="commit")
+            time.sleep(1.5)
+            resp_data = page.evaluate(
+                """async ([targetUrl, payload]) => {
+                    const res = await fetch(targetUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json, text/plain, */*'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return await res.json();
+                }""",
+                [url, payload],
+            )
+            browser.close()
+            if resp_data and isinstance(resp_data, dict) and "data" in resp_data:
+                print(f"✅ [Playwright Fallback] Lấy dữ liệu thành công cho nhóm {group_code} qua Chromium!", file=sys.stderr)
+                return resp_data
+    except Exception as exc:
+        print(f"⚠️ [Playwright Fallback Error cho {group_code}]: {exc}", file=sys.stderr)
+    return None
+
+
+def _fetch_group_map_for_provinces(
+    group_code: str,
+    url: str,
+    data_key: str,
+    time_type: str,
+    year: int,
+    period: int | None,
+    timeout: int,
+    max_retries: int,
+    delay_min: float = 1.0,
+    delay_max: float = 2.5,
+    pbar: CrawlerProgressBar | None = None,
+) -> tuple[str, dict[str, float], dict[str, dict[str, Any]]]:
+    """Worker function to fetch a single component indicator endpoint across all provinces with Playwright fallback."""
+    result_map: dict[str, float] = {}
+    item_map: dict[str, dict[str, Any]] = {}
+    resp = None
+    try:
+        if pbar:
+            pbar.set_postfix_str(f"Fetching {group_code}...")
+        resp = fetch_dvc_endpoint(
+            url,
+            time_type,
+            year,
+            period,
+            department_type="ADMINISTRATIVE_UNIT",
+            page_size=100,
+            current_page=1,
+            timeout=timeout,
+            max_retries=max_retries,
+            delay_min=delay_min,
+            delay_max=delay_max,
+        )
+    except Exception as exc:
+        print(f"\n⚠️ Direct API fetch failed for {group_code}: {exc}. Kích hoạt Playwright Fallback...", file=sys.stderr)
+        resp = fetch_group_via_playwright(group_code, url, time_type, year, period, timeout_sec=timeout)
+
+    if resp and isinstance(resp, dict):
+        data = resp.get("data", {}) if isinstance(resp, dict) else {}
+        items = data.get(data_key, [])
+        if not isinstance(items, list):
+            items = data.get("evaluation", [])
+        if isinstance(items, list):
+            for item in items:
+                if isinstance(item, dict):
+                    did = item.get("departmentId") or item.get("departmentCode")
+                    score_val = item.get("score") if item.get("score") is not None else item.get("totalScore", 0)
+                    if did:
+                        result_map[did] = round(float(score_val), 2)
+                        item_map[did] = item
+                        code = item.get("departmentCode")
+                        if code:
+                            result_map[code] = round(float(score_val), 2)
+                            item_map[code] = item
+        if pbar:
+            pbar.update(1, status=f"{group_code} OK")
+    else:
+        print(f"\n⚠️ Không thể lấy dữ liệu cho nhóm chỉ tiêu {group_code}.", file=sys.stderr)
+        if pbar:
+            pbar.update(1, status=f"{group_code} Warn")
+
+    return group_code, result_map, item_map
+
+
+def fetch_provinces_component_groups_maps(
+    time_type: str,
+    year: int,
+    period: int | None = None,
+    checkpoint_file: Path | None = None,
+    timeout: int = 45,
+    max_retries: int = 6,
+    concurrency: int = 5,
+    delay_min: float = 1.0,
+    delay_max: float = 2.5,
+    pbar: CrawlerProgressBar | None = None,
+) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, dict[str, Any]]]]:
+    """Fetch all 6 component criteria group endpoints concurrently for all provinces (Partition & Assembly)."""
+    maps: dict[str, dict[str, float]] = {
+        "CKMB": {},
+        "TDGQ": {},
+        "ONLINE": {},
+        "TTTT": {},
+        "MDSH": {},
+        "MDHL": {},
+    }
+    item_maps: dict[str, dict[str, dict[str, Any]]] = {
+        "CKMB": {},
+        "TDGQ": {},
+        "ONLINE": {},
+        "TTTT": {},
+        "MDSH": {},
+        "MDHL": {},
+    }
+
+    if checkpoint_file and checkpoint_file.exists():
+        cached = load_json(checkpoint_file)
+        if isinstance(cached, dict) and "maps" in cached:
+            c_maps = cached.get("maps", {})
+            c_items = cached.get("item_maps", {})
+            for k in maps:
+                if k in c_maps and isinstance(c_maps[k], dict) and len(c_maps[k]) > 0:
+                    maps[k] = c_maps[k]
+                if k in c_items and isinstance(c_items[k], dict) and len(c_items[k]) > 0:
+                    item_maps[k] = c_items[k]
+
+    tasks = [
+        ("CKMB", ENDPOINT_TRANSPARENCY, "evaluation"),
+        ("TDGQ", ENDPOINT_PROGRESS, "children"),
+        ("ONLINE", ENDPOINT_ONLINE, "children"),
+        ("TTTT", ENDPOINT_PAYMENT, "children"),
+        ("MDSH", ENDPOINT_DIGITIZED, "evaluation"),
+        ("MDHL", ENDPOINT_HANDLING_SATISFACTION, "evaluation"),
+    ]
+
+    pending_tasks = [t for t in tasks if not maps[t[0]]]
+    completed_count = len(tasks) - len(pending_tasks)
+
+    if completed_count > 0:
+        if pbar:
+            pbar.update(completed_count, status=f"Checkpoint {completed_count}/6 OK")
+        print(f"  ℹ️ Khôi phục {completed_count}/6 nhóm chỉ tiêu từ mốc checkpoint đĩa.")
+
+    if not pending_tasks:
+        return maps, item_maps
+
+    lock = threading.Lock()
+
+    def _worker(group_code: str, url: str, data_key: str) -> tuple[str, dict[str, float], dict[str, dict[str, Any]]]:
+        time.sleep(random.uniform(0.1, 0.4))
+        g_code, g_map, g_items = _fetch_group_map_for_provinces(
+            group_code, url, data_key, time_type, year, period, timeout, max_retries, delay_min, delay_max, pbar
+        )
+        with lock:
+            if g_map:
+                maps[g_code] = g_map
+                item_maps[g_code] = g_items
+                if checkpoint_file:
+                    write_json(checkpoint_file, {"maps": maps, "item_maps": item_maps, "updatedAt": utc_now()})
+        return g_code, g_map, g_items
+
+    if concurrency <= 1 or len(pending_tasks) == 1:
+        for group_code, url, data_key in pending_tasks:
+            _worker(group_code, url, data_key)
+    else:
+        max_workers = min(concurrency, len(pending_tasks))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = []
+            for g_code, url, d_key in pending_tasks:
+                futures.append(executor.submit(_worker, g_code, url, d_key))
+                time.sleep(random.uniform(0.3, 0.7))  # Staggered launch to prevent bursting DVCQG WAF
+            for future in as_completed(futures):
+                try:
+                    future.result()
+                except Exception as exc:
+                    print(f"\n⚠️ Thread partition error: {exc}", file=sys.stderr)
+
+    return maps, item_maps
+
+
 def fetch_all_provinces_service_results(
     time_type: str,
     year: int,
@@ -483,6 +781,7 @@ def extract_province_score_data(
     time_type: str,
     year: int,
     period: int | None = None,
+    component_group_maps: dict[str, dict[str, float]] | None = None,
     run_date_str: str | None = None,
 ) -> dict[str, Any]:
     """Extract, rank, and normalize evaluation summary scores for all provinces."""
@@ -511,13 +810,30 @@ def extract_province_score_data(
 
         item_gs = item.get("groupScores") or {}
 
-        ckmb_val = item_gs.get("CKMB") or 0.0
-        tdgq_val = item_gs.get("TDGQ") or 0.0
-        online_val = item_gs.get("CLGQ") or item_gs.get("ONLINE") or 0.0
-        tttt_val = item_gs.get("TTTT") or 0.0
-        mdsh_val = item_gs.get("MDSH") or 0.0
+        def _resolve_score(g_key: str, fallback_val: float) -> float:
+            if component_group_maps and g_key in component_group_maps:
+                g_dict = component_group_maps[g_key]
+                if code and code in g_dict:
+                    return g_dict[code]
+                if did and did in g_dict:
+                    return g_dict[did]
+            return fallback_val
 
-        mdhl_fetched = item_gs.get("MDHL")
+        ckmb_val = _resolve_score("CKMB", item_gs.get("CKMB") or 0.0)
+        tdgq_val = _resolve_score("TDGQ", item_gs.get("TDGQ") or 0.0)
+        online_val = _resolve_score("ONLINE", item_gs.get("CLGQ") or item_gs.get("ONLINE") or 0.0)
+        tttt_val = _resolve_score("TTTT", item_gs.get("TTTT") or 0.0)
+        mdsh_val = _resolve_score("MDSH", item_gs.get("MDSH") or 0.0)
+
+        mdhl_fetched = None
+        if component_group_maps and "MDHL" in component_group_maps:
+            if code and code in component_group_maps["MDHL"]:
+                mdhl_fetched = component_group_maps["MDHL"][code]
+            elif did and did in component_group_maps["MDHL"]:
+                mdhl_fetched = component_group_maps["MDHL"][did]
+        if mdhl_fetched is None:
+            mdhl_fetched = item_gs.get("MDHL")
+
         if mdhl_fetched is not None:
             mdhl_val = round(float(mdhl_fetched), 2)
         else:
@@ -1081,12 +1397,19 @@ def main() -> int:
     parser.add_argument("--clean-days", type=int, default=3, help="Auto-clean snapshots older than N days (default: 3)")
     parser.add_argument("--output-dir", type=str, default=str(DEFAULT_OUTPUT_DIR), help="Output directory for province JSON files")
     parser.add_argument("--raw-dir", type=str, default=str(DEFAULT_RAW_DIR), help="Raw output directory")
-    parser.add_argument("--concurrency", type=int, default=3, help="Unused compatibility flag for concurrent workers")
+    parser.add_argument("--concurrency", type=int, default=5, help="Số lượng worker luồng chạy song song tự phân tách & ráp nối dữ liệu (mặc định: 5)")
+    parser.add_argument("--delay-min", type=float, default=1.0, help="Thời gian nghỉ tối thiểu giữa các request tính theo giây (mặc định: 1.0s)")
+    parser.add_argument("--delay-max", type=float, default=2.5, help="Thời gian nghỉ tối đa giữa các request tính theo giây (mặc định: 2.5s)")
     parser.add_argument("--timeout", type=int, default=90, help="HTTP request timeout in seconds (default: 90)")
     parser.add_argument("--max-retries", type=int, default=8, help="Max retries for HTTP requests (default: 8)")
     parser.add_argument("--skip-clean", action="store_true", help="Skip auto-cleaning old snapshot files")
     parser.add_argument("--force", action="store_true", help="Bắt buộc crawl mới từ DVCQG, bỏ qua cache/checkpoint trên đĩa")
     args = parser.parse_args()
+
+    if args.delay_max < args.delay_min:
+        raise SystemExit("--delay-max phải lớn hơn hoặc bằng --delay-min")
+    if args.concurrency < 1:
+        args.concurrency = 1
 
     if args.time_type == "year":
         args.period = None
@@ -1107,10 +1430,12 @@ def main() -> int:
     checkpoint_dir.mkdir(parents=True, exist_ok=True)
 
     period_tag = f"year_{args.year}" if args.time_type == "year" else f"{args.time_type}_{args.period}_{args.year}"
+    checkpoint_file = checkpoint_dir / f"checkpoint_Provinces_{period_tag}_{run_date_str}.json"
     checkpoint_national = checkpoint_dir / f"checkpoint_national_{period_tag}_{run_date_str}.json"
     raw_file = raw_dir / f"raw_Provinces_{period_tag}_{run_date_str}.json"
 
     if args.force:
+        checkpoint_file.unlink(missing_ok=True)
         checkpoint_national.unlink(missing_ok=True)
         raw_file.unlink(missing_ok=True)
         print("⚡ Chế độ --force: Đã làm mới cache, bắt buộc tải dữ liệu mới nhất từ Cổng DVCQG.")
@@ -1122,7 +1447,13 @@ def main() -> int:
     index_path = output_dir / "index.json"
     index_data = load_json(index_path) or {}
 
-    print(f"\n🚀 Khởi động trích xuất Dữ liệu Điểm số UBND Tỉnh/Thành phố Index ({args.time_type.upper()} {args.period or ''}/{args.year})...")
+    print(f"\n🔄 Đang khởi tạo trích xuất điểm số UBND Tỉnh/Thành phố (Mốc ngày: {run_date_str}, Kỳ: {period_tag})...")
+    if args.concurrency > 1:
+        print(f"⚡ Chế độ thực thi: Multi-Threaded Partition & Assembly ({args.concurrency} workers | Tự phân tách & ráp nối dữ liệu)")
+    else:
+        print(f"🔒 Chế độ thực thi: Single-Threaded Sequential (1 worker)")
+    print(f"⏱️  Phân phối ngẫu nhiên thời gian nghỉ (Jitter Sleep): {args.delay_min}s ➡️ {args.delay_max}s | Timeout: {args.timeout}s | Retries: {args.max_retries}")
+    print(f"💾 Cơ chế Checkpoint Resumption & Fallback Active: {checkpoint_dir}")
 
     # Proactive Session Warmup & Anti-WAF TLS Handshake
     print("🌐 Khởi tạo kết nối & nhận diện phiên làm việc DVCQG (Session Warmup)...")
@@ -1131,7 +1462,7 @@ def main() -> int:
     else:
         print("⚠️ Không thể warmup session trước; tiếp tục với direct request...")
 
-    pbar = CrawlerProgressBar(total=2, desc="Crawling All Provinces Index", unit="step")
+    pbar = CrawlerProgressBar(total=7, desc="Crawling All Provinces Index", unit="step")
 
     # Step 2: Fetch national service-results
     pbar.set_postfix_str("Fetching National Service Results...")
@@ -1144,6 +1475,8 @@ def main() -> int:
             raw_file=raw_file,
             timeout=args.timeout,
             max_retries=args.max_retries,
+            delay_min=args.delay_min,
+            delay_max=args.delay_max,
         )
         pbar.update(1, status="National OK")
     except Exception as exc:
@@ -1154,17 +1487,30 @@ def main() -> int:
     write_json(raw_file, raw_national)
     write_json(checkpoint_national, raw_national)
 
-    # Step 3: Extract score data
-    pbar.set_postfix_str("Processing summary score data...")
+    # Step 3: Fetch 6 component group score maps (Multi-Threaded Partition & Assembly)
+    group_maps, _ = fetch_provinces_component_groups_maps(
+        args.time_type,
+        args.year,
+        args.period,
+        checkpoint_file=checkpoint_file,
+        timeout=args.timeout,
+        max_retries=args.max_retries,
+        concurrency=args.concurrency,
+        delay_min=args.delay_min,
+        delay_max=args.delay_max,
+        pbar=pbar,
+    )
+    pbar.close()
+
+    # Step 4: Extract and enrich score data
     score_data = extract_province_score_data(
         raw_national,
         args.time_type,
         args.year,
         args.period,
+        component_group_maps=group_maps,
         run_date_str=run_date_str,
     )
-    pbar.update(1, status="Extract OK")
-    pbar.close()
 
     summary_provinces = score_data.get("provinces", [])
     scores_file_data = {

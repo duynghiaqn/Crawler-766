@@ -81,17 +81,84 @@ DATA_DIR = ROOT_DIR / "data"
 DEFAULT_OUTPUT_DIR = DATA_DIR / "provinces"
 DEFAULT_RAW_DIR = DATA_DIR / "raw"
 
-# User-Agent Pool for Evasion / Anti-Blocking (Standard Desktop Chrome/Chromium)
-USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-]
+def generate_random_user_agent(
+    device_type=None,
+    browser_type=None,
+    chrome_versions=(125, 138),
+    firefox_versions=(120, 135),
+) -> str:
+    """Generate a randomized desktop or mobile User-Agent string across OS and browser types."""
+    if not device_type:
+        device_type = random.choice(["android", "ios", "windows", "ubuntu"])
+
+    if not browser_type:
+        browser_type = random.choice(["chrome", "firefox"])
+
+    if browser_type == "chrome":
+        chrome_ver_list = list(range(chrome_versions[0], chrome_versions[1]))
+        major_version = random.choice(chrome_ver_list)
+        minor_version = random.randint(0, 9)
+        build_version = random.randint(1000, 9999)
+        patch_version = random.randint(0, 99)
+        browser_version = f"{major_version}.{minor_version}.{build_version}.{patch_version}"
+    elif browser_type == "firefox":
+        firefox_ver_list = list(range(firefox_versions[0], firefox_versions[1]))
+        browser_version = str(random.choice(firefox_ver_list))
+    else:
+        browser_version = "125.0.0.0"
+
+    if device_type == "android":
+        android_versions = ["10.0", "11.0", "12.0", "13.0", "14.0", "15.0", "16.0"]
+        android_device = random.choice([
+            "SM-G960F", "Pixel 5", "SM-A505F", "Pixel 4a", "Pixel 6 Pro", "SM-N975F",
+            "SM-G973F", "Pixel 3", "SM-G980F", "Pixel 5a", "SM-G998B", "Pixel 4",
+            "SM-G991B", "SM-G996B", "SM-F711B", "SM-F916B", "SM-G781B", "SM-N986B",
+            "SM-N981B", "Pixel 2", "Pixel 2 XL", "Pixel 3 XL", "Pixel 4 XL",
+            "Pixel 5 XL", "Pixel 6", "Pixel 6 XL", "Pixel 6a", "Pixel 7", "Pixel 7 Pro",
+            "OnePlus 8", "OnePlus 8 Pro", "OnePlus 9", "OnePlus 9 Pro", "OnePlus Nord", "OnePlus Nord 2", "OnePlus Nord CE", "OnePlus 10", "OnePlus 10 Pro", "OnePlus 10T", "OnePlus 10T Pro",
+            "Xiaomi Mi 9", "Xiaomi Mi 10", "Xiaomi Mi 11", "Xiaomi Redmi Note 8", "Xiaomi Redmi Note 9",
+            "Huawei P30", "Huawei P40", "Huawei Mate 30", "Huawei Mate 40", "Sony Xperia 1",
+            "Sony Xperia 5", "LG G8", "LG V50", "LG V60", "Nokia 8.3", "Nokia 9 PureView",
+        ])
+        android_version = random.choice(android_versions)
+        if browser_type == "chrome":
+            return f"Mozilla/5.0 (Linux; Android {android_version}; {android_device}) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{browser_version} Mobile Safari/537.36"
+        elif browser_type == "firefox":
+            return f"Mozilla/5.0 (Android {android_version}; Mobile; rv:{browser_version}.0) Gecko/{browser_version}.0 Firefox/{browser_version}.0"
+
+    elif device_type == "ios":
+        ios_versions = ["13.0", "14.0", "15.0", "16.0"]
+        ios_device = random.choice([
+            "iPhone X", "iPhone 11", "iPhone 12", "iPhone 13", "iPad Pro", "iPad Mini",
+        ])
+        ios_version = random.choice(ios_versions)
+        if browser_type == "chrome":
+            return f"Mozilla/5.0 (iPhone; CPU iPhone OS {ios_version.replace('.', '_')} like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) CriOS/{browser_version} Mobile/15E148 Safari/604.1"
+        elif browser_type == "firefox":
+            return f"Mozilla/5.0 (iPhone; CPU iPhone OS {ios_version.replace('.', '_')} like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) FxiOS/{browser_version}.0 Mobile/15E148 Safari/605.1.15"
+
+    elif device_type == "windows":
+        windows_versions = ["10.0", "11.0"]
+        windows_version = random.choice(windows_versions)
+        if browser_type == "chrome":
+            return f"Mozilla/5.0 (Windows NT {windows_version}; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{browser_version} Safari/537.36"
+        elif browser_type == "firefox":
+            return f"Mozilla/5.0 (Windows NT {windows_version}; Win64; x64; rv:{browser_version}.0) Gecko/{browser_version}.0 Firefox/{browser_version}.0"
+
+    elif device_type == "ubuntu":
+        ubuntu_versions = ["20.04", "22.04"]
+        ubuntu_version = random.choice(ubuntu_versions)
+        if browser_type == "chrome":
+            return f"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:94.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{browser_version} Safari/537.36"
+        elif browser_type == "firefox":
+            return f"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:{browser_version}.0) Gecko/{browser_version}.0 Firefox/{browser_version}.0"
+
+    return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+
+
+# Backward-compatible module-level USER_AGENT property
+USER_AGENT = generate_random_user_agent()
+USER_AGENTS = [generate_random_user_agent() for _ in range(8)]
 
 try:
     from tqdm import tqdm
@@ -204,11 +271,14 @@ def decode_response_content(response: Any) -> str:
 
 def get_random_headers() -> dict[str, str]:
     """Generate randomized stealth headers with Keep-Alive & Gzip to prevent WAF / bot detection."""
-    ua = random.choice(USER_AGENTS)
-    ver_match = re.search(r"Chrome/(\d+)", ua)
-    ver = ver_match.group(1) if ver_match else "125"
+    ua = generate_random_user_agent()
+    is_mobile = "Mobile" in ua or "Android" in ua or "iPhone" in ua
     if "Windows" in ua:
         platform = '"Windows"'
+    elif "Android" in ua:
+        platform = '"Android"'
+    elif "iPhone" in ua or "iPad" in ua:
+        platform = '"iOS"'
     elif "Macintosh" in ua:
         platform = '"macOS"'
     else:
@@ -223,13 +293,16 @@ def get_random_headers() -> dict[str, str]:
         "Accept-Language": "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7",
         "Referer": "https://dichvucong.gov.vn/danh-gia-chat-luong-phuc-vu",
         "Origin": "https://dichvucong.gov.vn",
-        "Sec-Ch-Ua": f'"Chromium";v="{ver}", "Google Chrome";v="{ver}", "Not-A.Brand";v="99"',
-        "Sec-Ch-Ua-Mobile": "?0",
-        "Sec-Ch-Ua-Platform": platform,
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Site": "same-origin",
     }
+    if "Chrome" in ua or "CriOS" in ua:
+        ver_match = re.search(r"(?:Chrome|CriOS)/(\d+)", ua)
+        ver = ver_match.group(1) if ver_match else "125"
+        headers["Sec-Ch-Ua"] = f'"Chromium";v="{ver}", "Google Chrome";v="{ver}", "Not-A.Brand";v="99"'
+        headers["Sec-Ch-Ua-Mobile"] = "?1" if is_mobile else "?0"
+        headers["Sec-Ch-Ua-Platform"] = platform
     return headers
 
 
@@ -619,9 +692,9 @@ def fetch_provinces_component_groups_maps(
     checkpoint_file: Path | None = None,
     timeout: int = 45,
     max_retries: int = 6,
-    concurrency: int = 3,
+    concurrency: int = 5,
     delay_min: float = 1.0,
-    delay_max: float = 2.0,
+    delay_max: float = 2.5,
     pbar: CrawlerProgressBar | None = None,
 ) -> tuple[dict[str, dict[str, float]], dict[str, dict[str, dict[str, Any]]]]:
     """Fetch all 6 component criteria group endpoints concurrently for all provinces, returning score maps and item detail maps."""
@@ -676,7 +749,7 @@ def fetch_provinces_component_groups_maps(
     lock = threading.Lock()
 
     def _worker(group_code: str, url: str, data_key: str) -> tuple[str, dict[str, float], dict[str, dict[str, Any]]]:
-        time.sleep(random.uniform(0.1, 0.5))
+        time.sleep(random.uniform(0.1, 0.4))
         g_code, g_map, g_items = _fetch_group_map_for_provinces(
             group_code, url, data_key, time_type, year, period, timeout, max_retries, delay_min, delay_max, pbar
         )
@@ -697,7 +770,7 @@ def fetch_provinces_component_groups_maps(
             futures = []
             for g_code, url, d_key in pending_tasks:
                 futures.append(executor.submit(_worker, g_code, url, d_key))
-                time.sleep(random.uniform(0.6, 1.2))  # Staggered launch to prevent bursting DVCQG WAF
+                time.sleep(random.uniform(0.3, 0.7))  # Staggered launch to prevent bursting DVCQG WAF
             for future in as_completed(futures):
                 try:
                     future.result()
@@ -1369,12 +1442,19 @@ def main() -> int:
     parser.add_argument("--clean-days", type=int, default=3, help="Auto-clean snapshots older than N days (default: 3)")
     parser.add_argument("--output-dir", type=str, default=str(DEFAULT_OUTPUT_DIR), help="Output directory for province JSON files")
     parser.add_argument("--raw-dir", type=str, default=str(DEFAULT_RAW_DIR), help="Raw output directory")
-    parser.add_argument("--concurrency", type=int, default=3, help="Concurrent threads for fetching 6 component groups (default: 3)")
+    parser.add_argument("--concurrency", type=int, default=5, help="Số lượng worker luồng chạy song song tự phân tách & ráp nối dữ liệu (mặc định: 5)")
+    parser.add_argument("--delay-min", type=float, default=1.0, help="Thời gian nghỉ tối thiểu giữa các request tính theo giây (mặc định: 1.0s)")
+    parser.add_argument("--delay-max", type=float, default=2.5, help="Thời gian nghỉ tối đa giữa các request tính theo giây (mặc định: 2.5s)")
     parser.add_argument("--timeout", type=int, default=90, help="HTTP request timeout in seconds (default: 90)")
     parser.add_argument("--max-retries", type=int, default=8, help="Max retries for HTTP requests (default: 8)")
     parser.add_argument("--skip-clean", action="store_true", help="Skip auto-cleaning old snapshot files")
     parser.add_argument("--force", action="store_true", help="Bắt buộc crawl mới từ DVCQG, bỏ qua cache/checkpoint trên đĩa")
     args = parser.parse_args()
+
+    if args.delay_max < args.delay_min:
+        raise SystemExit("--delay-max phải lớn hơn hoặc bằng --delay-min")
+    if args.concurrency < 1:
+        args.concurrency = 1
 
     if args.time_type == "year":
         args.period = None
@@ -1412,7 +1492,13 @@ def main() -> int:
     index_detail_path = output_dir / "index_detail.json"
     index_detail_data = load_json(index_detail_path) or {}
 
-    print(f"\n🚀 Khởi động trích xuất Dữ liệu Chi tiết Chỉ số Thành phần UBND Tỉnh/Thành phố ({args.time_type.upper()} {args.period or ''}/{args.year})...")
+    print(f"\n🔄 Đang khởi tạo trích xuất chi tiết chỉ số UBND Tỉnh/Thành phố (Mốc ngày: {run_date_str}, Kỳ: {period_tag})...")
+    if args.concurrency > 1:
+        print(f"⚡ Chế độ thực thi: Multi-Threaded Partition & Assembly ({args.concurrency} workers | Tự phân tách & ráp nối dữ liệu)")
+    else:
+        print(f"🔒 Chế độ thực thi: Single-Threaded Sequential (1 worker)")
+    print(f"⏱️  Phân phối ngẫu nhiên thời gian nghỉ (Jitter Sleep): {args.delay_min}s ➡️ {args.delay_max}s | Timeout: {args.timeout}s | Retries: {args.max_retries}")
+    print(f"💾 Cơ chế Checkpoint Resumption & Fallback Active: {checkpoint_dir}")
 
     # Proactive Session Warmup & Anti-WAF TLS Handshake
     print("🌐 Khởi tạo kết nối & nhận diện phiên làm việc DVCQG (Session Warmup)...")
@@ -1434,6 +1520,8 @@ def main() -> int:
             raw_file=raw_file,
             timeout=args.timeout,
             max_retries=args.max_retries,
+            delay_min=args.delay_min,
+            delay_max=args.delay_max,
         )
         pbar.update(1, status="National OK")
     except Exception as exc:
@@ -1453,6 +1541,8 @@ def main() -> int:
         timeout=args.timeout,
         max_retries=args.max_retries,
         concurrency=args.concurrency,
+        delay_min=args.delay_min,
+        delay_max=args.delay_max,
         pbar=pbar,
     )
     pbar.close()
