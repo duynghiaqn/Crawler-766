@@ -160,3 +160,56 @@ jobs:
             -H "Content-Type: application/json" \
             -d "$PAYLOAD")
           echo "📩 Phản hồi từ GAS: $response"
+
+  purge:
+    name: Purge CDN Cache Provinces Detail
+    needs: [crawl-provinces-detail]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Send Purge Requests to jsDelivr
+        if: always()
+        run: |
+          URLS=(
+            "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
+          )
+
+          echo "🚀 Purging jsDelivr CDN cache at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')..."
+          for url in "${URLS[@]}"; do
+            echo "--------------------------------------------------"
+            echo "🔄 Requesting purge for: $url"
+            response=$(curl -s -X GET "$url")
+            echo "📩 Response: $response"
+          done
+          echo "--------------------------------------------------"
+          echo "✅ All purge requests sent successfully at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')."
+
+      - name: Warm-up jsDelivr CDN Cache (Tạo lại cache dữ liệu mới từ GitHub)
+        if: always()
+        run: |
+          # Ánh xạ từ các tệp trên GitHub (branch main):
+          # https://github.com/duynghiaqn/Crawler-766/blob/main/data/provinces/index_detail.json
+          CDN_URLS=(
+            "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
+          )
+
+          echo "⏳ Chờ 5 giây để jsDelivr hoàn tất xoá cache cũ..."
+          sleep 5
+
+          echo "🚀 Đang kích hoạt tạo lại cache dữ liệu mới qua jsDelivr CDN at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')..."
+          for url in "${CDN_URLS[@]}"; do
+            echo "--------------------------------------------------"
+            echo "🔥 Warm-up cache cho: $url"
+            http_code=$(curl -s -L -o /dev/null -w "%{http_code}" "$url")
+            echo "📩 HTTP Status Code: $http_code"
+            if [ "$http_code" -eq 200 ]; then
+              echo "✅ Cache mới đã được tạo thành công."
+            else
+              echo "⚠️ Cảnh báo: HTTP status code trả về $http_code"
+            fi
+          done
+          echo "--------------------------------------------------"
+          echo "✅ Hoàn tất tạo lại cache dữ liệu mới at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')."
+
