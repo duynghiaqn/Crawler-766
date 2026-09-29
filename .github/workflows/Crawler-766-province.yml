@@ -161,7 +161,7 @@ jobs:
           echo "📩 Phản hồi từ GAS: $response"
 
   purge:
-    name: Purge CDN Cache Provinces Index & Detail
+    name: Purge CDN Cache Provinces Index
     needs: [crawl-provinces]
     if: always()
     runs-on: ubuntu-latest
@@ -173,7 +173,6 @@ jobs:
         run: |
           URLS=(
             "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index.json"
-            "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
           )
 
           echo "🚀 Purging jsDelivr CDN cache at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')..."
@@ -190,11 +189,9 @@ jobs:
         if: always()
         run: |
           # Ánh xạ từ các tệp trên GitHub (branch main):
-          # 1. https://github.com/duynghiaqn/Crawler-766/blob/main/data/provinces/index.json
-          # 2. https://github.com/duynghiaqn/Crawler-766/blob/main/data/provinces/index_detail.json
+          # https://github.com/duynghiaqn/Crawler-766/blob/main/data/provinces/index.json
           CDN_URLS=(
             "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index.json"
-            "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
           )
 
           echo "⏳ Chờ 5 giây để jsDelivr hoàn tất xoá cache cũ..."
