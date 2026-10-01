@@ -34,17 +34,20 @@ Tùy chọn:
   --period PERIOD     Kỳ trích xuất (Tháng 1-12 hoặc Quý 1-4)
   --clean-days DAYS   Số ngày tự động dọn dẹp snapshot cũ (Mặc định: 3)
   --skip-test         Bỏ qua bước kiểm tra kết nối DVCQG
+  --push              Tự động git commit và push data/ lên repo
   -h, --help          Hiển thị trợ giúp này
 
 Ví dụ:
   ./tools/Auto_all.sh --time-type year --year 2026
   ./tools/Auto_all.sh --time-type month --year 2026 --period 3
+  ./tools/Auto_all.sh --push
 EOF
   exit 0
 }
 
 # Parse CLI flags
 ARGS=()
+PUSH="false"
 while [[ $# -gt 0 ]]; do
   case $1 in
     --time-type)
@@ -65,6 +68,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --skip-test)
       SKIP_TEST="true"
+      shift
+      ;;
+    --push)
+      PUSH="true"
       shift
       ;;
     -h|--help)
@@ -136,6 +143,30 @@ echo "🧹 Dọn dẹp dữ liệu cũ quá ${CLEAN_DAYS} ngày (clean_data.py).
 echo "------------------------------------------------------------------------------"
 if [[ -f "${SCRIPT_DIR}/clean_data.py" ]]; then
   python3 "${SCRIPT_DIR}/clean_data.py" --clean-days "${CLEAN_DAYS}" || true
+fi
+
+# 6. Auto Git Commit and Push (if --push requested)
+if [[ "${PUSH}" == "true" ]]; then
+  echo ""
+  echo "------------------------------------------------------------------------------"
+  echo "📤 [Git] Tự động Commit và Push Dữ liệu data/ lên Git Repository..."
+  echo "------------------------------------------------------------------------------"
+  git add "${WORKSPACE_DIR}/data" || true
+  if git diff --staged --quiet; then
+    echo "ℹ️  Không có dữ liệu mới để commit."
+  else
+    NOW=$(TZ='Asia/Ho_Chi_Minh' date +'%d/%m/%Y %H:%M:%S' 2>/dev/null || date +'%Y-%m-%d %H:%M:%S')
+    BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
+    git commit -m "📊 Auto Update DVCQG Data ($NOW)" || true
+    for i in 1 2 3; do
+      echo "🔄 Đang đẩy lên origin/${BRANCH} (Lần thử ${i}/3)..."
+      if git pull --rebase --autostash -X ours origin "${BRANCH}" && git push origin "${BRANCH}"; then
+        echo "✅ Dữ liệu đã được push lên GitHub thành công!"
+        break
+      fi
+      sleep 3
+    done
+  fi
 fi
 
 END_TIME=$(date +%s)

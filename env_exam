@@ -1,0 +1,45 @@
+# ==============================================================================
+# CẤU HÌNH BIẾN MÔI TRƯỜNG KẾT NỐI GITHUB & THÔNG BÁO - CRAWLER 766
+# Hướng dẫn: Đổi tên hoặc sao chép tệp này thành .env và điền thông tin của bạn
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. THÔNG TIN XÁC THỰC GITHUB (BẮT BUỘC ĐỂ PUSH TỰ ĐỘNG KHÔNG CẦN NHẬP PASS)
+# ------------------------------------------------------------------------------
+# GitHub Personal Access Token (Classic hoặc Fine-grained)
+# Cách tạo: Vào GitHub -> Settings -> Developer Settings -> Personal access tokens -> Tokens (classic)
+# Chọn quyền (Scopes): 'repo' (Full control of private repositories) hoặc tối thiểu 'contents: write'
+GITHUB_TOKEN=ghp_your_github_personal_access_token_here
+
+# Tên tài khoản GitHub của bạn
+GITHUB_USERNAME=duynghiaqn
+
+# Đường dẫn Repository trên GitHub (định dạng: owner/repo)
+GITHUB_REPOSITORY=duynghiaqn/Crawler-766
+
+# Nhánh git mặc định để push dữ liệu (Mặc định: main)
+GIT_BRANCH=main
+
+# Tên remote git (Mặc định: origin)
+GIT_REMOTE_NAME=origin
+
+# Thông tin tác giả ghi vào nhật ký git commit tự động
+GIT_USER_NAME=Crawler 766 Bot
+GIT_USER_EMAIL=crawler-bot@users.noreply.github.com
+
+# ------------------------------------------------------------------------------
+# 2. CẤU HÌNH THÔNG BÁO TELEGRAM / GOOGLE APPS SCRIPT WEBHOOK (TÙY CHỌN)
+# ------------------------------------------------------------------------------
+# URL Webhook Google Apps Script trung gian gửi tin nhắn Telegram (đồng bộ với GitHub Action)
+GAS_WEBHOOK_URL=https://script.google.com/macros/s/your_gas_deployment_id/exec
+GAS_SECRET_KEY=your_gas_secret_key_here
+
+# Hoặc cấu hình trực tiếp qua Telegram Bot API (nếu không dùng qua GAS)
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
+
+# ------------------------------------------------------------------------------
+# 3. CẤU HÌNH MẶC ĐỊNH CHO CRAWLER
+# ------------------------------------------------------------------------------
+CRAWLER_TIME_TYPE=year
+CRAWLER_CLEAN_DAYS=3

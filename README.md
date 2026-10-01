@@ -230,11 +230,72 @@ Tự động gọi thực hiện tuần tự tất cả 4 crawler pipelines (Gia
 # Chạy tự động tất cả các crawler theo Năm (Mặc định: Năm 2026)
 ./tools/Auto_all.sh --time-type year --year 2026
 
+# Chạy tự động và tự động Git Commit & Push lên GitHub Repo
+./tools/Auto_all.sh --time-type year --year 2026 --push
+
 # Chạy tự động tất cả các crawler theo Tháng
 ./tools/Auto_all.sh --time-type month --year 2026 --period 3
 
 # Tự động dọn dẹp dữ liệu cũ quá N ngày (Mặc định: 3 ngày)
 ./tools/Auto_all.sh --clean-days 3
+```
+
+---
+
+### 5. Tự Động Hóa Chạy & Push Git Theo Lịch Trên Windows / Cross-platform (`tools/auto_sync.py`)
+
+Công cụ Python chuyên biệt chạy đa nền tảng (tối ưu 100% cho Windows mà không cần Git Bash hay WSL), tích hợp sẵn:
+- Chạy toàn bộ hoặc tùy biến các crawler pipelines
+- Tự động phát hiện thay đổi trong `data/`, commit kèm ngày giờ VN và push lên GitHub
+- **Lập lịch trên Windows** thông qua **Windows Task Scheduler** hoặc **Python Daemon Loop**
+
+#### Cấu hình biến môi trường GitHub (`env_exam` / `.env`):
+Sao chép tệp `env_exam` thành `.env` để cấu hình token kết nối GitHub tự động (không bị hỏi mật khẩu khi chạy ngầm):
+```powershell
+# Trên Windows CMD / PowerShell:
+copy env_exam .env
+```
+Mở `.env` và điền `GITHUB_TOKEN` (Personal Access Token có quyền `repo` hoặc `contents: write`) cùng `GITHUB_REPOSITORY=duynghiaqn/Crawler-766`.
+
+#### Cách 1: Chạy 1 lần ngay lập tức & Tự động Push (One-shot)
+```powershell
+# Chạy trên Windows CMD / PowerShell
+python tools/auto_sync.py --run-once --push
+
+# Hoặc click đúp chuột tệp batch:
+tools\run_auto_windows.bat
+```
+
+#### Cách 2: Đăng ký lịch chạy ngầm bằng Windows Task Scheduler (Khuyên dùng)
+Máy tính Windows sẽ tự động đánh thức và chạy ngầm mỗi ngày vào giờ đã chọn (kể cả khi đã tắt terminal):
+```powershell
+# 1. Đăng ký tác vụ chạy tự động hàng ngày lúc 18:00 (hoặc giờ bạn muốn)
+python tools/auto_sync.py --install-task --daily-time 18:00
+
+# 2. Kiểm tra trạng thái tác vụ trong Windows Task Scheduler
+python tools/auto_sync.py --status-task
+
+# 3. Khi muốn hủy / xóa tác vụ
+python tools/auto_sync.py --remove-task
+```
+
+#### Cách 3: Chạy vòng lặp nền liên tục trong Python (Python Loop Daemon)
+Thích hợp khi muốn mở một cửa sổ console treo trên máy tính:
+```powershell
+# Chạy cố định mỗi ngày vào các khung giờ cụ thể (Ví dụ: 06:00 và 18:00 hàng ngày)
+python tools/auto_sync.py --loop --daily-time 06:00,18:00 --push
+
+# Hoặc chạy định kỳ sau mỗi N giờ (Ví dụ: mỗi 6 tiếng)
+python tools/auto_sync.py --loop --interval-hours 6 --push
+```
+
+#### Tùy chọn nâng cao:
+```powershell
+# Chỉ crawl Gia Lai và bỏ qua các chỉ tiêu con chi tiết (chạy siêu nhanh)
+python tools/auto_sync.py --run-once --only-gl --skip-detail --push
+
+# Chỉ định remote hoặc branch khác
+python tools/auto_sync.py --run-once --remote origin --branch main --push
 ```
 
 ---
