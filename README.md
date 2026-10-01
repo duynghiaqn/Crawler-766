@@ -249,11 +249,11 @@ Công cụ Python chuyên biệt chạy đa nền tảng (tối ưu 100% cho Win
 - Tự động phát hiện thay đổi trong `data/`, commit kèm ngày giờ VN và push lên GitHub
 - **Lập lịch trên Windows** thông qua **Windows Task Scheduler** hoặc **Python Daemon Loop**
 
-#### Cấu hình biến môi trường GitHub (`env_exam` / `.env`):
-Sao chép tệp `env_exam` thành `.env` để cấu hình token kết nối GitHub tự động (không bị hỏi mật khẩu khi chạy ngầm):
+#### Cấu hình biến môi trường GitHub (`env_config` / `.env`):
+Sao chép tệp `env_config` thành `.env` để cấu hình token kết nối GitHub tự động (không bị hỏi mật khẩu khi chạy ngầm):
 ```powershell
 # Trên Windows CMD / PowerShell:
-copy env_exam .env
+copy env_config .env
 ```
 Mở `.env` và điền `GITHUB_TOKEN` (Personal Access Token có quyền `repo` hoặc `contents: write`) cùng `GITHUB_REPOSITORY=duynghiaqn/Crawler-766`.
 

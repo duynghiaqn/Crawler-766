@@ -53,8 +53,8 @@ VN_TZ = timezone(timedelta(hours=7))
 
 
 def load_env_file() -> None:
-    """Tự động tải các biến môi trường từ .env hoặc env_exam nếu có."""
-    env_paths = [ROOT_DIR / ".env", ROOT_DIR / "env_exam"]
+    """Tự động tải các biến môi trường từ .env hoặc env_config nếu có."""
+    env_paths = [ROOT_DIR / ".env", ROOT_DIR / "env_config", ROOT_DIR / "env_exam"]
     loaded_from = None
     for p in env_paths:
         if p.exists() and p.is_file():
