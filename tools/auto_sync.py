@@ -356,18 +356,47 @@ def git_commit_and_push(
     print(f"🚀 Đang đẩy dữ liệu lên {target_remote}/{target_branch} (Tối đa {max_retries} lần thử)...")
     push_success = False
 
+    # Đảm bảo hủy trạng thái rebase hoặc merge dở dang nếu có từ phiên trước
+    git_dir = ROOT_DIR / ".git"
+    if (git_dir / "rebase-merge").exists() or (git_dir / "rebase-apply").exists():
+        print("🔄 Phát hiện phiên rebase chưa hoàn tất, đang tự động khôi phục...")
+        run_command(["git", "rebase", "--abort"], check=False, capture_output=True)
+    if (git_dir / "MERGE_HEAD").exists():
+        run_command(["git", "merge", "--abort"], check=False, capture_output=True)
+
     for attempt in range(1, max_retries + 1):
         print(f"\n🔄 [Lần thử {attempt}/{max_retries}] Đồng bộ với remote và push...")
         try:
-            # Pull rebase autostash để tích hợp thay đổi từ xa nếu có
+            # 1. Fetch remote trước để cập nhật thông tin mới nhất
+            run_command(["git", "fetch", push_remote_target, target_branch], check=False, capture_output=True)
+
+            # 2. Thử pull rebase autostash
             pull_res = run_command(
                 ["git", "pull", "--rebase", "--autostash", "-X", "ours", push_remote_target, target_branch],
                 check=False,
                 capture_output=True,
             )
             if pull_res.returncode != 0:
-                print(f"⚠️ Cảnh báo git pull rebase: {pull_res.stderr.strip() or pull_res.stdout.strip()}")
+                err_pull = pull_res.stderr.strip() or pull_res.stdout.strip()
+                print(f"⚠️ Cảnh báo git pull rebase: {err_pull}")
+                # Hủy rebase dở nếu gặp lỗi (VD: could not detach HEAD)
+                run_command(["git", "rebase", "--abort"], check=False, capture_output=True)
 
+                # Tự động stage toàn bộ tệp cục bộ để tránh lỗi untracked files
+                run_command(["git", "add", "-A"], check=False, capture_output=True)
+                run_command(["git", "commit", "-m", "chore: sync local tracking files"], check=False, capture_output=True)
+
+                # Thử đồng bộ qua merge
+                print("🔄 Đang thử đồng bộ qua phương thức Git Merge...")
+                merge_res = run_command(
+                    ["git", "pull", "--no-rebase", "-X", "ours", "--allow-unrelated-histories", push_remote_target, target_branch, "-m", f"Merge remote {target_branch}"],
+                    check=False,
+                    capture_output=True,
+                )
+                if merge_res.returncode != 0:
+                    print(f"⚠️ Cảnh báo git merge: {merge_res.stderr.strip() or merge_res.stdout.strip()}")
+
+            # 3. Đẩy lên remote repository
             push_res = run_command(
                 ["git", "push", push_remote_target, target_branch],
                 check=False,
@@ -378,7 +407,12 @@ def git_commit_and_push(
                 push_success = True
                 break
             else:
-                print(f"⚠️ Push thất bại lần {attempt}: {push_res.stderr.strip() or push_res.stdout.strip()}")
+                err_push = push_res.stderr.strip() or push_res.stdout.strip()
+                print(f"⚠️ Push thất bại lần {attempt}: {err_push}")
+                if "non-fast-forward" in err_push or "behind" in err_push:
+                    print("🔄 Nhánh cục bộ đang chậm hơn remote, đang đồng bộ lại nhánh...")
+                    run_command(["git", "fetch", push_remote_target, target_branch], check=False, capture_output=True)
+                    run_command(["git", "merge", "FETCH_HEAD", "-X", "ours", "-m", "Auto merge remote before retry push"], check=False, capture_output=True)
                 time.sleep(3)
         except Exception as exc:
             print(f"⚠️ Ngoại lệ trong lần thử {attempt}: {exc}")
@@ -395,9 +429,38 @@ def send_telegram_notification(
     message: str,
 ) -> None:
     """Gửi thông báo qua Telegram Webhook / GAS Webhook nếu được cấu hình."""
-    webhook_url = os.environ.get("GAS_WEBHOOK_URL")
-    secret_key = os.environ.get("GAS_SECRET_KEY", "")
+    webhook_url = (os.environ.get("GAS_WEBHOOK_URL") or "").strip()
+    secret_key = (os.environ.get("GAS_SECRET_KEY") or "").strip()
+    bot_token = (os.environ.get("TELEGRAM_BOT_TOKEN") or "").strip()
+    chat_id = (os.environ.get("TELEGRAM_CHAT_ID") or "").strip()
 
+    # Bỏ qua nếu là URL mẫu chưa được cấu hình
+    if "your_gas_deployment_id" in webhook_url or webhook_url.endswith("/your_gas_deployment_id/exec"):
+        webhook_url = ""
+
+    # 1. Gửi qua Telegram Bot API trực tiếp nếu có cấu hình
+    if bot_token and chat_id:
+        try:
+            tg_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            payload = {
+                "chat_id": chat_id,
+                "text": message,
+            }
+            data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(
+                tg_url,
+                data=data,
+                headers={"Content-Type": "application/json", "User-Agent": "Crawler766-AutoSync/1.0"},
+                method="POST",
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status == 200:
+                    print("📲 Đã gửi thông báo Telegram Bot thành công.")
+                    return
+        except Exception as exc:
+            print(f"⚠️ Không thể gửi thông báo Telegram Bot: {exc}")
+
+    # 2. Gửi qua GAS Webhook trung gian nếu có cấu hình thực tế
     if not webhook_url:
         return
 
@@ -423,7 +486,7 @@ def send_telegram_notification(
             if resp.status == 200:
                 print("📲 Đã gửi thông báo qua Telegram Webhook thành công.")
     except Exception as exc:
-        print(f"⚠️ Không thể gửi thông báo Telegram: {exc}")
+        print(f"⚠️ Không thể gửi thông báo Telegram Webhook: {exc}")
 
 
 # ==============================================================================
