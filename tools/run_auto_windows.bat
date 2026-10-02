@@ -116,6 +116,13 @@ echo Dang bat dau chay quy trinh thu thap va dong bo du lieu...
 echo ==============================================================================
 echo.
 
+:: Kiem tra neu thu muc chua co .git (VD: giai nen tu file ZIP)
+if not exist "%WORKSPACE_DIR%\.git" (
+    echo [THONG TIN] Phat hien ma nguon chua co thu muc .git (do tai file ZIP).
+    echo He thong se tu dong khoi tao git va ket noi voi GitHub repository.
+    echo.
+)
+
 :: Kiem tra file auto_sync.py co ton tai khong
 if not exist "%TOOLS_DIR%\auto_sync.py" (
     echo.
