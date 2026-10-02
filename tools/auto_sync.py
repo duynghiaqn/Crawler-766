@@ -432,23 +432,23 @@ def send_telegram_notification(
 def create_windows_launcher_bat(task_name: str) -> Path:
     """Tạo tệp launcher .bat chuẩn hóa trên Windows để gọi bởi Task Scheduler."""
     bat_path = TOOLS_DIR / "run_auto_windows.bat"
-    python_exe = sys.executable
+    if bat_path.exists():
+        return bat_path
 
-    # Tạo nội dung batch script an toàn tuyệt đối với dấu tiếng Việt và đường dẫn có khoảng trắng
+    python_exe = sys.executable
     content = f"""@echo off
 chcp 65001 > nul
 setlocal enabledelayedexpansion
 
 :: ==============================================================================
 :: Runner Script cho Windows Task Scheduler - Crawler 766
-:: Tự động thực thi crawler & đồng bộ push git
+:: Tu dong thuc thi crawler va dong bo push git (Tieng Viet khong dau)
 :: ==============================================================================
 
 cd /d "{ROOT_DIR}"
 
 set "PYTHON_EXE={python_exe}"
 
-:: Kiểm tra nếu có môi trường ảo local .venv hoặc venv
 if exist "{ROOT_DIR}\\.venv\\Scripts\\python.exe" (
     set "PYTHON_EXE={ROOT_DIR}\\.venv\\Scripts\\python.exe"
 ) else if exist "{ROOT_DIR}\\venv\\Scripts\\python.exe" (
@@ -471,7 +471,7 @@ if %EXIT_CODE% neq 0 (
 exit /b %EXIT_CODE%
 """
     bat_path.write_text(content, encoding="utf-8")
-    print(f"📄 Đã tạo tệp launcher Windows: {bat_path}")
+    print(f"📄 Da tao tep launcher Windows: {bat_path}")
     return bat_path
 
 

@@ -3,107 +3,157 @@ chcp 65001 > nul
 setlocal enabledelayedexpansion
 
 :: ==============================================================================
-:: Runner Script cho Windows Task Scheduler & Chạy thủ công - Crawler 766
-:: Tự động thực thi crawler, đồng bộ git và tạo lại cache jsDelivr CDN
+:: Runner Script cho Windows Task Scheduler & Chay thu cong - Crawler 766
+:: Tu dong thuc thi crawler, dong bo git va tao lai cache jsDelivr CDN
+:: Su dung tieng Viet khong dau de tuong thich 100%% CMD Windows.
 :: ==============================================================================
 
 set "SCRIPT_DIR=%~dp0"
 cd /d "%SCRIPT_DIR%.."
 set "WORKSPACE_DIR=%CD%"
+set "TOOLS_DIR=%WORKSPACE_DIR%\tools"
 
-:: Thiết lập mã hóa UTF-8 chuẩn cho môi trường Python trên Windows
+:: Thiet lap moi truong UTF-8 cho Python
 set "PYTHONIOENCODING=utf-8"
 set "PYTHONUTF8=1"
 
-:: Hiển thị trợ giúp nếu truyền cờ -h hoặc --help
+:: Kiem tra co tro giup -h hoac --help
 if "%~1"=="-h" goto show_help
 if "%~1"=="--help" goto show_help
 goto find_python
 
 :show_help
 echo ==============================================================================
-echo 🚀 CRAWLER 766 - WINDOWS AUTO RUNNER
+echo   CRAWLER 766 - WINDOWS AUTO RUNNER (run_auto_windows.bat)
 echo ==============================================================================
-echo Sử dụng:
-echo   run_auto_windows.bat [TÙY CHỌN]
+echo Su dung:
+echo   run_auto_windows.bat [TUY CHON]
 echo.
-echo Các tùy chọn phổ biến:
-echo   (không tham số)     Chạy toàn bộ crawler, commit git, push và purge CDN cache
-echo   --skip-test         Bỏ qua bước kiểm tra kết nối DVCQG
-echo   --skip-detail       Chỉ crawl dữ liệu tổng hợp (bỏ qua chi tiết các chỉ tiêu)
-echo   --only-gl           Chỉ crawl dữ liệu tỉnh Gia Lai
-echo   --only-provinces    Chỉ crawl dữ liệu 34 Tỉnh / Thành phố
-echo   --no-push           Chỉ crawl và lưu dữ liệu cục bộ (không đẩy lên git)
-echo   --skip-purge        Không thực hiện xóa cache jsDelivr CDN
-echo   -h, --help          Hiển thị trợ giúp này
+echo Cac tuy chon pho bien:
+echo   (khong tham so)     Chay toan bo crawler, commit git, push va purge CDN
+echo   --skip-test         Bo qua buoc kiem tra ket noi DVCQG
+echo   --skip-detail       Chi crawl du lieu tong hop (bo qua chi tiet cac chi tieu)
+echo   --only-gl           Chi crawl du lieu tinh Gia Lai
+echo   --only-provinces    Chi crawl du lieu 34 Tinh / Thanh pho
+echo   --no-push           Chi crawl va luu du lieu cuc bo (khong day len git)
+echo   --skip-purge        Khong thuc hien xoa cache jsDelivr CDN
+echo   -h, --help          Hien thi tro giup nay
 echo ==============================================================================
+echo.
+pause
 exit /b 0
 
 :find_python
-:: Tìm Python executable phù hợp (venv cục bộ, py launcher hoặc hệ thống)
-set "PYTHON_CMD="
+echo ==============================================================================
+echo   CRAWLER 766 AUTO RUNNER - WINDOWS
+echo   Thu muc lam viec: %WORKSPACE_DIR%
+echo ==============================================================================
 
+set "PYTHON_EXE="
+set "PYTHON_ARGS="
+
+:: 1. Uu tien moi truong ao trong thu muc du an (.venv, venv, env)
 if exist "%WORKSPACE_DIR%\.venv\Scripts\python.exe" (
-    set "PYTHON_CMD=%WORKSPACE_DIR%\.venv\Scripts\python.exe"
+    set "PYTHON_EXE=%WORKSPACE_DIR%\.venv\Scripts\python.exe"
 ) else if exist "%WORKSPACE_DIR%\venv\Scripts\python.exe" (
-    set "PYTHON_CMD=%WORKSPACE_DIR%\venv\Scripts\python.exe"
+    set "PYTHON_EXE=%WORKSPACE_DIR%\venv\Scripts\python.exe"
 ) else if exist "%WORKSPACE_DIR%\env\Scripts\python.exe" (
-    set "PYTHON_CMD=%WORKSPACE_DIR%\env\Scripts\python.exe"
+    set "PYTHON_EXE=%WORKSPACE_DIR%\env\Scripts\python.exe"
 )
 
-if not defined PYTHON_CMD (
-    for /f "tokens=*" %%i in ('where python 2^>nul') do (
-        if not defined PYTHON_CMD set "PYTHON_CMD=%%i"
+:: 2. Kiem tra lenh py (Python Launcher cua Windows)
+if not defined PYTHON_EXE (
+    where py >nul 2>&1
+    if !errorlevel! equ 0 (
+        py -3 -c "import sys" >nul 2>&1
+        if !errorlevel! equ 0 (
+            set "PYTHON_EXE=py"
+            set "PYTHON_ARGS=-3"
+        )
     )
 )
 
-if not defined PYTHON_CMD (
-    for /f "tokens=*" %%i in ('where py 2^>nul') do (
-        if not defined PYTHON_CMD set "PYTHON_CMD=%%i"
+:: 3. Kiem tra python trong PATH (chay thu de loai bo alias WindowsApps bi loi)
+if not defined PYTHON_EXE (
+    where python >nul 2>&1
+    if !errorlevel! equ 0 (
+        python -c "import sys" >nul 2>&1
+        if !errorlevel! equ 0 (
+            set "PYTHON_EXE=python"
+        )
     )
 )
 
-if not defined PYTHON_CMD (
-    echo ==============================================================================
-    echo ❌ LỖI: Không tìm thấy Python trong hệ thống hoặc môi trường ảo!
-    echo 💡 Vui lòng cài đặt Python (https://www.python.org/downloads/)
-    echo    và nhớ tích chọn "Add Python to PATH" khi cài đặt.
-    echo ==============================================================================
-    if not defined SCHTASKS_ENV pause
+:: 4. Kiem tra python3 trong PATH
+if not defined PYTHON_EXE (
+    where python3 >nul 2>&1
+    if !errorlevel! equ 0 (
+        python3 -c "import sys" >nul 2>&1
+        if !errorlevel! equ 0 (
+            set "PYTHON_EXE=python3"
+        )
+    )
+)
+
+:: Neu van khong tim thay Python kha dung
+if not defined PYTHON_EXE (
+    echo.
+    echo [LOI] Khong tim thay Python trong he thong hoac moi truong ao!
+    echo Vui long cai dat Python 3 tai: https://www.python.org/downloads/
+    echo LUU Y QUAN TRONG: Nho tich chon vao o [Add Python to PATH] khi cai dat.
+    echo.
+    pause
     exit /b 1
 )
 
-echo ==============================================================================
-echo 🤖 KHỞI ĐỘNG CRAWLER 766 AUTO RUNNER (WINDOWS)
-echo 📅 Thời gian: %DATE% %TIME%
-echo 🐍 Python   : !PYTHON_CMD!
-echo 📂 Workspace: %WORKSPACE_DIR%
-echo ==============================================================================
-echo.
-
-:: Thực thi auto_sync.py với các tham số truyền vào
-"!PYTHON_CMD!" "%SCRIPT_DIR%auto_sync.py" --run-once --push %*
-
-set "EXIT_CODE=!ERRORLEVEL!"
-echo.
-echo ==============================================================================
-if !EXIT_CODE! equ 0 (
-    echo ✅ TIẾN TRÌNH WINDOWS HOÀN TẤT THÀNH CÔNG!
+if defined PYTHON_ARGS (
+    echo   Python su dung: !PYTHON_EXE! !PYTHON_ARGS!
 ) else (
-    echo ❌ TIẾN TRÌNH WINDOWS THẤT BẠI VỚI MÃ LỖI: !EXIT_CODE!
+    echo   Python su dung: !PYTHON_EXE!
+)
+echo.
+echo Dang bat dau chay quy trinh thu thap va dong bo du lieu...
+echo ==============================================================================
+echo.
+
+:: Kiem tra file auto_sync.py co ton tai khong
+if not exist "%TOOLS_DIR%\auto_sync.py" (
+    echo.
+    echo [LOI] Khong tim thay file %TOOLS_DIR%\auto_sync.py!
+    echo Vui long kiem tra lai thu muc du an.
+    echo.
+    pause
+    exit /b 1
+)
+
+:: Thuc thi script auto_sync.py
+if defined PYTHON_ARGS (
+    "%PYTHON_EXE%" %PYTHON_ARGS% "%TOOLS_DIR%\auto_sync.py" --run-once --push %*
+) else (
+    "%PYTHON_EXE%" "%TOOLS_DIR%\auto_sync.py" --run-once --push %*
+)
+set "EXIT_CODE=%ERRORLEVEL%"
+
+echo.
+echo ==============================================================================
+if %EXIT_CODE% equ 0 (
+    echo [THANH CONG] Tien trinh da hoan tat xuat sac!
+) else (
+    echo [THAT BAI] Tien trinh ket thuc voi ma loi: %EXIT_CODE%
 )
 echo ==============================================================================
+echo.
 
-:: Nếu chạy tương tác bằng cách click đúp chuột (không chạy từ Task Scheduler)
+:: Tam dung xem log neu chay truc tiep bang double click
 if not defined SCHTASKS_ENV (
-    if !EXIT_CODE! neq 0 (
-        echo.
-        echo ⚠️ Đã xảy ra lỗi trong quá trình thực thi. Nhấn phím bất kỳ để đóng cửa sổ...
+    if %EXIT_CODE% neq 0 (
+        echo [THONG BAO] Da xay ra loi trong qua trinh thuc thi.
+        echo Nhan phim bat ky de dong cua so...
         pause > nul
     ) else (
-        echo ⏳ Cửa sổ sẽ tự động đóng sau 5 giây...
+        echo [THONG BAO] Cua so se tu dong dong sau 5 giay...
         timeout /t 5 > nul 2>&1
     )
 )
 
-exit /b !EXIT_CODE!
+exit /b %EXIT_CODE%
