@@ -262,7 +262,9 @@ Mở `.env` và điền `GITHUB_TOKEN` (Personal Access Token có quyền `repo`
 # Chạy trên Windows CMD / PowerShell
 python tools/auto_sync.py --run-once --push
 
-# Hoặc click đúp chuột tệp batch:
+# Hoặc chạy nhanh qua tệp batch (hỗ trợ double-click chuột):
+Auto_all.bat
+# hoặc:
 tools\run_auto_windows.bat
 ```
 
