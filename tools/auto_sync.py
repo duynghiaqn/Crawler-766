@@ -325,9 +325,10 @@ def git_commit_and_push(
     push_remote_target = target_remote
 
     if gh_token and gh_repo:
-        # Sử dụng URL xác thực với Personal Access Token để không bao giờ bị hỏi interactive prompt
-        push_remote_target = f"https://{gh_token}@github.com/{gh_repo}.git"
-        print(f"🔑 Đã phát hiện GITHUB_TOKEN, kích hoạt chế độ xác thực tự động tới {gh_repo}.")
+        # Sử dụng URL xác thực với Personal Access Token (chuẩn x-access-token hỗ trợ cả github_pat_ và ghp_)
+        push_remote_target = f"https://x-access-token:{gh_token}@github.com/{gh_repo}.git"
+        token_type = "Fine-grained Token (1 Repo)" if gh_token.startswith("github_pat_") else "Classic Token"
+        print(f"🔑 Đã phát hiện GITHUB_TOKEN ({token_type}), kích hoạt chế độ xác thực tự động tới {gh_repo}.")
 
     # Stage data directory
     print("📁 Đang stage thư mục data/...")

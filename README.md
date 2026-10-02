@@ -255,7 +255,7 @@ Sao chép tệp `env_config` thành `.env` để cấu hình token kết nối G
 # Trên Windows CMD / PowerShell:
 copy env_config .env
 ```
-Mở `.env` và điền `GITHUB_TOKEN` (Personal Access Token có quyền `repo` hoặc `contents: write`) cùng `GITHUB_REPOSITORY=duynghiaqn/Crawler-766`.
+Mở `.env` và điền `GITHUB_TOKEN` (Khuyên dùng: **Fine-grained Token** giới hạn duy nhất 1 repository `duynghiaqn/Crawler-766` với quyền `Contents: Read and write` để bảo mật tối đa).
 
 #### Cách 1: Chạy 1 lần ngay lập tức & Tự động Push (One-shot)
 ```powershell
