@@ -33,6 +33,8 @@ import shutil
 import subprocess
 import sys
 import time
+import ssl
+import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -455,6 +457,19 @@ def git_commit_and_push(
 # ==============================================================================
 # 3. TELEGRAM NOTIFICATIONS (OPTIONAL)
 # ==============================================================================
+def urlopen_safe(req: urllib.request.Request, timeout: int = 10) -> Any:
+    """Mở kết nối URL với cơ chế tự động vượt lỗi SSL certificate verify failed do antivirus hoặc proxy can thiệp."""
+    try:
+        ctx = ssl.create_default_context()
+        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+    except Exception as exc:
+        err_str = str(exc)
+        if "CERTIFICATE_VERIFY_FAILED" in err_str or "self-signed" in err_str:
+            unverified_ctx = ssl._create_unverified_context()
+            return urllib.request.urlopen(req, timeout=timeout, context=unverified_ctx)
+        raise
+
+
 def send_telegram_notification(
     status: str,
     message: str,
@@ -469,7 +484,7 @@ def send_telegram_notification(
     if "your_gas_deployment_id" in webhook_url or webhook_url.endswith("/your_gas_deployment_id/exec"):
         webhook_url = ""
 
-    # 1. Gửi qua Telegram Bot API trực tiếp nếu có cấu hình
+    # 1. Gửi qua Telegram Bot API trực tiếp nếu có cấu hình (Ưu tiên)
     if bot_token and chat_id:
         try:
             tg_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
@@ -484,14 +499,14 @@ def send_telegram_notification(
                 headers={"Content-Type": "application/json", "User-Agent": "Crawler766-AutoSync/1.0"},
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=10) as resp:
+            with urlopen_safe(req, timeout=10) as resp:
                 if resp.status == 200:
                     print("📲 Đã gửi thông báo Telegram Bot thành công.")
                     return
         except Exception as exc:
             print(f"⚠️ Không thể gửi thông báo Telegram Bot: {exc}")
 
-    # 2. Gửi qua GAS Webhook trung gian nếu có cấu hình thực tế
+    # 2. Gửi qua GAS Webhook trung gian nếu có cấu hình thực tế và chưa gửi thành công qua bot
     if not webhook_url:
         return
 
@@ -513,9 +528,14 @@ def send_telegram_notification(
             headers={"Content-Type": "application/json", "User-Agent": "Crawler766-AutoSync/1.0"},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urlopen_safe(req, timeout=10) as resp:
             if resp.status == 200:
                 print("📲 Đã gửi thông báo qua Telegram Webhook thành công.")
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            print("⚠️ GAS_WEBHOOK_URL trả về HTTP 404 (URL chưa được triển khai hoặc không tồn tại). Bỏ qua.")
+        else:
+            print(f"⚠️ Lỗi HTTP khi gửi Telegram Webhook: HTTP {exc.code}")
     except Exception as exc:
         print(f"⚠️ Không thể gửi thông báo Telegram Webhook: {exc}")
 

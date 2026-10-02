@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import ssl
 import sys
 import time
 import urllib.error
@@ -38,6 +39,19 @@ DEFAULT_DATA_PATHS = [
     "data/provinces/index.json",
     "data/provinces/index_detail.json",
 ]
+
+
+def urlopen_safe(req: urllib.request.Request, timeout: int = 15) -> Any:
+    """Mở kết nối URL với cơ chế tự động vượt lỗi SSL certificate verify failed do antivirus hoặc proxy can thiệp."""
+    try:
+        ctx = ssl.create_default_context()
+        return urllib.request.urlopen(req, timeout=timeout, context=ctx)
+    except Exception as exc:
+        err_str = str(exc)
+        if "CERTIFICATE_VERIFY_FAILED" in err_str or "self-signed" in err_str:
+            unverified_ctx = ssl._create_unverified_context()
+            return urllib.request.urlopen(req, timeout=timeout, context=unverified_ctx)
+        raise
 
 
 def get_vn_time_str(fmt: str = "%d/%m/%Y %H:%M:%S") -> str:
@@ -65,7 +79,7 @@ def send_purge_request(url: str, timeout: int = 15) -> tuple[bool, str]:
     }
     req = urllib.request.Request(url, headers=headers, method="GET")
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with urlopen_safe(req, timeout=timeout) as resp:
             status = resp.status
             body = resp.read().decode("utf-8", errors="replace").strip()
             return status in (200, 201), body
@@ -85,7 +99,7 @@ def send_warmup_request(url: str, timeout: int = 20) -> tuple[bool, int, str]:
     }
     req = urllib.request.Request(url, headers=headers, method="GET")
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        with urlopen_safe(req, timeout=timeout) as resp:
             status = resp.status
             # Đọc một đoạn đầu để kích hoạt CDN tải về đầy đủ
             resp.read(4096)
