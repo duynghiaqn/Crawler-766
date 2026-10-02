@@ -248,7 +248,18 @@ def fetch_dvc_endpoint(
                 continue
             raise RuntimeError(f"Network error connecting to DVCQG: {reason}") from exc
 
-    raise RuntimeError(f"Failed to fetch DVCQG endpoint after {max_retries} attempts")
+def is_checkpoint_valid(checkpoint_path: Path | None, max_age_seconds: int = 1800) -> bool:
+    """Kiểm tra checkpoint có tồn tại và còn mới trong max_age_seconds (mặc định 30 phút) hay không."""
+    if not checkpoint_path or not checkpoint_path.exists():
+        return False
+    try:
+        mtime = checkpoint_path.stat().st_mtime
+        if (time.time() - mtime) > max_age_seconds:
+            checkpoint_path.unlink(missing_ok=True)
+            return False
+        return True
+    except Exception:
+        return False
 
 
 def fetch_national_gia_lai_group_scores(
@@ -262,7 +273,7 @@ def fetch_national_gia_lai_group_scores(
     delay_max: float = 2.5,
 ) -> dict[str, float] | None:
     """Fetch national service-results response to obtain Gia Lai's full groupScores with checkpoint resume."""
-    if checkpoint_file and checkpoint_file.exists():
+    if is_checkpoint_valid(checkpoint_file):
         cached = load_json(checkpoint_file)
         if isinstance(cached, dict) and "groupScores" in cached:
             print("  ℹ️ Khôi phục Checkpoint điểm tổng quan Tỉnh Gia Lai từ đĩa.")
@@ -360,7 +371,7 @@ def fetch_child_units_group_scores_maps(
         "MDHL": {},
     }
 
-    if checkpoint_file and checkpoint_file.exists():
+    if is_checkpoint_valid(checkpoint_file):
         cached = load_json(checkpoint_file)
         if isinstance(cached, dict):
             for k in maps:
@@ -575,24 +586,113 @@ def find_previous_daily_date(output_dir: Path, current_date_str: str, explicit_c
     index_data = load_json(index_path)
     if index_data and isinstance(index_data, dict):
         avail = index_data.get("availableDates", [])
-        if isinstance(avail, list) and current_date_str in avail:
-            idx = avail.index(current_date_str)
-            if idx > 0:
-                return avail[idx - 1]
-        elif isinstance(avail, list) and len(avail) > 0:
-            past_dates = [d for d in avail if d < current_date_str]
-            if past_dates:
-                return past_dates[-1]
+        if isinstance(avail, list) and len(avail) > 0:
+            valid_dates = []
+            for d in avail:
+                try:
+                    dt = datetime.strptime(d, "%d%m%Y")
+                    valid_dates.append((dt, d))
+                except ValueError:
+                    pass
+            valid_dates.sort(key=lambda x: x[0])
+            sorted_strs = [d for _, d in valid_dates]
 
-    # Fallback to scanning existing score files in output_dir
-    score_files = sorted(output_dir.glob("scores_GiaLai_*.json"))
-    found_dates: list[str] = []
-    for f in score_files:
+            try:
+                curr_dt = datetime.strptime(current_date_str, "%d%m%Y")
+                past = [d for dt, d in valid_dates if dt < curr_dt]
+                if past:
+                    return past[-1]
+            except ValueError:
+                pass
+
+            if current_date_str in sorted_strs:
+                idx = sorted_strs.index(current_date_str)
+                if idx > 0:
+                    return sorted_strs[idx - 1]
+
+    # Fallback to scanning existing score/details files in output_dir
+    files = list(output_dir.glob("scores_GiaLai_*.json")) + list(output_dir.glob("details_GiaLai_*.json"))
+    found_dates: list[tuple[datetime, str]] = []
+    for f in files:
         m = re.search(r"_(\d{8})\.json$", f.name)
-        if m and m.group(1) != current_date_str:
-            found_dates.append(m.group(1))
+        if m:
+            d_str = m.group(1)
+            try:
+                dt = datetime.strptime(d_str, "%d%m%Y")
+                if d_str != current_date_str:
+                    found_dates.append((dt, d_str))
+            except ValueError:
+                pass
 
-    return found_dates[-1] if found_dates else None
+    if found_dates:
+        found_dates.sort(key=lambda x: x[0])
+        try:
+            curr_dt = datetime.strptime(current_date_str, "%d%m%Y")
+            past = [d for dt, d in found_dates if dt < curr_dt]
+            if past:
+                return past[-1]
+        except ValueError:
+            pass
+        return found_dates[-1][1]
+
+    return None
+
+
+def extract_previous_gl_score_data_from_index(index_data: dict[str, Any], prev_date_str: str) -> dict[str, Any] | None:
+    """Reconstruct score_data structure for Gia Lai from index.json historical records."""
+    if not isinstance(index_data, dict):
+        return None
+    ov_hist = index_data.get("overviewHistory", {}).get(prev_date_str, {})
+    dept_index = index_data.get("departmentsIndex", {})
+    if not isinstance(dept_index, dict) or not dept_index:
+        return None
+
+    units = []
+    agencies = []
+    communes = []
+    for code, d_entry in dept_index.items():
+        hist = d_entry.get("history", {}).get(prev_date_str)
+        if not hist:
+            continue
+        c_group = d_entry.get("childGroup", "AGENCY" if (".1" in code or len(code) <= 6) else "COMMUNE")
+        unit_item = {
+            "departmentId": d_entry.get("departmentId"),
+            "departmentName": d_entry.get("departmentName"),
+            "departmentCode": code,
+            "childGroup": c_group,
+            "totalScore": hist.get("totalScore"),
+            "rank": hist.get("rank"),
+            "groupRank": hist.get("groupRank"),
+            "ratio": hist.get("ratio"),
+            "scoreDelta": hist.get("scoreDelta"),
+            "groupScores": hist.get("groupScores") or {},
+        }
+        units.append(unit_item)
+        if c_group == "AGENCY":
+            agencies.append(unit_item)
+        else:
+            communes.append(unit_item)
+
+    if not units:
+        return None
+
+    units.sort(key=lambda u: (u["rank"] is not None, u["rank"] or 9999))
+    return {
+        "metadata": {
+            "runDateStr": prev_date_str,
+            "periodLabel": ov_hist.get("periodLabel", f"Date {prev_date_str}"),
+        },
+        "overview": {
+            "totalScore": ov_hist.get("totalScore"),
+            "groupScores": ov_hist.get("groupScores") or {},
+            "totalUnitsCount": len(units),
+            "agencyCount": len(agencies),
+            "communeCount": len(communes),
+        },
+        "units": units,
+        "agencies": agencies,
+        "communes": communes,
+    }
 
 
 def compare_scores(
@@ -603,11 +703,12 @@ def compare_scores(
     curr_meta = curr_score_data["metadata"]
     prev_meta = prev_score_data["metadata"]
 
-    curr_overview = curr_score_data["overview"]
-    prev_overview = prev_score_data["overview"]
+    curr_overview = curr_score_data.get("overview") or {}
+    prev_overview = prev_score_data.get("overview") or {}
 
-    curr_units = {u["departmentId"]: u for u in curr_score_data["units"] if u.get("departmentId")}
-    prev_units = {u["departmentId"]: u for u in prev_score_data["units"] if u.get("departmentId")}
+    curr_units = {u["departmentId"]: u for u in curr_score_data.get("units", []) if isinstance(u, dict) and u.get("departmentId")}
+    prev_units_list = prev_score_data.get("units") or prev_score_data.get("unitsDetail") or []
+    prev_units = {u["departmentId"]: u for u in prev_units_list if isinstance(u, dict) and u.get("departmentId")}
 
     curr_score_val = curr_overview.get("totalScore")
     prev_score_val = prev_overview.get("totalScore")
@@ -754,15 +855,15 @@ def update_api_index(output_dir: Path, score_data: dict[str, Any], date_str: str
 
     avail_dates = set(index_data.get("availableDates") or [])
     avail_dates.add(date_str)
-    sorted_avail = sorted(list(avail_dates), key=lambda d: datetime.strptime(d, "%d%m%Y") if len(d) == 8 else d)
+    sorted_avail = sorted(list(avail_dates), key=lambda d: datetime.strptime(d, "%d%m%Y") if len(d) == 8 and d.isdigit() else datetime.min)
 
     # index.json: Chỉ lưu dữ liệu kỳ hiện tại và 2 kỳ trước đó (tối đa 3 kỳ)
     allowed_index_dates = sorted_avail[-3:]
     index_data["availableDates"] = allowed_index_dates
 
-    latest_date = date_str
-    dates_before = [d for d in allowed_index_dates if d < latest_date]
-    prev_date = dates_before[-1] if dates_before else None
+    latest_date = sorted_avail[-1]
+    curr_idx = allowed_index_dates.index(date_str) if date_str in allowed_index_dates else -1
+    prev_date = allowed_index_dates[curr_idx - 1] if curr_idx > 0 else None
 
     index_data["latestDate"] = latest_date
     index_data["previousDate"] = prev_date
@@ -1099,43 +1200,37 @@ def main() -> int:
             pbar=pbar,
         )
 
-        # Fetch Current Period Main Data (with smart cache check & fallback)
+        # Fetch Current Period Main Data live from DVCQG (real-time intraday update)
+        pbar.set_postfix_str("Fetching Gia Lai Main Service Results...")
         raw_curr_data = None
-        if raw_curr_file.exists():
-            cached_raw = load_json(raw_curr_file)
-            if isinstance(cached_raw, dict) and cached_raw.get("data"):
-                raw_curr_data = cached_raw
-                print(f"  ℹ️ Đã tái sử dụng dữ liệu RAW hôm nay từ đĩa ({raw_curr_file.name}).")
+        try:
+            raw_curr_data = fetch_dvc_endpoint(
+                ENDPOINT_SERVICE_RESULTS,
+                args.time_type,
+                args.year,
+                period,
+                timeout=args.timeout,
+                max_retries=args.max_retries,
+                delay_min=args.delay_min,
+                delay_max=args.delay_max,
+            )
+            write_json(raw_curr_file, raw_curr_data)
+            pbar.update(1, status="Main Service Results OK")
+        except Exception as exc:
+            print(f"\n⚠️ Lỗi mạng khi tải Main Service Results từ DVCQG: {exc}", file=sys.stderr)
+            # Fallback: check if we have any previous raw file for today or recent raw files
+            if raw_curr_file.exists():
+                raw_curr_data = load_json(raw_curr_file)
+                print(f"🔄 [Fallback] Khôi phục dữ liệu từ file RAW hôm nay ({raw_curr_file.name}).")
                 pbar.update(1, status="Main Service Results (Cached) OK")
-
-        if raw_curr_data is None:
-            pbar.set_postfix_str("Fetching Gia Lai Main Service Results...")
-            try:
-                raw_curr_data = fetch_dvc_endpoint(
-                    ENDPOINT_SERVICE_RESULTS,
-                    args.time_type,
-                    args.year,
-                    period,
-                    timeout=args.timeout,
-                    max_retries=args.max_retries,
-                    delay_min=args.delay_min,
-                    delay_max=args.delay_max,
-                )
-                write_json(raw_curr_file, raw_curr_data)
-                pbar.update(1, status="Main Service Results OK")
-            except Exception as exc:
-                print(f"\n⚠️ Lỗi mạng khi tải Main Service Results từ DVCQG: {exc}", file=sys.stderr)
-                # Fallback: check if we have any previous raw file for today or recent raw files
-                if raw_curr_file.exists():
-                    raw_curr_data = load_json(raw_curr_file)
-                    print(f"🔄 [Fallback] Khôi phục dữ liệu từ file RAW hôm nay ({raw_curr_file.name}).")
+            else:
+                latest_raw = sorted((args.raw_dir / str(args.year) / "gia_lai").glob(f"raw_GiaLai_{period_tag}_*.json"))
+                if latest_raw:
+                    raw_curr_data = load_json(latest_raw[-1])
+                    print(f"🔄 [Fallback Resume] Khôi phục từ file RAW gần nhất ({latest_raw[-1].name}) để tránh exit code 1.")
+                    pbar.update(1, status="Main Service Results (Cached) OK")
                 else:
-                    latest_raw = sorted((args.raw_dir / str(args.year) / "gia_lai").glob(f"raw_GiaLai_{period_tag}_*.json"))
-                    if latest_raw:
-                        raw_curr_data = load_json(latest_raw[-1])
-                        print(f"🔄 [Fallback Resume] Khôi phục từ file RAW gần nhất ({latest_raw[-1].name}) để tránh exit code 1.")
-                    else:
-                        raise exc
+                    raise exc
 
         pbar.close()
 
@@ -1163,6 +1258,19 @@ def main() -> int:
             "totalUnitsCount": len(curr_score_data["units"]),
             "unitsDetail": curr_score_data["units"],
         })
+        write_json(scores_curr_file, curr_score_data)
+        write_json(agencies_curr_file, {
+            "metadata": curr_score_data["metadata"],
+            "overview": curr_score_data["overview"],
+            "count": len(curr_score_data.get("agencies", [])),
+            "agencies": curr_score_data.get("agencies", []),
+        })
+        write_json(communes_curr_file, {
+            "metadata": curr_score_data["metadata"],
+            "overview": curr_score_data["overview"],
+            "count": len(curr_score_data.get("communes", [])),
+            "communes": curr_score_data.get("communes", []),
+        })
 
         print(f"✅ Đã lưu Score JSON tổng hợp: {scores_curr_file}")
         print(f"✅ Đã lưu Score JSON Khối Sở/Ngành: {agencies_curr_file}")
@@ -1177,7 +1285,6 @@ def main() -> int:
         print(f"❌ Lỗi khi tải dữ liệu mốc hiện tại: {exc}", file=sys.stderr)
         return 1
 
-
     # Daily Comparison: Find previous stored daily date
     prev_date_str = find_previous_daily_date(args.output_dir, run_date_str, args.compare_date)
 
@@ -1185,6 +1292,23 @@ def main() -> int:
         print(f"🔄 Đang so sánh dữ liệu mốc ngày {run_date_str} với mốc ngày trước đó ({prev_date_str})...")
         prev_file = args.output_dir / f"scores_GiaLai_{prev_date_str}.json"
         prev_score_data = load_json(prev_file)
+        if not prev_score_data:
+            details_prev = args.output_dir / f"details_GiaLai_{prev_date_str}.json"
+            det_data = load_json(details_prev)
+            if det_data and isinstance(det_data, dict):
+                prev_units = det_data.get("unitsDetail") or det_data.get("units") or []
+                prev_score_data = {
+                    "metadata": det_data.get("metadata", {}),
+                    "overview": det_data.get("overview", {}),
+                    "units": prev_units,
+                    "agencies": [u for u in prev_units if u.get("childGroup") == "AGENCY"],
+                    "communes": [u for u in prev_units if u.get("childGroup") != "AGENCY"],
+                }
+        if not prev_score_data:
+            index_path = args.output_dir / "index.json"
+            idx_data = load_json(index_path)
+            if idx_data:
+                prev_score_data = extract_previous_gl_score_data_from_index(idx_data, prev_date_str)
 
         if prev_score_data is None:
             prev_score_data = {
@@ -1207,6 +1331,10 @@ def main() -> int:
     comp_data = compare_scores(curr_score_data, prev_score_data)
     write_json(comparison_file, comp_data)
     print(f"✅ Đã tạo & lưu file So sánh Điểm số theo Ngày: {comparison_file}")
+
+    # Dọn dẹp checkpoint tạm sau khi chạy thành công để lần crawl tiếp theo trong ngày luôn lấy số liệu mới
+    chk_national_file.unlink(missing_ok=True)
+    chk_group_maps_file.unlink(missing_ok=True)
 
     if not args.quiet:
         render_console_table(comp_data, group_filter=args.group, limit=args.limit)

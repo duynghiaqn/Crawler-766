@@ -65,12 +65,12 @@ _SESSION_LOCK = threading.Lock()
 
 # Default Configuration Constants
 ENDPOINT_SERVICE_RESULTS = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-results"
-ENDPOINT_TRANSPARENCY = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-transparency"
-ENDPOINT_PROGRESS = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-progress-results"
-ENDPOINT_ONLINE = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-online-public-results"
-ENDPOINT_PAYMENT = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-payment-results"
-ENDPOINT_DIGITIZED = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-digitized-records"
-ENDPOINT_HANDLING_SATISFACTION = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/service-handling-satisfaction-results"
+ENDPOINT_TRANSPARENCY = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/transparency"
+ENDPOINT_PROGRESS = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/dvc-progress-tree"
+ENDPOINT_ONLINE = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/provide-online-tree"
+ENDPOINT_PAYMENT = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/formality-online-payment-tree"
+ENDPOINT_DIGITIZED = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/dossier-digitized"
+ENDPOINT_HANDLING_SATISFACTION = "https://dichvucong.gov.vn/api/v1/reporting/evaluation/handling-satisfaction"
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
@@ -384,6 +384,8 @@ def fetch_dvc_endpoint(
             with OPENER.open(request, timeout=current_timeout) as response:
                 status = response.status
                 raw_text = decode_response_content(response)
+                if not raw_text.strip():
+                    raise ValueError("Empty response received from DVCQG")
                 parsed = json.loads(raw_text)
                 if status not in (200, 201):
                     raise RuntimeError(f"API returned HTTP status {status}")
@@ -398,7 +400,7 @@ def fetch_dvc_endpoint(
                 time.sleep(retry_wait)
                 continue
             raise RuntimeError(f"HTTP Error {exc.code}: {err_body[:500]}") from exc
-        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        except (urllib.error.URLError, TimeoutError, OSError, json.JSONDecodeError, ValueError) as exc:
             reason = getattr(exc, "reason", str(exc))
             if attempt < max_retries:
                 retry_wait = (2.5 * (1.35 ** (attempt - 1))) + random.uniform(1.0, 3.0)
@@ -590,6 +592,20 @@ def _fetch_group_map_for_provinces(
     return group_code, result_map, item_map
 
 
+def is_checkpoint_valid(checkpoint_path: Path | None, max_age_seconds: int = 1800) -> bool:
+    """Kiểm tra checkpoint có tồn tại và còn mới trong max_age_seconds (mặc định 30 phút) hay không."""
+    if not checkpoint_path or not checkpoint_path.exists():
+        return False
+    try:
+        mtime = checkpoint_path.stat().st_mtime
+        if (time.time() - mtime) > max_age_seconds:
+            checkpoint_path.unlink(missing_ok=True)
+            return False
+        return True
+    except Exception:
+        return False
+
+
 def fetch_provinces_component_groups_maps(
     time_type: str,
     year: int,
@@ -620,7 +636,7 @@ def fetch_provinces_component_groups_maps(
         "MDHL": {},
     }
 
-    if checkpoint_file and checkpoint_file.exists():
+    if is_checkpoint_valid(checkpoint_file):
         cached = load_json(checkpoint_file)
         if isinstance(cached, dict) and "maps" in cached:
             c_maps = cached.get("maps", {})
@@ -697,15 +713,10 @@ def fetch_all_provinces_service_results(
     delay_max: float = 2.5,
 ) -> dict[str, Any]:
     """Fetch national service-results overview containing all provinces with checkpoint resume & multi-strategy fallback."""
-    if checkpoint_file and checkpoint_file.exists():
+    if is_checkpoint_valid(checkpoint_file):
         cached = load_json(checkpoint_file)
         if isinstance(cached, dict) and cached.get("data", {}).get("evaluation"):
             print("  ℹ️ Khôi phục Dữ liệu Tổng quan Tỉnh/TP từ Checkpoint đĩa.")
-            return cached
-    if raw_file and raw_file.exists():
-        cached = load_json(raw_file)
-        if isinstance(cached, dict) and cached.get("data", {}).get("evaluation"):
-            print("  ℹ️ Khôi phục Dữ liệu Tổng quan Tỉnh/TP từ file Raw đĩa.")
             return cached
 
     # Strategy 1: Direct API
@@ -771,7 +782,12 @@ def fetch_all_provinces_service_results(
     if pw_result and isinstance(pw_result.get("data", {}).get("evaluation"), list) and len(pw_result["data"]["evaluation"]) > 0:
         if checkpoint_file:
             write_json(checkpoint_file, pw_result)
-        return pw_result
+    # Strategy 4: Fallback to existing raw file if available
+    if raw_file and raw_file.exists():
+        cached = load_json(raw_file)
+        if isinstance(cached, dict) and cached.get("data", {}).get("evaluation"):
+            print("  ℹ️ [Fallback] Khôi phục Dữ liệu Tổng quan Tỉnh/TP từ file Raw đĩa hôm nay.", file=sys.stderr)
+            return cached
 
     raise RuntimeError("Tất cả các cơ chế kết nối DVCQG (Direct API, Global Strategy, Playwright) đều không thành công.")
 
@@ -909,14 +925,29 @@ def find_previous_daily_date_from_index(index_data: dict[str, Any], current_date
         return explicit_compare_date
 
     avail = index_data.get("availableDates", [])
-    if isinstance(avail, list) and current_date_str in avail:
-        idx = avail.index(current_date_str)
-        if idx > 0:
-            return avail[idx - 1]
-    elif isinstance(avail, list) and len(avail) > 0:
-        past_dates = [d for d in avail if d < current_date_str]
-        if past_dates:
-            return past_dates[-1]
+    if isinstance(avail, list) and len(avail) > 0:
+        valid_dates = []
+        for d in avail:
+            try:
+                dt = datetime.strptime(d, "%d%m%Y")
+                valid_dates.append((dt, d))
+            except ValueError:
+                pass
+        valid_dates.sort(key=lambda x: x[0])
+        sorted_strs = [d for _, d in valid_dates]
+
+        try:
+            curr_dt = datetime.strptime(current_date_str, "%d%m%Y")
+            past = [d for dt, d in valid_dates if dt < curr_dt]
+            if past:
+                return past[-1]
+        except ValueError:
+            pass
+
+        if current_date_str in sorted_strs:
+            idx = sorted_strs.index(current_date_str)
+            if idx > 0:
+                return sorted_strs[idx - 1]
 
     return None
 
@@ -1112,14 +1143,14 @@ def update_and_save_summary_index(
 
     avail_dates = set(index_data.get("availableDates") or [])
     avail_dates.add(date_str)
-    sorted_avail = sorted(list(avail_dates), key=lambda d: datetime.strptime(d, "%d%m%Y") if len(d) == 8 else d)
+    sorted_avail = sorted(list(avail_dates), key=lambda d: datetime.strptime(d, "%d%m%Y") if len(d) == 8 and d.isdigit() else datetime.min)
 
     allowed_index_dates = sorted_avail[-3:]
     index_data["availableDates"] = allowed_index_dates
 
-    latest_date = date_str
-    dates_before = [d for d in allowed_index_dates if d < latest_date]
-    prev_date = dates_before[-1] if dates_before else None
+    latest_date = sorted_avail[-1]
+    curr_idx = allowed_index_dates.index(date_str) if date_str in allowed_index_dates else -1
+    prev_date = allowed_index_dates[curr_idx - 1] if curr_idx > 0 else None
 
     index_data["latestDate"] = latest_date
     index_data["previousDate"] = prev_date
@@ -1567,6 +1598,10 @@ def main() -> int:
 
     # Step 7: Print table
     print_province_scores_table(score_data, comparison_data)
+
+    # Dọn dẹp checkpoint tạm sau khi hoàn tất để lần chạy tiếp theo trong ngày luôn lấy dữ liệu mới nhất
+    checkpoint_file.unlink(missing_ok=True)
+    checkpoint_national.unlink(missing_ok=True)
 
     print("🏁 Hoàn thành xuất sắc nhiệm vụ crawl dữ liệu điểm số Tỉnh / Thành phố cho index.json!")
     return 0

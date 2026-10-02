@@ -286,6 +286,20 @@ def _fetch_single_detail_endpoint(
     return code, raw_response
 
 
+def is_checkpoint_valid(checkpoint_path: Path | None, max_age_seconds: int = 1800) -> bool:
+    """Kiểm tra checkpoint có tồn tại và còn mới trong max_age_seconds (mặc định 30 phút) hay không."""
+    if not checkpoint_path or not checkpoint_path.exists():
+        return False
+    try:
+        mtime = checkpoint_path.stat().st_mtime
+        if (time.time() - mtime) > max_age_seconds:
+            checkpoint_path.unlink(missing_ok=True)
+            return False
+        return True
+    except Exception:
+        return False
+
+
 def fetch_all_detailed_endpoints(
     time_type: str,
     year: int,
@@ -309,7 +323,7 @@ def fetch_all_detailed_endpoints(
         "HANDLING_SATISFACTION": {},
     }
 
-    if checkpoint_file and checkpoint_file.exists():
+    if is_checkpoint_valid(checkpoint_file):
         cached = load_json(checkpoint_file)
         if isinstance(cached, dict):
             for k in raw_endpoints:
@@ -544,15 +558,15 @@ def update_api_index_detail(
 
     avail_dates = set(index_data.get("availableDates") or [])
     avail_dates.add(date_str)
-    sorted_avail = sorted(list(avail_dates), key=lambda d: datetime.strptime(d, "%d%m%Y") if len(d) == 8 else d)
+    sorted_avail = sorted(list(avail_dates), key=lambda d: datetime.strptime(d, "%d%m%Y") if len(d) == 8 and d.isdigit() else datetime.min)
 
     # index.json: Chỉ lưu dữ liệu kỳ hiện tại và 2 kỳ trước đó (tối đa 3 kỳ)
     allowed_index_dates = sorted_avail[-3:]
     index_data["availableDates"] = allowed_index_dates
 
-    latest_date = date_str
-    dates_before = [d for d in allowed_index_dates if d < latest_date]
-    prev_date = dates_before[-1] if dates_before else None
+    latest_date = sorted_avail[-1]
+    curr_idx = allowed_index_dates.index(date_str) if date_str in allowed_index_dates else -1
+    prev_date = allowed_index_dates[curr_idx - 1] if curr_idx > 0 else None
 
     index_data["latestDate"] = latest_date
     index_data["previousDate"] = prev_date
@@ -869,6 +883,8 @@ def main() -> int:
         print(f"❌ Lỗi khi trích xuất dữ liệu chi tiết Gia Lai: {exc}", file=sys.stderr)
         return 1
 
+    # Dọn dẹp checkpoint tạm sau khi hoàn tất để lần chạy tiếp theo luôn lấy dữ liệu mới nhất
+    chk_detail_file.unlink(missing_ok=True)
     return 0
 
 

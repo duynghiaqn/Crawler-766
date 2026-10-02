@@ -471,6 +471,20 @@ def fetch_service_results_via_playwright(
     return None
 
 
+def is_checkpoint_valid(checkpoint_path: Path | None, max_age_seconds: int = 1800) -> bool:
+    """Kiểm tra checkpoint có tồn tại và còn mới trong max_age_seconds (mặc định 30 phút) hay không."""
+    if not checkpoint_path or not checkpoint_path.exists():
+        return False
+    try:
+        mtime = checkpoint_path.stat().st_mtime
+        if (time.time() - mtime) > max_age_seconds:
+            checkpoint_path.unlink(missing_ok=True)
+            return False
+        return True
+    except Exception:
+        return False
+
+
 def fetch_all_provinces_service_results(
     time_type: str,
     year: int,
@@ -483,15 +497,10 @@ def fetch_all_provinces_service_results(
     delay_max: float = 2.5,
 ) -> dict[str, Any]:
     """Fetch national service-results overview containing all provinces with checkpoint resume & multi-strategy fallback."""
-    if checkpoint_file and checkpoint_file.exists():
+    if is_checkpoint_valid(checkpoint_file):
         cached = load_json(checkpoint_file)
         if isinstance(cached, dict) and cached.get("data", {}).get("evaluation"):
             print("  ℹ️ Khôi phục Dữ liệu Tổng quan Tỉnh/TP từ Checkpoint đĩa.")
-            return cached
-    if raw_file and raw_file.exists():
-        cached = load_json(raw_file)
-        if isinstance(cached, dict) and cached.get("data", {}).get("evaluation"):
-            print("  ℹ️ Khôi phục Dữ liệu Tổng quan Tỉnh/TP từ file Raw đĩa.")
             return cached
 
     # Strategy 1: Direct API
@@ -557,7 +566,12 @@ def fetch_all_provinces_service_results(
     if pw_result and isinstance(pw_result.get("data", {}).get("evaluation"), list) and len(pw_result["data"]["evaluation"]) > 0:
         if checkpoint_file:
             write_json(checkpoint_file, pw_result)
-        return pw_result
+    # Strategy 4: Fallback to existing raw file if available
+    if raw_file and raw_file.exists():
+        cached = load_json(raw_file)
+        if isinstance(cached, dict) and cached.get("data", {}).get("evaluation"):
+            print("  ℹ️ [Fallback] Khôi phục Dữ liệu Tổng quan Tỉnh/TP từ file Raw đĩa hôm nay.", file=sys.stderr)
+            return cached
 
     raise RuntimeError("Tất cả các cơ chế kết nối DVCQG (Direct API, Global Strategy, Playwright) đều không thành công.")
 
@@ -715,7 +729,7 @@ def fetch_provinces_component_groups_maps(
         "MDHL": {},
     }
 
-    if checkpoint_file and checkpoint_file.exists():
+    if is_checkpoint_valid(checkpoint_file):
         cached = load_json(checkpoint_file)
         if isinstance(cached, dict) and "maps" in cached:
             c_maps = cached.get("maps", {})
@@ -1160,13 +1174,13 @@ def update_and_save_detail_index(
 
     avail_dates = set(index_detail_data.get("availableDates") or [])
     avail_dates.add(date_str)
-    sorted_avail = sorted(list(avail_dates), key=lambda d: datetime.strptime(d, "%d%m%Y") if len(d) == 8 else d)
+    sorted_avail = sorted(list(avail_dates), key=lambda d: datetime.strptime(d, "%d%m%Y") if len(d) == 8 and d.isdigit() else datetime.min)
 
     allowed_detail_dates = sorted_avail[-2:]
 
-    latest_date = date_str
-    dates_before = [d for d in allowed_detail_dates if d < latest_date]
-    prev_date = dates_before[-1] if dates_before else None
+    latest_date = sorted_avail[-1]
+    curr_idx = allowed_detail_dates.index(date_str) if date_str in allowed_detail_dates else -1
+    prev_date = allowed_detail_dates[curr_idx - 1] if curr_idx > 0 else None
 
     index_detail_data["schemaVersion"] = 1
     index_detail_data["updatedAt"] = utc_now()
@@ -1600,6 +1614,10 @@ def main() -> int:
 
     # Step 8: Print console summary table
     print_province_scores_table(score_data, comparison_data)
+
+    # Dọn dẹp checkpoint tạm sau khi hoàn tất để lần chạy tiếp theo trong ngày luôn lấy dữ liệu mới nhất
+    checkpoint_file.unlink(missing_ok=True)
+    checkpoint_national.unlink(missing_ok=True)
 
     print("🏁 Hoàn thành xuất sắc nhiệm vụ crawl dữ liệu chi tiết Tỉnh / Thành phố cho index_detail.json!")
     return 0
