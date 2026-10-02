@@ -346,16 +346,22 @@ def git_commit_and_push(
     except Exception:
         pass
 
-    is_ssh = (
-        auth_method == "ssh"
-        or current_remote_url.startswith("git@")
-        or current_remote_url.startswith("ssh://")
-    )
+    # Phân định phương thức xác thực rõ ràng
+    is_ssh = False
+    if auth_method == "ssh":
+        is_ssh = True
+    elif auth_method == "token":
+        is_ssh = False
+    else:
+        if gh_token:
+            is_ssh = False
+        elif current_remote_url.startswith("git@") or current_remote_url.startswith("ssh://"):
+            is_ssh = True
 
     if is_ssh and gh_repo:
         push_remote_target = f"git@github.com:{gh_repo}.git"
         print(f"🔑 Kích hoạt xác thực Git qua SSH Key tới {gh_repo} (git@github.com:{gh_repo}.git).")
-    elif gh_token and gh_repo and auth_method != "ssh":
+    elif gh_token and gh_repo:
         # Sử dụng URL xác thực với Personal Access Token (chuẩn x-access-token hỗ trợ cả github_pat_ và ghp_)
         push_remote_target = f"https://x-access-token:{gh_token}@github.com/{gh_repo}.git"
         token_type = "Fine-grained Token (1 Repo)" if gh_token.startswith("github_pat_") else "Classic Token"

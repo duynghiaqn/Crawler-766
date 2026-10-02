@@ -4,10 +4,16 @@
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# 1. THÔNG TIN XÁC THỰC GITHUB QUA SSH KEY (KHUYÊN DÙNG - BẢO MẬT & VĨNH VIỄN)
+# 1. THÔNG TIN XÁC THỰC GITHUB QUA PERSONAL ACCESS TOKEN (HTTPS)
 # ------------------------------------------------------------------------------
-# Phương thức xác thực Git: 'ssh' (Mặc định khuyên dùng) hoặc 'token'
-GIT_AUTH_METHOD=ssh
+# Phương thức xác thực Git: 'token' (HTTPS - Khuyên dùng) hoặc 'ssh' (SSH Key)
+GIT_AUTH_METHOD=token
+
+# Token truy cập cá nhân của GitHub (Personal Access Token - PAT)
+# Hỗ trợ cả 2 định dạng:
+#   - Classic Token: Bắt đầu bằng ghp_ (ví dụ: ghp_xxxxxxxxxxxxxxxxxxxx)
+#   - Fine-grained Token (khuyên dùng): Bắt đầu bằng github_pat_ (chỉ cấp quyền cho 1 repo này)
+GITHUB_TOKEN=ghp_your_github_personal_access_token_here
 
 # Đường dẫn Repository trên GitHub (định dạng: owner/repo)
 GITHUB_REPOSITORY=duynghiaqn/Crawler-766
@@ -21,41 +27,38 @@ GIT_BRANCH=main
 # Tên remote git (Mặc định: origin)
 GIT_REMOTE_NAME=origin
 
-# Đường dẫn tới tệp SSH Private Key (TÙY CHỌN - để trống nếu dùng key mặc định ~/.ssh/id_ed25519 hoặc id_rsa)
-# Ví dụ trên Windows: C:\Users\YourName\.ssh\id_ed25519
-# Ví dụ trên Linux/Mac: ~/.ssh/id_ed25519
-GIT_SSH_KEY_PATH=
-
-# ==============================================================================
-# HƯỚNG DẪN THIẾT LẬP SSH KEY VỚI GITHUB (Chỉ cần làm 1 lần):
-# ------------------------------------------------------------------------------
-# Bước 1: Mở Terminal / CMD / PowerShell kiểm tra hoặc tạo SSH key mới:
-#   ssh-keygen -t ed25519 -C "your_email@example.com"
-#   (Bấm Enter 3 lần để lưu vào đường dẫn mặc định và không đặt passphrase)
-#
-# Bước 2: Sao chép nội dung Public Key:
-#   - Trên Windows PowerShell: Get-Content ~\.ssh\id_ed25519.pub | Set-Clipboard
-#   - Trên Windows CMD:        type %USERPROFILE%\.ssh\id_ed25519.pub
-#   - Trên macOS / Linux:      cat ~/.ssh/id_ed25519.pub
-#
-# Bước 3: Thêm key vào tài khoản GitHub:
-#   Vào GitHub -> Settings -> SSH and GPG keys -> New SSH key -> Dán key vào và bấm Add SSH key
-#   Hoặc truy cập trực tiếp: https://github.com/settings/ssh/new
-#
-# Bước 4: Chuyển remote URL của kho lưu trữ này sang giao thức SSH:
-#   git remote set-url origin git@github.com:duynghiaqn/Crawler-766.git
-#
-# Bước 5: Kiểm tra kết nối SSH tới GitHub:
-#   ssh -T git@github.com
-#   (Nếu hiện: "Hi duynghiaqn! You've successfully authenticated..." là xong 100%)
-# ==============================================================================
-
-# (Tùy chọn phụ) Nếu muốn chuyển về dùng Personal Access Token (HTTPS):
-# GITHUB_TOKEN=ghp_your_github_personal_access_token_here
-
 # Thông tin tác giả ghi vào nhật ký git commit tự động
 GIT_USER_NAME=Crawler 766 Bot
 GIT_USER_EMAIL=crawler-bot@users.noreply.github.com
+
+# ==============================================================================
+# HƯỚNG DẪN TẠO GITHUB PERSONAL ACCESS TOKEN (PAT):
+# ------------------------------------------------------------------------------
+# Cách 1: Fine-grained Token (Bảo mật tối đa - Giới hạn 1 Repo):
+#   1. Truy cập: https://github.com/settings/tokens?type=beta
+#   2. Bấm "Generate new token"
+#   3. Đặt Token name: Crawler-766-Sync
+#   4. Tại "Repository access": Chọn "Only select repositories" -> Chọn "Crawler-766"
+#   5. Tại "Permissions" -> "Repository permissions":
+#      - "Contents": Chọn "Read and write"
+#      - "Metadata": "Read-only" (tự động bật)
+#   6. Bấm "Generate token" và sao chép mã (bắt đầu bằng github_pat_...) dán vào GITHUB_TOKEN ở trên.
+#
+# Cách 2: Classic Token (Đơn giản):
+#   1. Truy cập: https://github.com/settings/tokens
+#   2. Bấm "Generate new token" -> "Generate new token (classic)"
+#   3. Tích chọn quyền: "repo" (Full control of private repositories)
+#   4. Bấm "Generate token" và sao chép mã (bắt đầu bằng ghp_...) dán vào GITHUB_TOKEN ở trên.
+#
+# Chuyển Git Remote URL về giao thức HTTPS (nếu trước đó đang dùng SSH):
+#   git remote set-url origin https://github.com/duynghiaqn/Crawler-766.git
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# (TÙY CHỌN PHỤ) NẾU MUỐN DÙNG SSH KEY THAY VÌ TOKEN:
+# ------------------------------------------------------------------------------
+# Đổi GIT_AUTH_METHOD=ssh và bỏ comment dòng dưới nếu dùng key riêng:
+# GIT_SSH_KEY_PATH=
 
 # ------------------------------------------------------------------------------
 # 2. CẤU HÌNH THÔNG BÁO TELEGRAM / GOOGLE APPS SCRIPT WEBHOOK (TÙY CHỌN)
