@@ -273,64 +273,6 @@ def check_git_installed() -> bool:
         return False
 
 
-def is_git_repository() -> bool:
-    """Kiểm tra thư mục hiện tại có phải là Git repository hợp lệ hay không."""
-    try:
-        res = run_command(["git", "rev-parse", "--is-inside-work-tree"], check=False, capture_output=True)
-        return res.returncode == 0
-    except Exception:
-        return False
-
-
-def ensure_git_repository(remote: str = "origin", branch: str = "main") -> bool:
-    """Kiểm tra và tự động khởi tạo Git repository nếu thư mục chưa được khởi tạo (VD: tải từ file ZIP)."""
-    # Tránh lỗi dubious ownership trên Windows khi thư mục nằm ở ổ đĩa khác (VD: E:\Crawler-766)
-    root_str = str(ROOT_DIR).replace("\\", "/")
-    run_command(["git", "config", "--global", "--add", "safe.directory", root_str], check=False, capture_output=True)
-    run_command(["git", "config", "--global", "--add", "safe.directory", "*"], check=False, capture_output=True)
-
-    if is_git_repository():
-        return True
-
-    print("\n" + "=" * 78)
-    print("⚠️ [CẢNH BÁO] Thư mục hiện tại chưa được khởi tạo Git repository!")
-    print("💡 Nguyên nhân: Mã nguồn được tải về dưới dạng file ZIP (không có thư mục .git).")
-    print("⚙️ Đang tự động khởi tạo git (git init) và kết nối với GitHub repository...")
-    print("=" * 78)
-
-    # 1. Khởi tạo git
-    init_res = run_command(["git", "init"], check=False, capture_output=True)
-    if init_res.returncode != 0:
-        print(f"❌ Không thể khởi tạo git init: {init_res.stderr.strip() or init_res.stdout.strip()}", file=sys.stderr)
-        return False
-
-    # 2. Đặt nhánh chính là branch mục tiêu (mặc định main)
-    run_command(["git", "branch", "-M", branch], check=False, capture_output=True)
-
-    # 3. Kết nối Remote GitHub
-    gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
-    gh_repo = os.environ.get("GITHUB_REPOSITORY", "duynghiaqn/Crawler-766")
-
-    if gh_token and gh_repo:
-        remote_url = f"https://x-access-token:{gh_token}@github.com/{gh_repo}.git"
-    else:
-        remote_url = f"https://github.com/{gh_repo}.git"
-
-    existing_remotes = run_command(["git", "remote"], check=False, capture_output=True).stdout.split()
-    if remote in existing_remotes:
-        run_command(["git", "remote", "set-url", remote, remote_url], check=False, capture_output=True)
-    else:
-        run_command(["git", "remote", "add", remote, remote_url], check=False, capture_output=True)
-
-    print(f"✅ Đã khởi tạo Git và liên kết với remote {remote} ({gh_repo}).")
-
-    # 4. Fetch lịch sử commit từ GitHub
-    print("🔄 Đang đồng bộ lịch sử commit từ GitHub...")
-    run_command(["git", "fetch", remote, branch], check=False, capture_output=True)
-
-    return True
-
-
 def get_current_git_branch() -> str:
     """Lấy tên branch hiện tại."""
     try:
@@ -360,11 +302,6 @@ def git_commit_and_push(
     target_branch = branch or os.environ.get("GIT_BRANCH") or get_current_git_branch()
     print(f"🌿 Nhánh mục tiêu: {target_branch} | Remote: {target_remote}")
 
-    # Đảm bảo thư mục là Git repository hợp lệ (tự động khởi tạo nếu tải từ ZIP)
-    if not ensure_git_repository(remote=target_remote, branch=target_branch):
-        print("❌ Không thể khởi tạo Git repository. Bỏ qua bước git push.", file=sys.stderr)
-        return False
-
     # Đảm bảo có cấu hình user name & email nếu chưa có
     configured_name = os.environ.get("GIT_USER_NAME", "Crawler 766 Bot")
     configured_email = os.environ.get("GIT_USER_EMAIL", "crawler-bot@users.noreply.github.com")
@@ -392,16 +329,10 @@ def git_commit_and_push(
         push_remote_target = f"https://x-access-token:{gh_token}@github.com/{gh_repo}.git"
         token_type = "Fine-grained Token (1 Repo)" if gh_token.startswith("github_pat_") else "Classic Token"
         print(f"🔑 Đã phát hiện GITHUB_TOKEN ({token_type}), kích hoạt chế độ xác thực tự động tới {gh_repo}.")
-    elif not gh_token:
-        print("⚠️ Chưa cấu hình GITHUB_TOKEN trong .env. Git sẽ sử dụng thông tin xác thực mặc định của hệ thống.")
 
-    # Stage data directory an toàn
+    # Stage data directory
     print("📁 Đang stage thư mục data/...")
-    add_res = run_command(["git", "add", "data/"], check=False, capture_output=True)
-    if add_res.returncode != 0:
-        err_msg = add_res.stderr.strip() or add_res.stdout.strip()
-        print(f"❌ Lỗi khi thực hiện git add data/: {err_msg}", file=sys.stderr)
-        return False
+    run_command(["git", "add", "data/"], check=True)
 
     # Kiểm tra xem có thay đổi nào trong stage không
     staged_diff = run_command(["git", "diff", "--staged", "--quiet"], check=False)
@@ -415,10 +346,11 @@ def git_commit_and_push(
     final_msg = commit_msg or default_msg
 
     print(f"📝 Đang commit: \"{final_msg}\"...")
-    commit_res = run_command(["git", "commit", "-m", final_msg], check=False, capture_output=True)
-    if commit_res.returncode != 0:
-        err_msg = commit_res.stderr.strip() or commit_res.stdout.strip()
-        print(f"⚠️ Cảnh báo tạo git commit: {err_msg}")
+    try:
+        run_command(["git", "commit", "-m", final_msg], check=True)
+    except subprocess.CalledProcessError as exc:
+        print(f"❌ Không thể tạo git commit: {exc}", file=sys.stderr)
+        return False
 
     # Pull rebase và push với retry
     print(f"🚀 Đang đẩy dữ liệu lên {target_remote}/{target_branch} (Tối đa {max_retries} lần thử)...")
@@ -427,28 +359,14 @@ def git_commit_and_push(
     for attempt in range(1, max_retries + 1):
         print(f"\n🔄 [Lần thử {attempt}/{max_retries}] Đồng bộ với remote và push...")
         try:
-            # Pull rebase autostash với --allow-unrelated-histories để hỗ trợ cả repo tải từ ZIP
+            # Pull rebase autostash để tích hợp thay đổi từ xa nếu có
             pull_res = run_command(
-                [
-                    "git", "pull", "--rebase", "--autostash",
-                    "-X", "ours", "--allow-unrelated-histories",
-                    push_remote_target, target_branch,
-                ],
+                ["git", "pull", "--rebase", "--autostash", "-X", "ours", push_remote_target, target_branch],
                 check=False,
                 capture_output=True,
             )
             if pull_res.returncode != 0:
-                pull_res2 = run_command(
-                    [
-                        "git", "pull", "--no-rebase",
-                        "-X", "ours", "--allow-unrelated-histories",
-                        push_remote_target, target_branch,
-                    ],
-                    check=False,
-                    capture_output=True,
-                )
-                if pull_res2.returncode != 0:
-                    print(f"⚠️ Cảnh báo git pull: {pull_res2.stderr.strip() or pull_res.stderr.strip()}")
+                print(f"⚠️ Cảnh báo git pull rebase: {pull_res.stderr.strip() or pull_res.stdout.strip()}")
 
             push_res = run_command(
                 ["git", "push", push_remote_target, target_branch],
@@ -460,16 +378,6 @@ def git_commit_and_push(
                 push_success = True
                 break
             else:
-                # Thử đẩy với -u nếu là branch vừa tạo lần đầu
-                push_u_res = run_command(
-                    ["git", "push", "-u", push_remote_target, target_branch],
-                    check=False,
-                    capture_output=True,
-                )
-                if push_u_res.returncode == 0:
-                    print(f"✅ ĐẨY DỮ LIỆU LÊN REPO THÀNH CÔNG! ({remote}/{target_branch})")
-                    push_success = True
-                    break
                 print(f"⚠️ Push thất bại lần {attempt}: {push_res.stderr.strip() or push_res.stdout.strip()}")
                 time.sleep(3)
         except Exception as exc:

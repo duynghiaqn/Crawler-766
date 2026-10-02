@@ -6,29 +6,22 @@
 # ------------------------------------------------------------------------------
 # 1. THÔNG TIN XÁC THỰC GITHUB (BẮT BUỘC ĐỂ PUSH TỰ ĐỘNG KHÔNG CẦN NHẬP PASS)
 # ------------------------------------------------------------------------------
-# KHUYÊN DÙNG: Fine-grained Personal Access Token (Giới hạn truy cập DUY NHẤT 1 repo)
-# Bảo mật tối đa - Token chỉ có quyền trên repo này, KHÔNG THỂ truy cập bất kỳ repo nào khác!
+# GitHub Personal Access Token (Classic - định dạng: ghp_...)
 #
-# Cách tạo Fine-grained Token giới hạn 1 repo trên GitHub:
-#   1. Vào GitHub -> Settings (Avatar góc trên bên phải -> Settings)
-#   2. Kéo xuống thanh menu bên trái chọn "Developer Settings"
-#   3. Chọn "Personal access tokens" -> "Fine-grained tokens"
-#   4. Bấm nút "Generate new token"
-#   5. Đặt tên (Token name, VD: Crawler-766-Bot) & Thời hạn (Expiration, VD: 90 days hoặc Custom)
-#   6. Tại mục "Resource owner": Chọn tài khoản của bạn (VD: duynghiaqn)
-#   7. [QUAN TRỌNG - GIỚI HẠN 1 REPO]:
-#      - Tại mục "Repository access", chọn: "Only select repositories"
-#      - Bấm menu xổ xuống và tick chọn duy nhất repo: duynghiaqn/Crawler-766
-#   8. Tại mục "Permissions" -> Mở rộng phần "Repository permissions":
-#      - Tìm mục "Contents": Đổi quyền thành "Access: Read and write"
-#      - (Mục "Metadata" sẽ tự động được chọn "Read-only" theo chuẩn GitHub)
-#      - Giữ nguyên tất cả các quyền còn lại là "No access"
-#   9. Bấm nút "Generate token" ở cuối trang -> Sao chép chuỗi token (bắt đầu bằng github_pat_...)
+# Cách tạo Token Classic (ghp_...) trên GitHub:
+#   1. Vào GitHub -> Settings (bấm Avatar góc trên bên phải -> Settings)
+#   2. Kéo xuống cuối thanh menu bên trái, chọn: "Developer Settings"
+#   3. Chọn "Personal access tokens" -> "Tokens (classic)"
+#   4. Bấm nút "Generate new token" -> Chọn "Generate new token (classic)"
+#   5. Đặt tên (Note, VD: Crawler-766-Bot) & Thời hạn (Expiration, VD: 90 days hoặc No expiration)
+#   6. Tại mục "Select scopes": Tích chọn ô:
+#      ☑️ 'repo' (Full control of private repositories)
+#   7. Kéo xuống cuối trang bấm "Generate token" -> Sao chép chuỗi token (bắt đầu bằng ghp_...)
 #
-# (Tùy chọn khác) Nếu dùng Token Classic cũ:
-#   Settings -> Developer Settings -> Personal access tokens -> Tokens (classic)
-#   Scopes cần chọn: 'repo' hoặc tối thiểu 'contents: write' (Lưu ý: Classic Token sẽ có quyền trên toàn bộ repo)
-GITHUB_TOKEN=github_pat_your_fine_grained_token_here
+# (Tùy chọn khác) Nếu dùng Fine-grained Token (giới hạn 1 repo):
+#   Settings -> Developer Settings -> Personal access tokens -> Fine-grained tokens
+#   Repository access: "Only select repositories" -> Chọn duy nhất repo này -> Contents: "Read and write"
+GITHUB_TOKEN=ghp_your_github_personal_access_token_here
 
 # Tên tài khoản GitHub của bạn
 GITHUB_USERNAME=duynghiaqn
