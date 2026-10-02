@@ -319,16 +319,47 @@ def git_commit_and_push(
     except Exception as exc:
         print(f"⚠️ Không thể kiểm tra git config: {exc}")
 
-    # Kiểm tra Token xác thực GitHub để hỗ trợ push tự động không cần nhập mật khẩu
+    # 1. Kiểm tra phương thức xác thực: SSH Key (Khuyên dùng) hoặc Personal Access Token (HTTPS)
+    auth_method = os.environ.get("GIT_AUTH_METHOD", "").lower().strip()
+    ssh_key_path = os.environ.get("GIT_SSH_KEY_PATH", "").strip()
+    gh_repo = (os.environ.get("GITHUB_REPOSITORY") or "").strip()
     gh_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
-    gh_repo = os.environ.get("GITHUB_REPOSITORY")
+
+    # Cấu hình SSH Key tùy chỉnh nếu được chỉ định
+    if ssh_key_path:
+        key_file = Path(ssh_key_path).expanduser()
+        if key_file.exists():
+            os.environ["GIT_SSH_COMMAND"] = f'ssh -i "{key_file}" -o StrictHostKeyChecking=accept-new'
+            print(f"🔑 Đã áp dụng SSH Key tùy chọn: {key_file}")
+        else:
+            print(f"⚠️ Cảnh báo: Tệp SSH Key không tồn tại: {key_file}")
+
     push_remote_target = target_remote
 
-    if gh_token and gh_repo:
+    # Lấy URL hiện tại của remote để nhận diện giao thức
+    current_remote_url = ""
+    try:
+        remote_url_proc = run_command(["git", "remote", "get-url", target_remote], check=False, capture_output=True)
+        current_remote_url = remote_url_proc.stdout.strip()
+    except Exception:
+        pass
+
+    is_ssh = (
+        auth_method == "ssh"
+        or current_remote_url.startswith("git@")
+        or current_remote_url.startswith("ssh://")
+    )
+
+    if is_ssh and gh_repo:
+        push_remote_target = f"git@github.com:{gh_repo}.git"
+        print(f"🔑 Kích hoạt xác thực Git qua SSH Key tới {gh_repo} (git@github.com:{gh_repo}.git).")
+    elif gh_token and gh_repo and auth_method != "ssh":
         # Sử dụng URL xác thực với Personal Access Token (chuẩn x-access-token hỗ trợ cả github_pat_ và ghp_)
         push_remote_target = f"https://x-access-token:{gh_token}@github.com/{gh_repo}.git"
         token_type = "Fine-grained Token (1 Repo)" if gh_token.startswith("github_pat_") else "Classic Token"
         print(f"🔑 Đã phát hiện GITHUB_TOKEN ({token_type}), kích hoạt chế độ xác thực tự động tới {gh_repo}.")
+    elif is_ssh:
+        print(f"🔑 Kích hoạt xác thực Git qua SSH Key tới remote '{target_remote}'.")
 
     # Stage data directory
     print("📁 Đang stage thư mục data/...")
