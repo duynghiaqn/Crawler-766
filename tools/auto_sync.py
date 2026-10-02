@@ -51,6 +51,16 @@ DATA_DIR = ROOT_DIR / "data"
 
 VN_TZ = timezone(timedelta(hours=7))
 
+# Tích hợp công cụ Purge & Warm-up jsDelivr CDN Cache
+try:
+    from tools.purge_cache import purge_and_warmup_jsdelivr_cache
+except ImportError:
+    try:
+        from purge_cache import purge_and_warmup_jsdelivr_cache
+    except ImportError:
+        def purge_and_warmup_jsdelivr_cache(*args: Any, **kwargs: Any) -> bool:
+            return True
+
 
 def load_env_file() -> None:
     """Tự động tải các biến môi trường từ .env hoặc env_config nếu có."""
@@ -652,8 +662,18 @@ def run_scheduler_loop(args: argparse.Namespace) -> None:
                         commit_msg=args.commit_msg,
                     )
                     status_text = "THÀNH CÔNG (Đã Crawl & Push Git)" if push_ok else "Crawl XONG, Push Git gặp lỗi"
+                    if push_ok and not args.skip_purge:
+                        purge_and_warmup_jsdelivr_cache(
+                            repo=os.environ.get("GITHUB_REPOSITORY", "duynghiaqn/Crawler-766"),
+                            branch=args.branch or "main",
+                        )
                 else:
                     status_text = "THÀNH CÔNG (Crawl hoàn tất)"
+                    if args.purge and not args.skip_purge:
+                        purge_and_warmup_jsdelivr_cache(
+                            repo=os.environ.get("GITHUB_REPOSITORY", "duynghiaqn/Crawler-766"),
+                            branch=args.branch or "main",
+                        )
                 send_telegram_notification("success", f"✅ [Crawler 766 Auto] {status_text} lúc {get_vn_time_str()}")
             else:
                 send_telegram_notification("failure", f"❌ [Crawler 766 Auto] Quá trình crawl gặp lỗi lúc {get_vn_time_str()}")
@@ -846,6 +866,18 @@ Ví dụ sử dụng trên Windows / macOS / Linux:
         help="Nội dung custom cho git commit message",
     )
 
+    purge_group = parser.add_argument_group("Tùy chọn jsDelivr CDN Cache")
+    purge_group.add_argument(
+        "--purge",
+        action="store_true",
+        help="Kích hoạt gửi Purge Requests và tạo lại cache mới trên jsDelivr CDN",
+    )
+    purge_group.add_argument(
+        "--skip-purge",
+        action="store_true",
+        help="Bỏ qua bước xóa cache và tạo lại cache jsDelivr CDN sau khi push git",
+    )
+
     return parser.parse_args()
 
 
@@ -883,10 +915,21 @@ def main() -> None:
             commit_msg=args.commit_msg,
         )
         if push_ok:
-            send_telegram_notification("success", f"✅ [Crawler 766 Auto] Đã chạy xong và push code lên repo thành công lúc {get_vn_time_str()}")
+            if not args.skip_purge:
+                purge_and_warmup_jsdelivr_cache(
+                    repo=os.environ.get("GITHUB_REPOSITORY", "duynghiaqn/Crawler-766"),
+                    branch=args.branch or "main",
+                )
+            send_telegram_notification("success", f"✅ [Crawler 766 Auto] Đã chạy xong, push dữ liệu & purge jsDelivr cache lúc {get_vn_time_str()}")
         else:
             send_telegram_notification("failure", f"⚠️ [Crawler 766 Auto] Crawl thành công nhưng Git Push thất bại lúc {get_vn_time_str()}")
             sys.exit(1)
+    elif success and args.purge and not args.skip_purge:
+        purge_and_warmup_jsdelivr_cache(
+            repo=os.environ.get("GITHUB_REPOSITORY", "duynghiaqn/Crawler-766"),
+            branch=args.branch or "main",
+        )
+        send_telegram_notification("success", f"✅ [Crawler 766 Auto] Hoàn tất crawl & purge jsDelivr cache lúc {get_vn_time_str()}")
     elif not success:
         send_telegram_notification("failure", f"❌ [Crawler 766 Auto] Crawl thất bại lúc {get_vn_time_str()}")
         sys.exit(1)

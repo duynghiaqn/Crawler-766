@@ -35,12 +35,15 @@ Tùy chọn:
   --clean-days DAYS   Số ngày tự động dọn dẹp snapshot cũ (Mặc định: 3)
   --skip-test         Bỏ qua bước kiểm tra kết nối DVCQG
   --push              Tự động git commit và push data/ lên repo
+  --purge             Gửi Purge Requests tới jsDelivr và tạo lại cache mới
+  --skip-purge        Bỏ qua bước purge và tạo lại cache jsDelivr sau khi push
   -h, --help          Hiển thị trợ giúp này
 
 Ví dụ:
   ./tools/Auto_all.sh --time-type year --year 2026
   ./tools/Auto_all.sh --time-type month --year 2026 --period 3
   ./tools/Auto_all.sh --push
+  ./tools/Auto_all.sh --push --purge
 EOF
   exit 0
 }
@@ -48,6 +51,8 @@ EOF
 # Parse CLI flags
 ARGS=()
 PUSH="false"
+PURGE="false"
+SKIP_PURGE="false"
 while [[ $# -gt 0 ]]; do
   case $1 in
     --time-type)
@@ -72,6 +77,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --push)
       PUSH="true"
+      shift
+      ;;
+    --purge)
+      PURGE="true"
+      shift
+      ;;
+    --skip-purge)
+      SKIP_PURGE="true"
       shift
       ;;
     -h|--help)
@@ -165,6 +178,52 @@ if [[ "${PUSH}" == "true" ]]; then
         break
       fi
       sleep 3
+    done
+  fi
+fi
+
+# 7. Send Purge Requests to jsDelivr & Recreate/Warm-up Cache
+# Tự động kích hoạt khi có đồng bộ git (--push) hoặc được chỉ định rõ (--purge), trừ khi có --skip-purge
+if [[ ("${PUSH}" == "true" || "${PURGE}" == "true") && "${SKIP_PURGE}" != "true" ]]; then
+  echo ""
+  echo "------------------------------------------------------------------------------"
+  echo "⚡ [7/7] Send Purge Requests to jsDelivr & Tạo lại cache dữ liệu mới..."
+  echo "------------------------------------------------------------------------------"
+  if [[ -f "${SCRIPT_DIR}/purge_cache.py" ]]; then
+    python3 "${SCRIPT_DIR}/purge_cache.py" || true
+  else
+    PURGE_URLS=(
+      "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index.json"
+      "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index_detail.json"
+      "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index.json"
+      "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
+    )
+    echo "🚀 Purging jsDelivr CDN cache at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')..."
+    for url in "${PURGE_URLS[@]}"; do
+      echo "  🔄 Requesting purge for: $url"
+      response=$(curl -s -X GET "$url")
+      echo "  📩 Response: $response"
+    done
+
+    echo "⏳ Chờ 5 giây để jsDelivr hoàn tất xóa cache cũ..."
+    sleep 5
+
+    CDN_URLS=(
+      "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index.json"
+      "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index_detail.json"
+      "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index.json"
+      "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
+    )
+    echo "🔥 Đang kích hoạt tạo lại cache dữ liệu mới qua jsDelivr CDN..."
+    for url in "${CDN_URLS[@]}"; do
+      echo "  🔥 Warm-up cache cho: $url"
+      http_code=$(curl -s -L -o /dev/null -w "%{http_code}" "$url")
+      echo "  📩 HTTP Status Code: $http_code"
+      if [ "$http_code" -eq 200 ]; then
+        echo "  ✅ Cache mới đã được tạo thành công."
+      else
+        echo "  ⚠️ Cảnh báo: HTTP status code trả về $http_code"
+      fi
     done
   fi
 fi
