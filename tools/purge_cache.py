@@ -32,12 +32,14 @@ VN_TZ = timezone(timedelta(hours=7))
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 
-# Danh sách mặc định 4 tệp dữ liệu cốt lõi
+# Danh sách mặc định 6 tệp dữ liệu cốt lõi
 DEFAULT_DATA_PATHS = [
     "data/gia_lai/index.json",
     "data/gia_lai/index_detail.json",
     "data/provinces/index.json",
     "data/provinces/index_detail.json",
+    "data/agencies/index.json",
+    "data/agencies/index_detail.json",
 ]
 
 

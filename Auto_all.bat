@@ -35,6 +35,7 @@ echo   --skip-test         Bo qua buoc kiem tra ket noi DVCQG
 echo   --skip-detail       Chi crawl du lieu tong hop (bo qua chi tiet cac chi tieu)
 echo   --only-gl           Chi crawl du lieu tinh Gia Lai
 echo   --only-provinces    Chi crawl du lieu 34 Tinh / Thanh pho
+echo   --only-agencies     Chi crawl du lieu Khoi So/Nganh toan quoc
 echo   --no-push           Chi crawl va luu du lieu cuc bo (khong day len git)
 echo   --skip-purge        Khong thuc hien xoa cache jsDelivr CDN
 echo   -h, --help          Hien thi tro giup nay

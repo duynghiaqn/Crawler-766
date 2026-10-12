@@ -222,9 +222,40 @@ Hoặc gọi trực tiếp qua wrapper CLI script:
 ./tools/crawl-province-detail --time-type year --year 2026
 ```
 
-### 4. Thực thi Master Auto Script Tự Động Toàn Bộ Pipelines (`tools/Auto_all.sh`)
+### 4. Thực thi Tool Crawler Khối Sở / Ban / Ngành Toàn Quốc (`tools/crawl_agency.py` & `tools/crawl_agency_detail.py`)
 
-Tự động gọi thực hiện tuần tự tất cả 4 crawler pipelines (Gia Lai tổng hợp, Gia Lai chi tiết chỉ tiêu con, UBND các Tỉnh/Thành phố tổng hợp & UBND các Tỉnh/Thành phố chi tiết):
+Dữ liệu được lưu trữ chuyên biệt tại thư mục `data/agencies/`:
+- `index.json`: Master API Index cho toàn bộ Sở/Ngành 34 tỉnh/thành phố.
+- `index_detail.json`: Master API Detail Index chứa 6 nhóm chỉ tiêu thành phần & sub-metrics.
+- `scores_Agencies_DDMMYYYY.json`: Snapshot điểm số & xếp hạng toàn quốc / xếp hạng nội bộ tỉnh theo ngày.
+- `details_Agencies_DDMMYYYY.json`: Snapshot chi tiết hồ sơ & metrics thành phần.
+- `comparison_Agencies_DDMMYYYY.json`: So sánh chênh lệch điểm số, biến động thứ hạng toàn quốc & thứ hạng tỉnh.
+
+```bash
+# Trích xuất dữ liệu xếp hạng & điểm số tổng hợp tất cả Sở/Ngành toàn quốc cho index.json
+python3 tools/crawl_agency.py --time-type year --year 2026
+
+# Trích xuất chi tiết 6 nhóm chỉ tiêu thành phần tất cả Sở/Ngành cho index_detail.json
+python3 tools/crawl_agency_detail.py --time-type year --year 2026
+
+# Lọc crawl theo mã tỉnh cụ thể (ví dụ: An Giang H01 và Gia Lai H21)
+python3 tools/crawl_agency.py --provinces H01,H21
+python3 tools/crawl_agency_detail.py --provinces H01,H21
+
+# Tự động clean snapshot Sở/Ngành cũ quá N ngày (Mặc định: 3 ngày)
+python3 tools/crawl_agency.py --clean-days 3
+python3 tools/crawl_agency_detail.py --clean-days 3
+```
+
+Hoặc gọi trực tiếp qua wrapper CLI script:
+```bash
+./tools/crawl-agency --time-type year --year 2026
+./tools/crawl-agency-detail --time-type year --year 2026
+```
+
+### 5. Thực thi Master Auto Script Tự Động Toàn Bộ Pipelines (`tools/Auto_all.sh`)
+
+Tự động gọi thực hiện tuần tự tất cả 6 crawler pipelines (Gia Lai tổng hợp, Gia Lai chi tiết, UBND Tỉnh/TP tổng hợp, UBND Tỉnh/TP chi tiết, Khối Sở/Ngành tổng hợp & Khối Sở/Ngành chi tiết):
 
 ```bash
 # Chạy tự động tất cả các crawler theo Năm (Mặc định: Năm 2026)
@@ -242,7 +273,7 @@ Tự động gọi thực hiện tuần tự tất cả 4 crawler pipelines (Gia
 
 ---
 
-### 5. Tự Động Hóa Chạy & Push Git Theo Lịch Trên Windows / Cross-platform (`tools/auto_sync.py`)
+### 6. Tự Động Hóa Chạy & Push Git Theo Lịch Trên Windows / Cross-platform (`tools/auto_sync.py`)
 
 Công cụ Python chuyên biệt chạy đa nền tảng (tối ưu 100% cho Windows mà không cần Git Bash hay WSL), tích hợp sẵn:
 - Chạy toàn bộ hoặc tùy biến các crawler pipelines
