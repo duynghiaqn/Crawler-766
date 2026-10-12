@@ -28,6 +28,8 @@ jobs:
             "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index_detail.json"
             "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index.json"
             "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
+            "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/agencies/index.json"
+            "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/agencies/index_detail.json"
           )
 
           echo "🚀 Purging jsDelivr CDN cache at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')..."
@@ -48,11 +50,15 @@ jobs:
           # 2. https://github.com/duynghiaqn/Crawler-766/blob/main/data/gia_lai/index_detail.json
           # 3. https://github.com/duynghiaqn/Crawler-766/blob/main/data/provinces/index.json
           # 4. https://github.com/duynghiaqn/Crawler-766/blob/main/data/provinces/index_detail.json
+          # 5. https://github.com/duynghiaqn/Crawler-766/blob/main/data/agencies/index.json
+          # 6. https://github.com/duynghiaqn/Crawler-766/blob/main/data/agencies/index_detail.json
           CDN_URLS=(
             "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index.json"
             "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index_detail.json"
             "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index.json"
             "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
+            "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/agencies/index.json"
+            "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/agencies/index_detail.json"
           )
 
           echo "⏳ Chờ 5 giây để jsDelivr hoàn tất xoá cache cũ..."

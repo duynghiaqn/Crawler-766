@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Auto_all.sh - Automated Master Execution Script for Crawler 766
-# Runs all 4 main DVCQG crawler pipelines sequentially:
+# Runs all 6 main DVCQG crawler pipelines sequentially:
 #   1. Gia Lai General Scores & Indexer         (crawl_gl.py)
 #   2. Gia Lai Detailed Sub-Metrics             (crawl_gl_detail.py)
 #   3. All Provinces & Cities Index             (crawl_province.py)
 #   4. All Provinces & Cities Detailed Sub-Metrics (crawl_province_detail.py)
+#   5. All Agencies General Scores & Indexer    (crawl_agency.py)
+#   6. All Agencies Detailed Sub-Metrics        (crawl_agency_detail.py)
 # ==============================================================================
 
 set -eo pipefail
@@ -117,39 +119,53 @@ START_TIME=$(date +%s)
 # 0. Connectivity test (optional)
 if [[ "${SKIP_TEST}" != "true" && -f "${SCRIPT_DIR}/test_dvcqg_connectivity.py" ]]; then
   echo ""
-  echo "🔍 [0/4] Kiểm tra kết nối tới Cổng DVCQG (test_dvcqg_connectivity.py)..."
+  echo "🔍 [0/6] Kiểm tra kết nối tới Cổng DVCQG (test_dvcqg_connectivity.py)..."
   python3 "${SCRIPT_DIR}/test_dvcqg_connectivity.py" --allow-fail || true
 fi
 
 # 1. Run Gia Lai General Crawler
 echo ""
 echo "------------------------------------------------------------------------------"
-echo "📊 [1/4] Thực thi Crawler DVCQG Gia Lai (crawl_gl.py)..."
+echo "📊 [1/6] Thực thi Crawler DVCQG Gia Lai (crawl_gl.py)..."
 echo "------------------------------------------------------------------------------"
 python3 "${SCRIPT_DIR}/crawl_gl.py" "${COMMON_ARGS[@]}"
 
 # 2. Run Gia Lai Detailed Sub-Metrics Crawler
 echo ""
 echo "------------------------------------------------------------------------------"
-echo "🔬 [2/4] Thực thi Crawler Chi tiết Chỉ tiêu Con Gia Lai (crawl_gl_detail.py)..."
+echo "🔬 [2/6] Thực thi Crawler Chi tiết Chỉ tiêu Con Gia Lai (crawl_gl_detail.py)..."
 echo "------------------------------------------------------------------------------"
 python3 "${SCRIPT_DIR}/crawl_gl_detail.py" "${COMMON_ARGS[@]}"
 
 # 3. Run All Provinces & Cities Index Crawler
 echo ""
 echo "------------------------------------------------------------------------------"
-echo "🏛️ [3/4] Thực thi Crawler UBND Tất cả Tỉnh / Thành phố Index (crawl_province.py)..."
+echo "🏛️ [3/6] Thực thi Crawler UBND Tất cả Tỉnh / Thành phố Index (crawl_province.py)..."
 echo "------------------------------------------------------------------------------"
 python3 "${SCRIPT_DIR}/crawl_province.py" "${COMMON_ARGS[@]}"
 
 # 4. Run All Provinces & Cities Detailed Crawler
 echo ""
 echo "------------------------------------------------------------------------------"
-echo "🔬 [4/4] Thực thi Crawler UBND Tất cả Tỉnh / Thành phố Chi tiết (crawl_province_detail.py)..."
+echo "🔬 [4/6] Thực thi Crawler UBND Tất cả Tỉnh / Thành phố Chi tiết (crawl_province_detail.py)..."
 echo "------------------------------------------------------------------------------"
 python3 "${SCRIPT_DIR}/crawl_province_detail.py" "${COMMON_ARGS[@]}"
 
-# 5. Auto Clean Old Data Snapshots
+# 5. Run All Agencies General Scores Crawler
+echo ""
+echo "------------------------------------------------------------------------------"
+echo "🏢 [5/6] Thực thi Crawler Điểm số Tất cả Sở / Ngành Toàn quốc (crawl_agency.py)..."
+echo "------------------------------------------------------------------------------"
+python3 "${SCRIPT_DIR}/crawl_agency.py" "${COMMON_ARGS[@]}"
+
+# 6. Run All Agencies Detailed Sub-Metrics Crawler
+echo ""
+echo "------------------------------------------------------------------------------"
+echo "🔬 [6/6] Thực thi Crawler Chi tiết Tất cả Sở / Ngành Toàn quốc (crawl_agency_detail.py)..."
+echo "------------------------------------------------------------------------------"
+python3 "${SCRIPT_DIR}/crawl_agency_detail.py" "${COMMON_ARGS[@]}"
+
+# Auto Clean Old Data Snapshots
 echo ""
 echo "------------------------------------------------------------------------------"
 echo "🧹 Dọn dẹp dữ liệu cũ quá ${CLEAN_DAYS} ngày (clean_data.py)..."
@@ -158,7 +174,7 @@ if [[ -f "${SCRIPT_DIR}/clean_data.py" ]]; then
   python3 "${SCRIPT_DIR}/clean_data.py" --clean-days "${CLEAN_DAYS}" || true
 fi
 
-# 6. Auto Git Commit and Push (if --push requested)
+# Auto Git Commit and Push (if --push requested)
 if [[ "${PUSH}" == "true" ]]; then
   echo ""
   echo "------------------------------------------------------------------------------"
@@ -182,12 +198,11 @@ if [[ "${PUSH}" == "true" ]]; then
   fi
 fi
 
-# 7. Send Purge Requests to jsDelivr & Recreate/Warm-up Cache
-# Tự động kích hoạt khi có đồng bộ git (--push) hoặc được chỉ định rõ (--purge), trừ khi có --skip-purge
+# Send Purge Requests to jsDelivr & Recreate/Warm-up Cache
 if [[ ("${PUSH}" == "true" || "${PURGE}" == "true") && "${SKIP_PURGE}" != "true" ]]; then
   echo ""
   echo "------------------------------------------------------------------------------"
-  echo "⚡ [7/7] Send Purge Requests to jsDelivr & Tạo lại cache dữ liệu mới..."
+  echo "⚡ Send Purge Requests to jsDelivr & Tạo lại cache dữ liệu mới..."
   echo "------------------------------------------------------------------------------"
   if [[ -f "${SCRIPT_DIR}/purge_cache.py" ]]; then
     python3 "${SCRIPT_DIR}/purge_cache.py" || true
@@ -197,6 +212,8 @@ if [[ ("${PUSH}" == "true" || "${PURGE}" == "true") && "${SKIP_PURGE}" != "true"
       "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index_detail.json"
       "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index.json"
       "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
+      "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/agencies/index.json"
+      "https://purge.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/agencies/index_detail.json"
     )
     echo "🚀 Purging jsDelivr CDN cache at $(TZ='Asia/Ho_Chi_Minh' date +'%Y-%m-%d %H:%M:%S %Z')..."
     for url in "${PURGE_URLS[@]}"; do
@@ -213,6 +230,8 @@ if [[ ("${PUSH}" == "true" || "${PURGE}" == "true") && "${SKIP_PURGE}" != "true"
       "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/gia_lai/index_detail.json"
       "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index.json"
       "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/provinces/index_detail.json"
+      "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/agencies/index.json"
+      "https://cdn.jsdelivr.net/gh/duynghiaqn/Crawler-766@main/data/agencies/index_detail.json"
     )
     echo "🔥 Đang kích hoạt tạo lại cache dữ liệu mới qua jsDelivr CDN..."
     for url in "${CDN_URLS[@]}"; do

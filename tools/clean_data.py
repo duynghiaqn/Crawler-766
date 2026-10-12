@@ -37,6 +37,7 @@ ROOT_DIR = Path(__file__).resolve().parents[1]
 DATA_DIR = ROOT_DIR / "data"
 GIA_LAI_DIR = DATA_DIR / "gia_lai"
 PROVINCES_DIR = DATA_DIR / "provinces"
+AGENCIES_DIR = DATA_DIR / "agencies"
 RAW_DIR = DATA_DIR / "raw"
 
 TARGET_PREFIXES = (
@@ -274,19 +275,24 @@ def clean_all(clean_days: int = 3, dry_run: bool = False) -> dict[str, int]:
     prov_deleted, prov_purged = clean_target_directory(PROVINCES_DIR, cutoff_date, dry_run=dry_run)
     prune_index_files(PROVINCES_DIR, cutoff_date, prov_purged, dry_run=dry_run)
 
-    # 3. Clean data/raw
+    # 3. Clean data/agencies
+    ag_deleted, ag_purged = clean_target_directory(AGENCIES_DIR, cutoff_date, dry_run=dry_run)
+    prune_index_files(AGENCIES_DIR, cutoff_date, ag_purged, dry_run=dry_run)
+
+    # 4. Clean data/raw
     raw_deleted = clean_raw_directory(cutoff_date, dry_run=dry_run)
 
-    total_deleted = gl_deleted + prov_deleted + raw_deleted
+    total_deleted = gl_deleted + prov_deleted + ag_deleted + raw_deleted
     print("\n" + "=" * 78)
     print("✅ HOÀN THÀNH QUÁ TRÌNH DỌN DẸP!")
-    print(f"📊 Kết quả: Gia Lai: {gl_deleted} file | Tỉnh/TP: {prov_deleted} file | Raw: {raw_deleted} file")
+    print(f"📊 Kết quả: Gia Lai: {gl_deleted} file | Tỉnh/TP: {prov_deleted} file | Sở/Ngành: {ag_deleted} file | Raw: {raw_deleted} file")
     print(f"🗑️ Tổng cộng tệp tin đã xóa: {total_deleted}")
     print("=" * 78)
 
     return {
         "gia_lai": gl_deleted,
         "provinces": prov_deleted,
+        "agencies": ag_deleted,
         "raw": raw_deleted,
         "total": total_deleted,
     }

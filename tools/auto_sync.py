@@ -182,7 +182,7 @@ def execute_crawler_pipeline(args: argparse.Namespace) -> bool:
             ))
 
     # Bước 1: Crawl Gia Lai tổng hợp
-    if not args.only_provinces:
+    if not args.only_provinces and not args.only_agencies:
         gl_script = TOOLS_DIR / "crawl_gl.py"
         if gl_script.exists():
             steps_to_run.append((
@@ -202,7 +202,7 @@ def execute_crawler_pipeline(args: argparse.Namespace) -> bool:
                 ))
 
     # Bước 3: Crawl Toàn quốc Tỉnh/Thành phố tổng hợp
-    if not args.only_gl:
+    if not args.only_gl and not args.only_agencies:
         prov_script = TOOLS_DIR / "crawl_province.py"
         if prov_script.exists():
             steps_to_run.append((
@@ -221,7 +221,26 @@ def execute_crawler_pipeline(args: argparse.Namespace) -> bool:
                     True,
                 ))
 
-    # Bước 5: Tự động dọn dẹp snapshots cũ
+    # Bước: Crawl Toàn quốc Sở/Ngành tổng hợp & chi tiết
+    if not args.only_gl and not args.only_provinces:
+        agency_script = TOOLS_DIR / "crawl_agency.py"
+        if agency_script.exists():
+            steps_to_run.append((
+                "Thu thập Điểm số & Xếp hạng Tất cả Sở/Ngành (crawl_agency.py)",
+                [sys.executable, str(agency_script)] + common_args,
+                True,
+            ))
+
+        if not args.skip_detail:
+            agency_detail_script = TOOLS_DIR / "crawl_agency_detail.py"
+            if agency_detail_script.exists():
+                steps_to_run.append((
+                    "Thu thập Chi tiết Chỉ tiêu con Tất cả Sở/Ngành (crawl_agency_detail.py)",
+                    [sys.executable, str(agency_detail_script)] + common_args,
+                    True,
+                ))
+
+    # Bước: Tự động dọn dẹp snapshots cũ
     clean_script = TOOLS_DIR / "clean_data.py"
     if clean_script.exists():
         steps_to_run.append((
@@ -951,6 +970,12 @@ Ví dụ sử dụng trên Windows / macOS / Linux:
         action="store_true",
         default=False,
         help="Chỉ crawl dữ liệu tất cả các Tỉnh/Thành phố",
+    )
+    crawl_group.add_argument(
+        "--only-agencies",
+        action="store_true",
+        default=False,
+        help="Chỉ crawl dữ liệu khối Sở/Ngành toàn quốc",
     )
 
     # Tùy chọn Git Push
