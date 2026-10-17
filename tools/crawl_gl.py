@@ -1243,21 +1243,6 @@ def main() -> int:
             child_group_maps=child_group_maps,
             run_date_str=run_date_str,
         )
-        details_curr_file = args.output_dir / f"details_GiaLai_{run_date_str}.json"
-        write_json(details_curr_file, {
-            "metadata": curr_score_data["metadata"],
-            "overview": curr_score_data["overview"],
-            "criteriaGroups": {
-                "CKMB": "Công khai, minh bạch",
-                "TDGQ": "Tiến độ giải quyết",
-                "ONLINE": "Dịch vụ công trực tuyến",
-                "TTTT": "Thanh toán trực tuyến",
-                "MDSH": "Mức độ số hóa",
-                "MDHL": "Mức độ hài lòng",
-            },
-            "totalUnitsCount": len(curr_score_data["units"]),
-            "unitsDetail": curr_score_data["units"],
-        })
         write_json(scores_curr_file, curr_score_data)
         write_json(agencies_curr_file, {
             "metadata": curr_score_data["metadata"],
@@ -1275,7 +1260,6 @@ def main() -> int:
         print(f"✅ Đã lưu Score JSON tổng hợp: {scores_curr_file}")
         print(f"✅ Đã lưu Score JSON Khối Sở/Ngành: {agencies_curr_file}")
         print(f"✅ Đã lưu Score JSON Khối UBND Xã/Phường: {communes_curr_file}")
-        print(f"🔍 Đã lưu Score JSON Chi tiết Tất cả Chỉ tiêu Con: {details_curr_file}")
 
         index_file = update_api_index(args.output_dir, curr_score_data, run_date_str)
         print(f"🚀 Đã Cập nhật API Index Database: {index_file}")

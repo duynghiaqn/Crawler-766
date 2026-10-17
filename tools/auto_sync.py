@@ -182,7 +182,15 @@ def execute_crawler_pipeline(args: argparse.Namespace) -> bool:
             ))
 
     # Bước 1: Crawl Gia Lai tổng hợp
-    if not args.only_provinces and not args.only_agencies:
+    should_run_gl = not args.only_agencies
+    if getattr(args, "provinces", None):
+        prov_filter = [p.strip().upper() for p in str(args.provinces).split(",")]
+        if "H21" not in prov_filter:
+            should_run_gl = False
+    elif args.only_provinces:
+        should_run_gl = False
+
+    if should_run_gl:
         gl_script = TOOLS_DIR / "crawl_gl.py"
         if gl_script.exists():
             steps_to_run.append((
@@ -215,9 +223,12 @@ def execute_crawler_pipeline(args: argparse.Namespace) -> bool:
         if not args.skip_detail:
             prov_detail_script = TOOLS_DIR / "crawl_province_detail.py"
             if prov_detail_script.exists():
+                prov_detail_args = list(common_args)
+                if getattr(args, "provinces", None):
+                    prov_detail_args.extend(["--provinces", str(args.provinces)])
                 steps_to_run.append((
                     "Thu thập Chi tiết Chỉ tiêu con Tất cả Tỉnh/Thành phố (crawl_province_detail.py)",
-                    [sys.executable, str(prov_detail_script)] + common_args,
+                    [sys.executable, str(prov_detail_script)] + prov_detail_args,
                     True,
                 ))
 
@@ -225,18 +236,24 @@ def execute_crawler_pipeline(args: argparse.Namespace) -> bool:
     if not args.only_gl and not args.only_provinces:
         agency_script = TOOLS_DIR / "crawl_agency.py"
         if agency_script.exists():
+            agency_args = list(common_args)
+            if getattr(args, "provinces", None):
+                agency_args.extend(["--provinces", str(args.provinces)])
             steps_to_run.append((
                 "Thu thập Điểm số & Xếp hạng Tất cả Sở/Ngành (crawl_agency.py)",
-                [sys.executable, str(agency_script)] + common_args,
+                [sys.executable, str(agency_script)] + agency_args,
                 True,
             ))
 
         if not args.skip_detail:
             agency_detail_script = TOOLS_DIR / "crawl_agency_detail.py"
             if agency_detail_script.exists():
+                agency_detail_args = list(common_args)
+                if getattr(args, "provinces", None):
+                    agency_detail_args.extend(["--provinces", str(args.provinces)])
                 steps_to_run.append((
                     "Thu thập Chi tiết Chỉ tiêu con Tất cả Sở/Ngành (crawl_agency_detail.py)",
-                    [sys.executable, str(agency_detail_script)] + common_args,
+                    [sys.executable, str(agency_detail_script)] + agency_detail_args,
                     True,
                 ))
 
@@ -430,7 +447,7 @@ def git_commit_and_push(
 
             # 2. Thử pull rebase autostash
             pull_res = run_command(
-                ["git", "pull", "--rebase", "--autostash", "-X", "ours", push_remote_target, target_branch],
+                ["git", "pull", "--rebase", "--autostash", "-X", "theirs", push_remote_target, target_branch],
                 check=False,
                 capture_output=True,
             )
@@ -976,6 +993,12 @@ Ví dụ sử dụng trên Windows / macOS / Linux:
         action="store_true",
         default=False,
         help="Chỉ crawl dữ liệu khối Sở/Ngành toàn quốc",
+    )
+    crawl_group.add_argument(
+        "--provinces",
+        type=str,
+        default=None,
+        help="Danh sách mã tỉnh lọc, ví dụ: H01,H21 (mặc định tất cả 34 tỉnh)",
     )
 
     # Tùy chọn Git Push
