@@ -14,7 +14,8 @@ Endpoint API công khai DVCQG:
 Tính năng chính:
 1. Trích xuất chi tiết 6 nhóm chỉ số thành phần (CKMB, TDGQ, ONLINE, TTTT, MDSH, MDHL) & sub-metrics của tất cả Sở/Ngành toàn quốc.
 2. Lưu file CSDL Master Index Detail (index_detail.json) và snapshot chi tiết theo mốc ngày DDMMYYYY trong data/agencies/:
-   - index_detail.json              : API Detailed Index Database chứa toàn bộ số liệu chi tiết các chỉ số thành phần (componentIndicators) phục vụ tra cứu.
+   - index_detail.json              : API Detailed Navigation & Master Index Database chứa toàn bộ chỉ số thành phần & provincesIndex điều hướng.
+   - index_detail_{mã_tỉnh}.json    : Phân tách chi tiết theo từng địa phương (ví dụ: index_detail_H21.json cho Gia Lai), tối ưu hóa tải trọng mạng.
    - details_Agencies_DDMMYYYY.json : Dữ liệu chi tiết 6 nhóm chỉ tiêu & sub-metrics tất cả Sở/Ngành toàn quốc theo ngày.
 3. Checkpoint Resumption theo từng tỉnh tại data/raw/<year>/agencies/checkpoints/.
 4. Cơ chế chống WAF/Firewall: User-Agent Rotation Pool, Header ngẫu nhiên, TLS Session Cookie Warmup & Randomized Sleep Jitter.
@@ -25,6 +26,7 @@ Sử dụng:
   python tools/crawl_agency_detail.py --time-type month --year 2026 --period 3
   python tools/crawl_agency_detail.py --provinces H01,H21
   python tools/crawl_agency_detail.py --clean-days 3
+  python tools/crawl_agency_detail.py --split-only
 """
 
 from __future__ import annotations
@@ -722,12 +724,133 @@ def crawl_all_agencies_detail(
     return all_agencies_detail, by_province
 
 
+def split_index_detail_by_province(
+    output_dir: Path,
+    index_data: dict[str, Any] | None = None,
+) -> tuple[Path, dict[str, Path]]:
+    """Tách data/agencies/index_detail.json theo từng địa phương theo mã đơn vị:
+    index_detail_{provinceCode}.json (ví dụ: index_detail_H21.json).
+    Đồng thời cập nhật index_detail.json với provincesIndex làm chỉ mục điều hướng,
+    giữ nguyên vẹn toàn bộ cấu trúc và dữ liệu agencies hiện tại.
+    """
+    index_file = output_dir / "index_detail.json"
+    if index_data is None:
+        index_data = load_json(index_file, {}) or {}
+
+    agencies_db = index_data.get("agencies", {})
+    if not isinstance(agencies_db, dict):
+        agencies_db = {}
+
+    def _date_sort_key(d: str):
+        try:
+            return datetime.strptime(d, "%d%m%Y")
+        except ValueError:
+            return datetime.min
+
+    available_dates = index_data.get("availableDates", [])
+    if isinstance(available_dates, list):
+        available_dates = sorted(available_dates, key=_date_sort_key)
+    else:
+        available_dates = []
+
+    MAX_DETAIL_DAYS = 2
+
+    # Giới hạn availableDates trong index_data (master index) tối đa 2 ngày
+    if len(available_dates) > MAX_DETAIL_DAYS:
+        available_dates = available_dates[-MAX_DETAIL_DAYS:]
+
+    # Tối ưu history trong master agencies_db: chỉ giữ các ngày trong available_dates (tối đa 2 ngày)
+    for did, ag in agencies_db.items():
+        hist = ag.get("history", {})
+        if isinstance(hist, dict):
+            ag["history"] = {d: val for d, val in hist.items() if d in available_dates}
+
+    # Nhóm agencies theo provinceCode
+    by_prov_agencies: dict[str, dict[str, Any]] = {}
+    prov_names: dict[str, str] = {}
+    for did, ag in agencies_db.items():
+        p_code = ag.get("provinceCode")
+        if not p_code:
+            continue
+        if p_code not in by_prov_agencies:
+            by_prov_agencies[p_code] = {}
+        by_prov_agencies[p_code][did] = ag
+        if p_code not in prov_names and ag.get("provinceName"):
+            prov_names[p_code] = ag["provinceName"]
+
+    provinces_index: dict[str, Any] = {}
+    generated_files: dict[str, Path] = {}
+
+    for p_code in sorted(by_prov_agencies.keys()):
+        p_ag = by_prov_agencies[p_code]
+        p_name = prov_names.get(p_code, f"UBND tỉnh {p_code}")
+
+        # Tính availableDates cho tỉnh này từ history của các agency thuộc tỉnh (tối đa 2 ngày gần nhất)
+        p_dates_set = {d for a in p_ag.values() for d in a.get("history", {}).keys()}
+        p_avail_dates = sorted(list(p_dates_set), key=_date_sort_key) if p_dates_set else list(available_dates)
+        if len(p_avail_dates) > MAX_DETAIL_DAYS:
+            p_avail_dates = p_avail_dates[-MAX_DETAIL_DAYS:]
+
+        p_latest_d = p_avail_dates[-1] if p_avail_dates else index_data.get("latestDate", "")
+        p_prev_d = p_avail_dates[-2] if len(p_avail_dates) >= 2 else None
+
+        # Tối ưu lưu trữ: Chỉ giữ tối đa 2 ngày trong history của từng agency thuộc tỉnh
+        pruned_p_ag: dict[str, Any] = {}
+        for did, ag in p_ag.items():
+            ag_copy = dict(ag)
+            hist = ag.get("history", {})
+            if isinstance(hist, dict):
+                ag_copy["history"] = {d: val for d, val in hist.items() if d in p_avail_dates}
+            pruned_p_ag[did] = ag_copy
+
+        filename = f"index_detail_{p_code}.json"
+        prov_file_path = output_dir / filename
+
+        prov_payload = {
+            "schemaVersion": 1,
+            "updatedAt": index_data.get("updatedAt", utc_now()),
+            "latestDate": p_latest_d,
+            "previousDate": p_prev_d,
+            "provinceCode": p_code,
+            "provinceName": p_name,
+            "availableDates": p_avail_dates,
+            "agencyCount": len(pruned_p_ag),
+            "agencies": pruned_p_ag,
+        }
+        write_json(prov_file_path, prov_payload)
+        generated_files[p_code] = prov_file_path
+
+        provinces_index[p_code] = {
+            "provinceCode": p_code,
+            "provinceName": p_name,
+            "agencyCount": len(pruned_p_ag),
+            "file": filename,
+            "detailFile": filename,
+            "detailPath": f"data/agencies/{filename}",
+            "agencyIds": list(pruned_p_ag.keys()),
+        }
+
+    # Cập nhật provincesIndex và availableDates trong index_detail.json làm chỉ mục điều hướng
+    index_data["updatedAt"] = utc_now()
+    index_data["availableDates"] = available_dates
+    index_data["latestDate"] = available_dates[-1] if available_dates else index_data.get("latestDate", "")
+    index_data["previousDate"] = available_dates[-2] if len(available_dates) >= 2 else None
+    index_data["provincesCount"] = len(provinces_index)
+    index_data["agencyCount"] = len(agencies_db)
+    index_data["provincesIndex"] = provinces_index
+    index_data["agencies"] = agencies_db
+
+    write_json(index_file, index_data)
+    return index_file, generated_files
+
+
 def update_master_index_detail(
     output_dir: Path,
     details_payload: dict[str, Any],
     run_date_str: str,
 ) -> Path:
-    """Update master index_detail.json database for all agencies nationwide."""
+    """Update master index_detail.json database for all agencies nationwide
+    and synchronize per-province split files (e.g. index_detail_H21.json)."""
     index_file = output_dir / "index_detail.json"
     index_data = load_json(index_file, {}) or {}
 
@@ -744,6 +867,11 @@ def update_master_index_detail(
             return datetime.min
 
     available_dates.sort(key=_date_sort_key)
+
+    # Giới hạn tối đa 2 ngày gần nhất cho dữ liệu chi tiết
+    MAX_DETAIL_DAYS = 2
+    if len(available_dates) > MAX_DETAIL_DAYS:
+        available_dates = available_dates[-MAX_DETAIL_DAYS:]
 
     agencies_db = index_data.get("agencies", {})
     if not isinstance(agencies_db, dict):
@@ -789,17 +917,32 @@ def update_master_index_detail(
                 "componentIndicators": a.get("componentIndicators", {}),
             }
 
+    # Tối ưu agencies_db: chỉ giữ tối đa 2 ngày trong history
+    for did, ag in agencies_db.items():
+        hist = ag.get("history", {})
+        if isinstance(hist, dict):
+            ag["history"] = {d: val for d, val in hist.items() if d in available_dates}
+
     updated_index = {
         "schemaVersion": 1,
         "updatedAt": utc_now(),
         "latestDate": available_dates[-1] if available_dates else run_date_str,
+        "previousDate": available_dates[-2] if len(available_dates) >= 2 else index_data.get("previousDate"),
         "availableDates": available_dates,
-        "agencyCount": len(agencies_list),
+        "agencyCount": len(agencies_db),
         "provincesCount": len(details_payload.get("byProvince", {})),
         "agencies": agencies_db,
     }
 
-    write_json(index_file, updated_index)
+    # Preserve extra metadata if present
+    for k in ("latestOverview", "previousOverview"):
+        if k in index_data:
+            updated_index[k] = index_data[k]
+
+    # Split into per-province files and build provincesIndex navigation
+    index_file, prov_files = split_index_detail_by_province(output_dir, updated_index)
+    print(f"📦 Đã đồng bộ phân tách {len(prov_files)} tệp index_detail theo từng địa phương (tối đa {MAX_DETAIL_DAYS} ngày).")
+
     return index_file
 
 
@@ -840,11 +983,22 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--raw-dir", type=Path, default=DEFAULT_RAW_DIR, help="Thư mục raw data")
     parser.add_argument("--force", action="store_true", help="Bỏ qua checkpoint, bắt buộc crawl mới")
     parser.add_argument("--timeout", type=int, default=45, help="Timeout kết nối mạng (giây)")
+    parser.add_argument("--split-only", action="store_true", help="Chỉ tách index_detail.json thành các file index_detail_{mã_tỉnh}.json theo địa phương mà không crawl lại")
     return parser.parse_args()
 
 
 def main() -> int:
     args = parse_arguments()
+    if getattr(args, "split_only", False):
+        print("==============================================================================")
+        print("⚡ Chế độ --split-only: Phân tách data/agencies/index_detail.json theo địa phương")
+        print(f"📁 Thư mục: {args.output_dir}")
+        print("==============================================================================")
+        index_file, gen_files = split_index_detail_by_province(args.output_dir)
+        print(f"✅ Đã phân tách thành công {len(gen_files)} tệp địa phương (ví dụ: index_detail_H21.json).")
+        print(f"✅ Đã cập nhật thành công chỉ mục điều hướng: {index_file}")
+        return 0
+
     run_date_str = datetime.now().strftime("%d%m%Y")
 
     filter_codes = [c.strip() for c in args.provinces.split(",")] if args.provinces else None

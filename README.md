@@ -151,14 +151,24 @@ data/
 │   ├── scores_Provinces_DDMMYYYY.json     # Dữ liệu điểm số tổng hợp các tỉnh/thành phố theo ngày
 │   ├── details_Provinces_DDMMYYYY.json    # Dữ liệu chi tiết 6 nhóm chỉ tiêu & sub-metrics các tỉnh/thành phố theo ngày
 │   └── comparison_Provinces_DDMMYYYY.json # File so sánh điểm số & xu hướng các tỉnh/thành phố theo ngày
+├── agencies/
+│   ├── index.json                         # API Master Index điểm số & xếp hạng khối Sở/Ngành toàn quốc
+│   ├── index_detail.json                  # API Detailed Master & Navigation Index (chỉ mục điều hướng provincesIndex & toàn quốc)
+│   ├── index_detail_H21.json              # API Detailed Index riêng cho địa phương Gia Lai (nhẹ tải, tối ưu băng thông)
+│   ├── index_detail_{mã_tỉnh}.json        # API Detailed Index phân tách độc lập theo từng địa phương (H01..H63)
+│   ├── scores_Agencies_DDMMYYYY.json      # Snapshot điểm số & xếp hạng Khối Sở/Ngành toàn quốc theo ngày
+│   ├── details_Agencies_DDMMYYYY.json     # Snapshot chi tiết 6 nhóm chỉ tiêu thành phần Sở/Ngành theo ngày
+│   └── comparison_Agencies_DDMMYYYY.json  # So sánh biến động điểm số & thứ hạng Sở/Ngành theo ngày
 └── raw/
     └── 2026/
         ├── gia_lai/
         │   ├── raw_GiaLai_DDMMYYYY.json   # Dữ liệu RAW JSON nguyên bản Gia Lai
         │   └── checkpoints/               # Dữ liệu checkpoint tự động lưu vết chống lỗi mạng
-        └── provinces/
-            ├── raw_Provinces_DDMMYYYY.json# Dữ liệu RAW JSON nguyên bản tất cả Tỉnh/TP
-            └── checkpoints/               # Checkpoint lưu vết chỉ số thành phần các Tỉnh/TP
+        ├── provinces/
+        │   ├── raw_Provinces_DDMMYYYY.json# Dữ liệu RAW JSON nguyên bản tất cả Tỉnh/TP
+        │   └── checkpoints/               # Checkpoint lưu vết chỉ số thành phần các Tỉnh/TP
+        └── agencies/
+            └── checkpoints/               # Checkpoint lưu vết chỉ số thành phần các Sở/Ngành
 ```
 
 ---
@@ -226,7 +236,8 @@ Hoặc gọi trực tiếp qua wrapper CLI script:
 
 Dữ liệu được lưu trữ chuyên biệt tại thư mục `data/agencies/`:
 - `index.json`: Master API Index cho toàn bộ Sở/Ngành 34 tỉnh/thành phố.
-- `index_detail.json`: Master API Detail Index chứa 6 nhóm chỉ tiêu thành phần & sub-metrics.
+- `index_detail.json`: Master API Detail & Navigation Index chứa 6 nhóm chỉ tiêu thành phần & chỉ mục điều hướng `provincesIndex` liên kết tới các file địa phương.
+- `index_detail_{mã_đơn_vị}.json` (ví dụ: `index_detail_H21.json`): CSDL chi tiết 6 nhóm chỉ tiêu thành phần phân tách độc lập theo từng địa phương (Gia Lai, An Giang, Cần Thơ...), dung lượng siêu nhẹ (~700KB thay vì 28MB), tối ưu tốc độ tải và tiết kiệm 97% băng thông.
 - `scores_Agencies_DDMMYYYY.json`: Snapshot điểm số & xếp hạng toàn quốc / xếp hạng nội bộ tỉnh theo ngày.
 - `details_Agencies_DDMMYYYY.json`: Snapshot chi tiết hồ sơ & metrics thành phần.
 - `comparison_Agencies_DDMMYYYY.json`: So sánh chênh lệch điểm số, biến động thứ hạng toàn quốc & thứ hạng tỉnh.
@@ -235,8 +246,11 @@ Dữ liệu được lưu trữ chuyên biệt tại thư mục `data/agencies/`
 # Trích xuất dữ liệu xếp hạng & điểm số tổng hợp tất cả Sở/Ngành toàn quốc cho index.json
 python3 tools/crawl_agency.py --time-type year --year 2026
 
-# Trích xuất chi tiết 6 nhóm chỉ tiêu thành phần tất cả Sở/Ngành cho index_detail.json
+# Trích xuất chi tiết 6 nhóm chỉ tiêu thành phần tất cả Sở/Ngành cho index_detail.json & tự động phân tách index_detail_{mã_tỉnh}.json
 python3 tools/crawl_agency_detail.py --time-type year --year 2026
+
+# Phân tách nhanh index_detail.json hiện có thành các file index_detail_{mã_tỉnh}.json (ví dụ: index_detail_H21.json) mà không cần crawl lại mạng
+python3 tools/crawl_agency_detail.py --split-only
 
 # Lọc crawl theo mã tỉnh cụ thể (ví dụ: An Giang H01 và Gia Lai H21)
 python3 tools/crawl_agency.py --provinces H01,H21

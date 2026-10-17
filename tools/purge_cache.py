@@ -67,7 +67,18 @@ def build_urls(
     paths: list[str] | None = None,
 ) -> tuple[list[str], list[str]]:
     """Tạo danh sách Purge URLs và CDN Warm-up URLs tương ứng."""
-    target_paths = paths or DEFAULT_DATA_PATHS
+    if paths:
+        target_paths = list(paths)
+    else:
+        target_paths = list(DEFAULT_DATA_PATHS)
+        # Tự động phát hiện các tệp index_detail_{mã_tỉnh}.json trong data/agencies/
+        agencies_dir = ROOT_DIR / "data" / "agencies"
+        if agencies_dir.exists():
+            for p in sorted(agencies_dir.glob("index_detail_*.json")):
+                rel_path = str(p.relative_to(ROOT_DIR)).replace("\\", "/")
+                if rel_path not in target_paths:
+                    target_paths.append(rel_path)
+
     purge_urls = [f"https://purge.jsdelivr.net/gh/{repo}@{branch}/{p.lstrip('/')}" for p in target_paths]
     cdn_urls = [f"https://cdn.jsdelivr.net/gh/{repo}@{branch}/{p.lstrip('/')}" for p in target_paths]
     return purge_urls, cdn_urls

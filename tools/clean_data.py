@@ -92,7 +92,7 @@ def clean_target_directory(
     for file_path in sorted(target_dir.glob("*.json")):
         if not file_path.is_file():
             continue
-        if file_path.name in ("index.json", "index_detail.json"):
+        if file_path.name in ("index.json", "index_detail.json") or file_path.name.startswith("index_detail_"):
             continue
 
         if not file_path.name.startswith(TARGET_PREFIXES):
@@ -125,15 +125,20 @@ def prune_index_files(
     removed_dates: set[str],
     dry_run: bool = False,
 ) -> int:
-    """Prune dates older than cutoff_date from index.json and index_detail.json."""
+    """Prune dates older than cutoff_date from index.json, index_detail.json, and index_detail_*.json."""
     if dry_run or not target_dir.exists():
         return 0
 
     cutoff_date_int = int(cutoff_date.strftime("%Y%m%d"))
     pruned_files = 0
 
-    for idx_name in ("index.json", "index_detail.json"):
-        idx_path = target_dir / idx_name
+    target_files = [
+        p for p in target_dir.glob("*.json")
+        if p.name in ("index.json", "index_detail.json") or p.name.startswith("index_detail_")
+    ]
+
+    for idx_path in target_files:
+        idx_name = idx_path.name
         data = load_json(idx_path)
         if not data or not isinstance(data, dict):
             continue
@@ -150,10 +155,11 @@ def prune_index_files(
                 except ValueError:
                     pass
 
-            max_allowed = 2 if idx_name == "index_detail.json" else 3
+            is_detail = idx_name.startswith("index_detail")
+            max_allowed = 2 if is_detail else 3
             if dates_to_remove or len(avail) > max_allowed:
                 new_avail = [d for d in avail if d not in dates_to_remove]
-                # index.json tối đa 3 kỳ, index_detail.json tối đa 2 kỳ
+                # index.json tối đa 3 kỳ, index_detail*.json tối đa 2 kỳ
                 if len(new_avail) > max_allowed:
                     extra_remove = set(new_avail[:-max_allowed])
                     dates_to_remove.update(extra_remove)
@@ -217,6 +223,18 @@ def prune_index_files(
                                         hist.pop(d, None)
                                     prov["latest"] = hist.get(latest_d) if latest_d else None
                                     prov["previous"] = hist.get(prev_d) if prev_d else None
+
+                    # Agencies dictionary (agencies/index.json, index_detail.json, index_detail_*.json)
+                    agencies = data.get("agencies", {})
+                    if isinstance(agencies, dict):
+                        for agency in agencies.values():
+                            if isinstance(agency, dict):
+                                hist = agency.get("history", {})
+                                if isinstance(hist, dict):
+                                    for d in dates_to_remove:
+                                        hist.pop(d, None)
+                                    agency["latest"] = hist.get(latest_d) if latest_d else None
+                                    agency["previous"] = hist.get(prev_d) if prev_d else None
 
                     write_json(idx_path, data)
                     changed = True
