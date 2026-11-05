@@ -342,6 +342,7 @@ def fetch_dvc_endpoint(
     year: int,
     period: int | None = None,
     department_type: str | None = "ADMINISTRATIVE_UNIT",
+    root_dept_id: str | None = None,
     page_size: int = 100,
     current_page: int = 1,
     timeout: int = 45,
@@ -357,7 +358,9 @@ def fetch_dvc_endpoint(
         "pageSize": page_size,
         "currentPage": current_page,
     }
-    if department_type:
+    if root_dept_id:
+        payload["rootDepartmentId"] = root_dept_id
+    elif department_type:
         payload["departmentType"] = department_type
 
     if time_type == "quarter":
@@ -674,6 +677,10 @@ def _fetch_group_map_for_provinces(
 
     if resp and isinstance(resp, dict):
         data = resp.get("data", {}) if isinstance(resp, dict) else {}
+        if "parent" in data and isinstance(data["parent"], dict):
+            item_map["__overview__"] = data["parent"]
+            item_map["ALL"] = data["parent"]
+
         items = data.get(data_key, [])
         if not isinstance(items, list):
             items = data.get("evaluation", [])
@@ -689,6 +696,53 @@ def _fetch_group_map_for_provinces(
                         if code:
                             result_map[code] = round(float(score_val), 2)
                             item_map[code] = item
+
+            # Bổ sung trích xuất dữ liệu chi tiết parent từ API provide-online-tree cho từng Tỉnh/TP
+            if group_code == "ONLINE" and items:
+                prov_targets = [it for it in items if isinstance(it, dict) and it.get("departmentId")]
+                if pbar:
+                    pbar.set_postfix_str("Trích xuất sub-metrics ONLINE từng Tỉnh/TP...")
+
+                def _fetch_online_parent(prov_item: dict[str, Any]) -> tuple[str, str, dict[str, Any] | None]:
+                    pid = prov_item.get("departmentId")
+                    pcode = prov_item.get("departmentCode")
+                    if not pid:
+                        return "", "", None
+                    try:
+                        p_resp = fetch_dvc_endpoint(
+                            ENDPOINT_ONLINE,
+                            time_type,
+                            year,
+                            period,
+                            root_dept_id=pid,
+                            page_size=1,
+                            current_page=1,
+                            timeout=min(25, timeout),
+                            max_retries=3,
+                            delay_min=0.05,
+                            delay_max=0.15,
+                        )
+                        parent_data = p_resp.get("data", {}).get("parent")
+                        return pid, pcode, parent_data
+                    except Exception:
+                        return pid, pcode, None
+
+                max_sub_workers = min(8, len(prov_targets))
+                with ThreadPoolExecutor(max_workers=max_sub_workers) as ex:
+                    fetched_parents = list(ex.map(_fetch_online_parent, prov_targets))
+
+                for pid, pcode, p_data in fetched_parents:
+                    if p_data and isinstance(p_data, dict):
+                        merged = dict(item_map.get(pid, {}))
+                        merged.update(p_data)
+                        item_map[pid] = merged
+                        if pcode:
+                            item_map[pcode] = merged
+                        if p_data.get("totalScore") is not None:
+                            result_map[pid] = round(float(p_data["totalScore"]), 2)
+                            if pcode:
+                                result_map[pcode] = round(float(p_data["totalScore"]), 2)
+
         if pbar:
             pbar.update(1, status=f"{group_code} OK")
     else:
@@ -891,7 +945,20 @@ def extract_province_score_data(
             "ONLINE_DichVuTrucTuyen": {
                 "score": group_scores["ONLINE"],
                 "maxScore": o_item.get("totalMaxScore", 12),
+                "totalScore": o_item.get("totalScore", group_scores["ONLINE"]),
+                "totalMaxScore": o_item.get("totalMaxScore", 12),
                 "ratio": o_item.get("ratio"),
+                "authorityCount": o_item.get("authorityCount"),
+                "partialCount": o_item.get("partialCount"),
+                "fullCount": o_item.get("fullCount"),
+                "onlineDossierCount": o_item.get("onlineDossierCount"),
+                "onlineServiceTotal": o_item.get("onlineServiceTotal"),
+                "channelOnlineSum": o_item.get("channelOnlineSum"),
+                "channelDirectSum": o_item.get("channelDirectSum"),
+                "channelPostalSum": o_item.get("channelPostalSum"),
+                "channelTotalSum": o_item.get("channelTotalSum"),
+                "onlineOnTimeSum": o_item.get("onlineOnTimeSum"),
+                "onlineOverdueSum": o_item.get("onlineOverdueSum"),
             },
             "TTTT_ThanhToanTrucTuyen": {
                 "score": group_scores["TTTT"],
@@ -943,6 +1010,37 @@ def extract_province_score_data(
     ratio_val = overview.get("ratio")
     prov_delta = overview.get("scoreDelta")
 
+    nat_online = ci_maps.get("ONLINE", {}).get("__overview__") or {}
+    ov_info: dict[str, Any] = {
+        "departmentName": overview.get("departmentName", "Cả nước"),
+        "totalScore": round(float(total_score_val), 2) if total_score_val is not None else None,
+        "totalMaxScore": overview.get("totalMaxScore", 100),
+        "ratio": round(float(ratio_val), 2) if ratio_val is not None else None,
+        "scoreDelta": round(float(prov_delta), 2) if prov_delta is not None else None,
+        "growthPercent": data.get("growthPercent"),
+        "totalProvincesCount": len(provinces),
+    }
+    if nat_online:
+        ov_info["onlineService"] = {
+            "departmentId": nat_online.get("departmentId", "__overview__"),
+            "departmentName": nat_online.get("departmentName", "Cả nước"),
+            "departmentCode": nat_online.get("departmentCode"),
+            "totalScore": nat_online.get("totalScore"),
+            "totalMaxScore": nat_online.get("totalMaxScore", 12),
+            "ratio": nat_online.get("ratio"),
+            "authorityCount": nat_online.get("authorityCount"),
+            "partialCount": nat_online.get("partialCount"),
+            "fullCount": nat_online.get("fullCount"),
+            "onlineDossierCount": nat_online.get("onlineDossierCount"),
+            "onlineServiceTotal": nat_online.get("onlineServiceTotal"),
+            "channelOnlineSum": nat_online.get("channelOnlineSum"),
+            "channelDirectSum": nat_online.get("channelDirectSum"),
+            "channelPostalSum": nat_online.get("channelPostalSum"),
+            "channelTotalSum": nat_online.get("channelTotalSum"),
+            "onlineOnTimeSum": nat_online.get("onlineOnTimeSum"),
+            "onlineOverdueSum": nat_online.get("onlineOverdueSum"),
+        }
+
     return {
         "metadata": {
             "scope": "ProvincesDetail",
@@ -954,15 +1052,7 @@ def extract_province_score_data(
             "extractedAt": utc_now(),
             "sourceUrl": ENDPOINT_SERVICE_RESULTS,
         },
-        "overview": {
-            "departmentName": overview.get("departmentName", "Cả nước"),
-            "totalScore": round(float(total_score_val), 2) if total_score_val is not None else None,
-            "totalMaxScore": overview.get("totalMaxScore", 100),
-            "ratio": round(float(ratio_val), 2) if ratio_val is not None else None,
-            "scoreDelta": round(float(prov_delta), 2) if prov_delta is not None else None,
-            "growthPercent": data.get("growthPercent"),
-            "totalProvincesCount": len(provinces),
-        },
+        "overview": ov_info,
         "provinces": provinces,
     }
 

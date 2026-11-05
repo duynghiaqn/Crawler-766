@@ -391,6 +391,27 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
     sat_raw = raw_endpoints.get("HANDLING_SATISFACTION", {}).get("data", {})
 
     overview = sr_raw.get("overview") or {}
+    online_parent = online_raw.get("parent") or {}
+    if online_parent:
+        overview["onlineService"] = {
+            "departmentId": online_parent.get("departmentId", GIA_LAI_ROOT_ID),
+            "departmentName": online_parent.get("departmentName", GIA_LAI_NAME),
+            "departmentCode": online_parent.get("departmentCode", GIA_LAI_CODE),
+            "totalScore": round(float(online_parent["totalScore"]), 2) if online_parent.get("totalScore") is not None else None,
+            "totalMaxScore": round(float(online_parent.get("totalMaxScore", 12)), 2),
+            "ratio": round(float(online_parent["ratio"]), 2) if online_parent.get("ratio") is not None else None,
+            "authorityCount": online_parent.get("authorityCount"),
+            "partialCount": online_parent.get("partialCount"),
+            "fullCount": online_parent.get("fullCount"),
+            "onlineDossierCount": online_parent.get("onlineDossierCount"),
+            "onlineServiceTotal": online_parent.get("onlineServiceTotal"),
+            "channelOnlineSum": online_parent.get("channelOnlineSum"),
+            "channelDirectSum": online_parent.get("channelDirectSum"),
+            "channelPostalSum": online_parent.get("channelPostalSum"),
+            "channelTotalSum": online_parent.get("channelTotalSum"),
+            "onlineOnTimeSum": online_parent.get("onlineOnTimeSum"),
+            "onlineOverdueSum": online_parent.get("onlineOverdueSum"),
+        }
     evaluation_list = sr_raw.get("evaluation") or []
 
     # Map departmentId to item dictionary for each API
@@ -478,7 +499,20 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
                 "ONLINE_DichVuTrucTuyen": {
                     "score": online_score,
                     "maxScore": o_info.get("totalMaxScore", 12),
+                    "totalScore": o_info.get("totalScore", online_score),
+                    "totalMaxScore": o_info.get("totalMaxScore", 12),
                     "ratio": o_info.get("ratio"),
+                    "authorityCount": o_info.get("authorityCount"),
+                    "partialCount": o_info.get("partialCount"),
+                    "fullCount": o_info.get("fullCount"),
+                    "onlineDossierCount": o_info.get("onlineDossierCount"),
+                    "onlineServiceTotal": o_info.get("onlineServiceTotal"),
+                    "channelOnlineSum": o_info.get("channelOnlineSum"),
+                    "channelDirectSum": o_info.get("channelDirectSum"),
+                    "channelPostalSum": o_info.get("channelPostalSum"),
+                    "channelTotalSum": o_info.get("channelTotalSum"),
+                    "onlineOnTimeSum": o_info.get("onlineOnTimeSum"),
+                    "onlineOverdueSum": o_info.get("onlineOverdueSum"),
                 },
                 "TTTT_ThanhToanTrucTuyen": {
                     "score": tttt_score,
@@ -555,6 +589,8 @@ def update_api_index_detail(
     province_info["name"] = GIA_LAI_NAME
     province_info["code"] = GIA_LAI_CODE
     province_info["id"] = GIA_LAI_ROOT_ID
+    if processed["overview"].get("onlineService"):
+        province_info["onlineService"] = processed["overview"]["onlineService"]
 
     avail_dates = set(index_data.get("availableDates") or [])
     avail_dates.add(date_str)
@@ -583,6 +619,7 @@ def update_api_index_detail(
         "totalUnitsCount": len(processed["units"]),
         "agencyCount": len(processed["agencies"]),
         "communeCount": len(processed["communes"]),
+        "onlineService": processed["overview"].get("onlineService"),
     }
 
     # Chỉ giữ tối đa 3 kỳ trong overviewHistory của index.json
