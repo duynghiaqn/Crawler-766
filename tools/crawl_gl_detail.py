@@ -26,6 +26,7 @@ Sử dụng:
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import random
 import re
@@ -34,6 +35,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+import zlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -181,6 +183,23 @@ def get_random_headers() -> dict[str, str]:
     return headers
 
 
+def decode_response_content(response: Any) -> str:
+    """Read response bytes and decompress gzip/deflate if needed, returning decoded utf-8 text."""
+    raw_bytes = response.read()
+    content_encoding = (response.headers.get("Content-Encoding") or "").lower()
+    if "gzip" in content_encoding or raw_bytes.startswith(b"\x1f\x8b"):
+        try:
+            return gzip.decompress(raw_bytes).decode("utf-8", errors="replace")
+        except Exception:
+            pass
+    elif "deflate" in content_encoding:
+        try:
+            return zlib.decompress(raw_bytes).decode("utf-8", errors="replace")
+        except Exception:
+            pass
+    return raw_bytes.decode("utf-8", errors="replace")
+
+
 def fetch_dvc_endpoint(
     url: str,
     time_type: str,
@@ -223,7 +242,7 @@ def fetch_dvc_endpoint(
         try:
             with urllib.request.urlopen(request, timeout=timeout) as response:
                 status = response.status
-                raw_text = response.read().decode("utf-8", errors="replace")
+                raw_text = decode_response_content(response)
                 parsed = json.loads(raw_text)
                 if status not in (200, 201):
                     raise RuntimeError(f"API returned HTTP status {status}")
@@ -276,6 +295,44 @@ def _fetch_single_detail_endpoint(
             delay_min=delay_min,
             delay_max=delay_max,
         )
+        if code == "ONLINE" and raw_response and isinstance(raw_response.get("data"), dict):
+            ch_list = raw_response["data"].get("children", [])
+            if ch_list and isinstance(ch_list, list):
+                if pbar:
+                    pbar.set_postfix_str(f"Trích xuất ONLINE parent {len(ch_list)} đơn vị con...")
+
+                def _fetch_child_online(c_item: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+                    cid = c_item.get("departmentId")
+                    if not cid:
+                        return "", None
+                    try:
+                        cr = fetch_dvc_endpoint(
+                            ENDPOINT_ONLINE,
+                            time_type,
+                            year,
+                            period,
+                            root_dept_id=cid,
+                            page_size=1,
+                            timeout=min(20, timeout),
+                            max_retries=3,
+                            delay_min=0.01,
+                            delay_max=0.05,
+                        )
+                        return cid, cr.get("data", {}).get("parent")
+                    except Exception:
+                        return cid, None
+
+                with ThreadPoolExecutor(max_workers=12) as ex:
+                    child_parents = dict(ex.map(_fetch_child_online, ch_list))
+
+                for c_item in ch_list:
+                    cid = c_item.get("departmentId")
+                    cp = child_parents.get(cid)
+                    if cp and isinstance(cp, dict):
+                        for k, v in cp.items():
+                            if k not in ("children", "parent"):
+                                c_item[k] = v
+
         if pbar:
             pbar.update(1, status=f"{code} OK")
     except Exception as exc:

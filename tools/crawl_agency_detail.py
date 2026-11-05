@@ -462,7 +462,41 @@ def fetch_all_province_detail_endpoints(
                 timeout=timeout,
                 max_retries=max_retries,
             )
-            results[code] = resp.get("data", {}) if isinstance(resp, dict) else {}
+            data_val = resp.get("data", {}) if isinstance(resp, dict) else {}
+            if code == "ONLINE" and isinstance(data_val, dict):
+                ch_list = data_val.get("children", [])
+                if ch_list and isinstance(ch_list, list):
+                    def _fetch_child_online(c_item: dict[str, Any]) -> tuple[str, dict[str, Any] | None]:
+                        cid = c_item.get("departmentId")
+                        if not cid:
+                            return "", None
+                        try:
+                            cr = fetch_dvc_endpoint(
+                                ENDPOINT_ONLINE,
+                                time_type=time_type,
+                                year=year,
+                                period=period,
+                                root_dept_id=cid,
+                                page_size=1,
+                                current_page=1,
+                                timeout=min(20, timeout),
+                                max_retries=2,
+                            )
+                            return cid, cr.get("data", {}).get("parent")
+                        except Exception:
+                            return cid, None
+
+                    with ThreadPoolExecutor(max_workers=8) as ex:
+                        child_parents = dict(ex.map(_fetch_child_online, ch_list))
+
+                    for c_item in ch_list:
+                        cid = c_item.get("departmentId")
+                        cp = child_parents.get(cid)
+                        if cp and isinstance(cp, dict):
+                            for k, v in cp.items():
+                                if k not in ("children", "parent"):
+                                    c_item[k] = v
+            results[code] = data_val
         except Exception as exc:
             print(f"\n⚠️ Cảnh báo: Lỗi tải endpoint {code} cho rootDepartmentId={root_dept_id}: {exc}", file=sys.stderr)
             results[code] = {}
