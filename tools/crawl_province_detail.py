@@ -929,6 +929,7 @@ def extract_province_score_data(
                 "ratio": p_item.get("ratio"),
                 "score": group_scores["TDGQ"],
                 "maxScore": p_item.get("maxScore", 20),
+                "metrics": p_item.get("metrics", []),
             },
             "CKMB_CongKhaiMinhBach": {
                 "score": group_scores["CKMB"],
@@ -959,6 +960,7 @@ def extract_province_score_data(
                 "channelTotalSum": o_item.get("channelTotalSum"),
                 "onlineOnTimeSum": o_item.get("onlineOnTimeSum"),
                 "onlineOverdueSum": o_item.get("onlineOverdueSum"),
+                "metrics": o_item.get("metrics", []),
             },
             "TTTT_ThanhToanTrucTuyen": {
                 "score": group_scores["TTTT"],
@@ -967,7 +969,10 @@ def extract_province_score_data(
                 "totalDossierOnlinePaymentSuccess": pay_item.get("totalDossierOnlinePaymentSuccess"),
                 "totalDossierFinancialObligation": pay_item.get("totalDossierFinancialObligation"),
                 "totalDossierOnlineFormalityPaymentSuccess": pay_item.get("totalDossierOnlineFormalityPaymentSuccess"),
+                "totalFeeDossierFormalityDistinct": pay_item.get("totalFeeDossierFormalityDistinct"),
+                "totalFeeDossierFormality": pay_item.get("totalFeeDossierFormality"),
                 "totalFeeFormality": pay_item.get("totalFeeFormality"),
+                "metrics": pay_item.get("metrics", []),
             },
             "MDHL_MucDoHaiLong": {
                 "score": group_scores["MDHL"],
@@ -1011,6 +1016,9 @@ def extract_province_score_data(
     prov_delta = overview.get("scoreDelta")
 
     nat_online = ci_maps.get("ONLINE", {}).get("__overview__") or {}
+    nat_progress = ci_maps.get("TDGQ", {}).get("__overview__") or {}
+    nat_payment = ci_maps.get("TTTT", {}).get("__overview__") or {}
+
     ov_info: dict[str, Any] = {
         "departmentName": overview.get("departmentName", "Cả nước"),
         "totalScore": round(float(total_score_val), 2) if total_score_val is not None else None,
@@ -1039,6 +1047,37 @@ def extract_province_score_data(
             "channelTotalSum": nat_online.get("channelTotalSum"),
             "onlineOnTimeSum": nat_online.get("onlineOnTimeSum"),
             "onlineOverdueSum": nat_online.get("onlineOverdueSum"),
+            "metrics": nat_online.get("metrics", []),
+        }
+    if nat_progress:
+        ov_info["progressService"] = {
+            "departmentId": nat_progress.get("departmentId", "__overview__"),
+            "departmentName": nat_progress.get("departmentName", "Cả nước"),
+            "departmentCode": nat_progress.get("departmentCode"),
+            "totalScore": nat_progress.get("totalScore"),
+            "totalMaxScore": nat_progress.get("totalMaxScore", 20),
+            "ratio": nat_progress.get("ratio"),
+            "totalReceived": nat_progress.get("totalReceived"),
+            "totalOnTime": nat_progress.get("totalOnTime"),
+            "totalCompleted": nat_progress.get("totalCompleted"),
+            "avgProcessingDays": nat_progress.get("avgProcessingDays"),
+            "metrics": nat_progress.get("metrics", []),
+        }
+    if nat_payment:
+        ov_info["paymentService"] = {
+            "departmentId": nat_payment.get("departmentId", "__overview__"),
+            "departmentName": nat_payment.get("departmentName", "Cả nước"),
+            "departmentCode": nat_payment.get("departmentCode"),
+            "totalScore": nat_payment.get("totalScore"),
+            "totalMaxScore": nat_payment.get("totalMaxScore", 10),
+            "ratio": nat_payment.get("ratio"),
+            "totalDossierOnlinePaymentSuccess": nat_payment.get("totalDossierOnlinePaymentSuccess"),
+            "totalDossierFinancialObligation": nat_payment.get("totalDossierFinancialObligation"),
+            "totalDossierOnlineFormalityPaymentSuccess": nat_payment.get("totalDossierOnlineFormalityPaymentSuccess"),
+            "totalFeeDossierFormalityDistinct": nat_payment.get("totalFeeDossierFormalityDistinct"),
+            "totalFeeDossierFormality": nat_payment.get("totalFeeDossierFormality"),
+            "totalFeeFormality": nat_payment.get("totalFeeFormality"),
+            "metrics": nat_payment.get("metrics", []),
         }
 
     return {
@@ -1290,6 +1329,9 @@ def update_and_save_detail_index(
         "ratio": overview.get("ratio"),
         "scoreDelta": overview.get("scoreDelta"),
         "totalProvincesCount": overview.get("totalProvincesCount"),
+        "onlineService": overview.get("onlineService"),
+        "progressService": overview.get("progressService"),
+        "paymentService": overview.get("paymentService"),
     }
     index_detail_data["overviewHistory"] = {d: overview_history_detail[d] for d in allowed_detail_dates if d in overview_history_detail}
 

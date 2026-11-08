@@ -596,6 +596,7 @@ def process_province_agencies_details(
                     "ratio": p_info.get("ratio"),
                     "score": tdgq_score,
                     "maxScore": p_info.get("maxScore", 20),
+                    "metrics": p_info.get("metrics", []),
                 },
                 "CKMB_CongKhaiMinhBach": {
                     "score": ckmb_score,
@@ -626,6 +627,7 @@ def process_province_agencies_details(
                     "channelTotalSum": o_info.get("channelTotalSum"),
                     "onlineOnTimeSum": o_info.get("onlineOnTimeSum"),
                     "onlineOverdueSum": o_info.get("onlineOverdueSum"),
+                    "metrics": o_info.get("metrics", []),
                 },
                 "TTTT_ThanhToanTrucTuyen": {
                     "score": tttt_score,
@@ -634,7 +636,10 @@ def process_province_agencies_details(
                     "totalDossierOnlinePaymentSuccess": pay_info.get("totalDossierOnlinePaymentSuccess"),
                     "totalDossierFinancialObligation": pay_info.get("totalDossierFinancialObligation"),
                     "totalDossierOnlineFormalityPaymentSuccess": pay_info.get("totalDossierOnlineFormalityPaymentSuccess"),
+                    "totalFeeDossierFormalityDistinct": pay_info.get("totalFeeDossierFormalityDistinct"),
+                    "totalFeeDossierFormality": pay_info.get("totalFeeDossierFormality"),
                     "totalFeeFormality": pay_info.get("totalFeeFormality"),
+                    "metrics": pay_info.get("metrics", []),
                 },
                 "MDHL_MucDoHaiLong": {
                     "score": mdhl_score,

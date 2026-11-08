@@ -869,6 +869,7 @@ def update_api_index(output_dir: Path, score_data: dict[str, Any], date_str: str
     index_data["previousDate"] = prev_date
 
     ov_hist = index_data.setdefault("overviewHistory", {})
+    existing_ov = ov_hist.get(date_str, {})
     ov_hist[date_str] = {
         "date": date_str,
         "periodLabel": score_data["metadata"]["periodLabel"],
@@ -879,6 +880,9 @@ def update_api_index(output_dir: Path, score_data: dict[str, Any], date_str: str
         "totalUnitsCount": score_data["overview"].get("totalUnitsCount"),
         "agencyCount": score_data["overview"].get("agencyCount"),
         "communeCount": score_data["overview"].get("communeCount"),
+        "onlineService": score_data["overview"].get("onlineService") or existing_ov.get("onlineService"),
+        "progressService": score_data["overview"].get("progressService") or existing_ov.get("progressService"),
+        "paymentService": score_data["overview"].get("paymentService") or existing_ov.get("paymentService"),
     }
 
     # Chỉ giữ tối đa 3 kỳ trong overviewHistory của index.json

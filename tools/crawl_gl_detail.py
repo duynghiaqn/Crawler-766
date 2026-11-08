@@ -468,6 +468,41 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
             "channelTotalSum": online_parent.get("channelTotalSum"),
             "onlineOnTimeSum": online_parent.get("onlineOnTimeSum"),
             "onlineOverdueSum": online_parent.get("onlineOverdueSum"),
+            "metrics": online_parent.get("metrics", []),
+        }
+
+    prog_parent = prog_raw.get("parent") or {}
+    if prog_parent:
+        overview["progressService"] = {
+            "departmentId": prog_parent.get("departmentId", GIA_LAI_ROOT_ID),
+            "departmentName": prog_parent.get("departmentName", GIA_LAI_NAME),
+            "departmentCode": prog_parent.get("departmentCode", GIA_LAI_CODE),
+            "totalScore": round(float(prog_parent["totalScore"]), 2) if prog_parent.get("totalScore") is not None else None,
+            "totalMaxScore": round(float(prog_parent.get("totalMaxScore", 20)), 2),
+            "ratio": round(float(prog_parent["ratio"]), 2) if prog_parent.get("ratio") is not None else None,
+            "totalReceived": prog_parent.get("totalReceived"),
+            "totalOnTime": prog_parent.get("totalOnTime"),
+            "totalCompleted": prog_parent.get("totalCompleted"),
+            "avgProcessingDays": prog_parent.get("avgProcessingDays"),
+            "metrics": prog_parent.get("metrics", []),
+        }
+
+    pay_parent = pay_raw.get("parent") or {}
+    if pay_parent:
+        overview["paymentService"] = {
+            "departmentId": pay_parent.get("departmentId", GIA_LAI_ROOT_ID),
+            "departmentName": pay_parent.get("departmentName", GIA_LAI_NAME),
+            "departmentCode": pay_parent.get("departmentCode", GIA_LAI_CODE),
+            "totalScore": round(float(pay_parent["totalScore"]), 2) if pay_parent.get("totalScore") is not None else None,
+            "totalMaxScore": round(float(pay_parent.get("totalMaxScore", 10)), 2),
+            "ratio": round(float(pay_parent["ratio"]), 2) if pay_parent.get("ratio") is not None else None,
+            "totalDossierOnlinePaymentSuccess": pay_parent.get("totalDossierOnlinePaymentSuccess"),
+            "totalDossierFinancialObligation": pay_parent.get("totalDossierFinancialObligation"),
+            "totalDossierOnlineFormalityPaymentSuccess": pay_parent.get("totalDossierOnlineFormalityPaymentSuccess"),
+            "totalFeeDossierFormalityDistinct": pay_parent.get("totalFeeDossierFormalityDistinct"),
+            "totalFeeDossierFormality": pay_parent.get("totalFeeDossierFormality"),
+            "totalFeeFormality": pay_parent.get("totalFeeFormality"),
+            "metrics": pay_parent.get("metrics", []),
         }
     evaluation_list = sr_raw.get("evaluation") or []
 
@@ -540,6 +575,7 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
                     "ratio": p_info.get("ratio"),
                     "score": tdgq_score,
                     "maxScore": p_info.get("maxScore", 20),
+                    "metrics": p_info.get("metrics", []),
                 },
                 "CKMB_CongKhaiMinhBach": {
                     "score": ckmb_score,
@@ -570,6 +606,7 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
                     "channelTotalSum": o_info.get("channelTotalSum"),
                     "onlineOnTimeSum": o_info.get("onlineOnTimeSum"),
                     "onlineOverdueSum": o_info.get("onlineOverdueSum"),
+                    "metrics": o_info.get("metrics", []),
                 },
                 "TTTT_ThanhToanTrucTuyen": {
                     "score": tttt_score,
@@ -578,7 +615,10 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
                     "totalDossierOnlinePaymentSuccess": pay_info.get("totalDossierOnlinePaymentSuccess"),
                     "totalDossierFinancialObligation": pay_info.get("totalDossierFinancialObligation"),
                     "totalDossierOnlineFormalityPaymentSuccess": pay_info.get("totalDossierOnlineFormalityPaymentSuccess"),
+                    "totalFeeDossierFormalityDistinct": pay_info.get("totalFeeDossierFormalityDistinct"),
+                    "totalFeeDossierFormality": pay_info.get("totalFeeDossierFormality"),
                     "totalFeeFormality": pay_info.get("totalFeeFormality"),
+                    "metrics": pay_info.get("metrics", []),
                 },
                 "MDHL_MucDoHaiLong": {
                     "score": mdhl_score,
@@ -648,6 +688,10 @@ def update_api_index_detail(
     province_info["id"] = GIA_LAI_ROOT_ID
     if processed["overview"].get("onlineService"):
         province_info["onlineService"] = processed["overview"]["onlineService"]
+    if processed["overview"].get("progressService"):
+        province_info["progressService"] = processed["overview"]["progressService"]
+    if processed["overview"].get("paymentService"):
+        province_info["paymentService"] = processed["overview"]["paymentService"]
 
     avail_dates = set(index_data.get("availableDates") or [])
     avail_dates.add(date_str)
@@ -677,6 +721,8 @@ def update_api_index_detail(
         "agencyCount": len(processed["agencies"]),
         "communeCount": len(processed["communes"]),
         "onlineService": processed["overview"].get("onlineService"),
+        "progressService": processed["overview"].get("progressService"),
+        "paymentService": processed["overview"].get("paymentService"),
     }
 
     # Chỉ giữ tối đa 3 kỳ trong overviewHistory của index.json

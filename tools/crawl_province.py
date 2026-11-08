@@ -1156,6 +1156,7 @@ def update_and_save_summary_index(
     index_data["previousDate"] = prev_date
 
     overview_history = index_data.setdefault("overviewHistory", {})
+    existing_ov = overview_history.get(date_str, {})
     overview_history[date_str] = {
         "date": date_str,
         "periodLabel": meta.get("periodLabel"),
@@ -1167,6 +1168,9 @@ def update_and_save_summary_index(
         "ratio": overview.get("ratio"),
         "scoreDelta": overview.get("scoreDelta"),
         "totalProvincesCount": overview.get("totalProvincesCount"),
+        "onlineService": overview.get("onlineService") or existing_ov.get("onlineService"),
+        "progressService": overview.get("progressService") or existing_ov.get("progressService"),
+        "paymentService": overview.get("paymentService") or existing_ov.get("paymentService"),
     }
 
     index_data["overviewHistory"] = {d: overview_history[d] for d in allowed_index_dates if d in overview_history}
