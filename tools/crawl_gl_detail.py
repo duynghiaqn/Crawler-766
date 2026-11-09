@@ -437,6 +437,125 @@ def fetch_all_detailed_endpoints(
     return raw_endpoints
 
 
+def compute_online_submetrics(
+    authority_count: int | None,
+    partial_count: int | None,
+    full_count: int | None,
+    online_dossier_count: int | None,
+    online_service_total: int | None,
+    channel_online_sum: int | None,
+    channel_direct_sum: int | None,
+    channel_postal_sum: int | None,
+    channel_total_sum: int | None,
+    online_on_time_sum: int | None,
+    online_overdue_sum: int | None,
+) -> dict[str, Any]:
+    """Calculate normalized DVCTT sub-metrics based on official DVCQG logic."""
+    online_prov_ratio = None
+    if authority_count and authority_count > 0:
+        online_prov_ratio = round(((partial_count or 0) + (full_count or 0)) / authority_count * 100, 2)
+
+    has_dossier_ratio = None
+    if online_service_total and online_service_total > 0:
+        has_dossier_ratio = round((online_dossier_count or 0) / online_service_total * 100, 2)
+
+    tot_channel = channel_total_sum if (channel_total_sum is not None and channel_total_sum > 0) else ((channel_online_sum or 0) + (channel_direct_sum or 0) + (channel_postal_sum or 0))
+    online_channel_ratio = None
+    if tot_channel and tot_channel > 0:
+        online_channel_ratio = round((channel_online_sum or 0) / tot_channel * 100, 2)
+
+    tot_online_proc = (online_on_time_sum or 0) + (online_overdue_sum or 0)
+    online_on_time_ratio = None
+    if tot_online_proc and tot_online_proc > 0:
+        online_on_time_ratio = round((online_on_time_sum or 0) / tot_online_proc * 100, 2)
+
+    return {
+        "formalityOnlineProvisionRatio": online_prov_ratio,
+        "onlineServiceHasDossierRatio": has_dossier_ratio,
+        "dossierOnlineChannelRatio": online_channel_ratio,
+        "onlineDossierOnTimeRatio": online_on_time_ratio,
+    }
+
+
+def compute_payment_submetrics(
+    total_dossier_payment_success: int | None,
+    total_dossier_financial_obligation: int | None,
+    total_formality_payment_success: int | None,
+    total_fee_formality_distinct: int | None,
+    total_fee_dossier_formality: int | None,
+    total_fee_formality: int | None,
+) -> dict[str, Any]:
+    """Calculate normalized TTTT sub-metrics based on official DVCQG logic."""
+    payment_dossier_ratio = None
+    if total_dossier_financial_obligation and total_dossier_financial_obligation > 0:
+        payment_dossier_ratio = round((total_dossier_payment_success or 0) / total_dossier_financial_obligation * 100, 2)
+
+    formality_trans_ratio = None
+    if total_fee_formality_distinct and total_fee_formality_distinct > 0:
+        formality_trans_ratio = round((total_formality_payment_success or 0) / total_fee_formality_distinct * 100, 2)
+
+    formality_config_ratio = None
+    if total_fee_formality and total_fee_formality > 0:
+        formality_config_ratio = round((total_fee_dossier_formality or 0) / total_fee_formality * 100, 2)
+
+    return {
+        "paymentDossierRatio": payment_dossier_ratio,
+        "paymentFormalityTransactionRatio": formality_trans_ratio,
+        "paymentFormalityConfigRatio": formality_config_ratio,
+    }
+
+
+def compute_progress_submetrics(
+    total_received: int | None,
+    total_on_time: int | None,
+    total_completed: int | None,
+    total_overdue: int | None,
+) -> dict[str, Any]:
+    """Calculate normalized TDGQ sub-metrics based on official DVCQG logic."""
+    on_time_ratio = None
+    if total_received and total_received > 0:
+        on_time_ratio = round((total_on_time or 0) / total_received * 100, 2)
+    elif total_completed and total_completed > 0:
+        on_time_ratio = round((total_on_time or 0) / total_completed * 100, 2)
+
+    overdue_ratio = None
+    if total_received and total_received > 0:
+        overdue_ratio = round((total_overdue or 0) / total_received * 100, 2)
+
+    return {
+        "onTimeRatio": on_time_ratio,
+        "overdueRatio": overdue_ratio,
+    }
+
+
+def extract_digitized_indicators(d_info: dict[str, Any]) -> dict[str, Any]:
+    """Extract helper metrics from MDSH metrics array."""
+    metrics_list = d_info.get("metrics") or []
+    extracted: dict[str, Any] = {
+        "resultDigitizedDossiers": None,
+        "digitizedDossiers": None,
+        "reusedDataDossiers": None,
+        "syncedStorageDossiers": None,
+        "citizenConnectedDossiers": None,
+    }
+    for m in metrics_list:
+        if not isinstance(m, dict):
+            continue
+        code = m.get("code")
+        num = m.get("numerator")
+        if code == "ORIGINAL_RESULT_AVAILABLE":
+            extracted["resultDigitizedDossiers"] = num
+        elif code == "SO_HOA_GIAY_TO_GIAI_QUYET":
+            extracted["digitizedDossiers"] = num
+        elif code == "REUSED_DIGITIZED_DATA":
+            extracted["reusedDataDossiers"] = num
+        elif code == "SYNCED_WITH_DVCQG_PERSONAL_STORAGE":
+            extracted["syncedStorageDossiers"] = num
+        elif code == "CITIZEN_DATA_CONNECTED_DOSSIER":
+            extracted["citizenConnectedDossiers"] = num
+    return extracted
+
+
 def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str, Any]:
     """Combine and build complete sub-criteria indicator breakdown for all 149 Gia Lai child units."""
     sr_raw = raw_endpoints.get("SERVICE_RESULTS", {}).get("data", {})
@@ -450,6 +569,17 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
     overview = sr_raw.get("overview") or {}
     online_parent = online_raw.get("parent") or {}
     if online_parent:
+        ov_auth = online_parent.get("authorityCount")
+        ov_part = online_parent.get("partialCount")
+        ov_full = online_parent.get("fullCount")
+        ov_on_dos = online_parent.get("onlineDossierCount")
+        ov_on_tot = online_parent.get("onlineServiceTotal")
+        ov_ch_on = online_parent.get("channelOnlineSum")
+        ov_ch_dir = online_parent.get("channelDirectSum")
+        ov_ch_pos = online_parent.get("channelPostalSum")
+        ov_ch_tot = online_parent.get("channelTotalSum")
+        ov_on_time = online_parent.get("onlineOnTimeSum")
+        ov_on_over = online_parent.get("onlineOverdueSum")
         overview["onlineService"] = {
             "departmentId": online_parent.get("departmentId", GIA_LAI_ROOT_ID),
             "departmentName": online_parent.get("departmentName", GIA_LAI_NAME),
@@ -457,22 +587,30 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
             "totalScore": round(float(online_parent["totalScore"]), 2) if online_parent.get("totalScore") is not None else None,
             "totalMaxScore": round(float(online_parent.get("totalMaxScore", 12)), 2),
             "ratio": round(float(online_parent["ratio"]), 2) if online_parent.get("ratio") is not None else None,
-            "authorityCount": online_parent.get("authorityCount"),
-            "partialCount": online_parent.get("partialCount"),
-            "fullCount": online_parent.get("fullCount"),
-            "onlineDossierCount": online_parent.get("onlineDossierCount"),
-            "onlineServiceTotal": online_parent.get("onlineServiceTotal"),
-            "channelOnlineSum": online_parent.get("channelOnlineSum"),
-            "channelDirectSum": online_parent.get("channelDirectSum"),
-            "channelPostalSum": online_parent.get("channelPostalSum"),
-            "channelTotalSum": online_parent.get("channelTotalSum"),
-            "onlineOnTimeSum": online_parent.get("onlineOnTimeSum"),
-            "onlineOverdueSum": online_parent.get("onlineOverdueSum"),
+            "authorityCount": ov_auth,
+            "partialCount": ov_part,
+            "fullCount": ov_full,
+            "onlineDossierCount": ov_on_dos,
+            "onlineServiceTotal": ov_on_tot,
+            "channelOnlineSum": ov_ch_on,
+            "channelDirectSum": ov_ch_dir,
+            "channelPostalSum": ov_ch_pos,
+            "channelTotalSum": ov_ch_tot,
+            "onlineOnTimeSum": ov_on_time,
+            "onlineOverdueSum": ov_on_over,
+            "subMetrics": compute_online_submetrics(
+                ov_auth, ov_part, ov_full, ov_on_dos, ov_on_tot,
+                ov_ch_on, ov_ch_dir, ov_ch_pos, ov_ch_tot, ov_on_time, ov_on_over
+            ),
             "metrics": online_parent.get("metrics", []),
         }
 
     prog_parent = prog_raw.get("parent") or {}
     if prog_parent:
+        p_recv = prog_parent.get("totalReceived")
+        p_ontime = prog_parent.get("totalOnTime")
+        p_comp = prog_parent.get("totalCompleted")
+        p_over = prog_parent.get("totalOverdue")
         overview["progressService"] = {
             "departmentId": prog_parent.get("departmentId", GIA_LAI_ROOT_ID),
             "departmentName": prog_parent.get("departmentName", GIA_LAI_NAME),
@@ -480,15 +618,23 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
             "totalScore": round(float(prog_parent["totalScore"]), 2) if prog_parent.get("totalScore") is not None else None,
             "totalMaxScore": round(float(prog_parent.get("totalMaxScore", 20)), 2),
             "ratio": round(float(prog_parent["ratio"]), 2) if prog_parent.get("ratio") is not None else None,
-            "totalReceived": prog_parent.get("totalReceived"),
-            "totalOnTime": prog_parent.get("totalOnTime"),
-            "totalCompleted": prog_parent.get("totalCompleted"),
+            "totalReceived": p_recv,
+            "totalOnTime": p_ontime,
+            "totalCompleted": p_comp,
+            "totalOverdue": p_over,
             "avgProcessingDays": prog_parent.get("avgProcessingDays"),
+            "subMetrics": compute_progress_submetrics(p_recv, p_ontime, p_comp, p_over),
             "metrics": prog_parent.get("metrics", []),
         }
 
     pay_parent = pay_raw.get("parent") or {}
     if pay_parent:
+        py_dos_ok = pay_parent.get("totalDossierOnlinePaymentSuccess")
+        py_dos_fin = pay_parent.get("totalDossierFinancialObligation")
+        py_form_ok = pay_parent.get("totalDossierOnlineFormalityPaymentSuccess")
+        py_form_dist = pay_parent.get("totalFeeDossierFormalityDistinct")
+        py_form_cfg = pay_parent.get("totalFeeDossierFormality")
+        py_form_tot = pay_parent.get("totalFeeFormality")
         overview["paymentService"] = {
             "departmentId": pay_parent.get("departmentId", GIA_LAI_ROOT_ID),
             "departmentName": pay_parent.get("departmentName", GIA_LAI_NAME),
@@ -496,12 +642,15 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
             "totalScore": round(float(pay_parent["totalScore"]), 2) if pay_parent.get("totalScore") is not None else None,
             "totalMaxScore": round(float(pay_parent.get("totalMaxScore", 10)), 2),
             "ratio": round(float(pay_parent["ratio"]), 2) if pay_parent.get("ratio") is not None else None,
-            "totalDossierOnlinePaymentSuccess": pay_parent.get("totalDossierOnlinePaymentSuccess"),
-            "totalDossierFinancialObligation": pay_parent.get("totalDossierFinancialObligation"),
-            "totalDossierOnlineFormalityPaymentSuccess": pay_parent.get("totalDossierOnlineFormalityPaymentSuccess"),
-            "totalFeeDossierFormalityDistinct": pay_parent.get("totalFeeDossierFormalityDistinct"),
-            "totalFeeDossierFormality": pay_parent.get("totalFeeDossierFormality"),
-            "totalFeeFormality": pay_parent.get("totalFeeFormality"),
+            "totalDossierOnlinePaymentSuccess": py_dos_ok,
+            "totalDossierFinancialObligation": py_dos_fin,
+            "totalDossierOnlineFormalityPaymentSuccess": py_form_ok,
+            "totalFeeDossierFormalityDistinct": py_form_dist,
+            "totalFeeDossierFormality": py_form_cfg,
+            "totalFeeFormality": py_form_tot,
+            "subMetrics": compute_payment_submetrics(
+                py_dos_ok, py_dos_fin, py_form_ok, py_form_dist, py_form_cfg, py_form_tot
+            ),
             "metrics": pay_parent.get("metrics", []),
         }
     evaluation_list = sr_raw.get("evaluation") or []
@@ -550,6 +699,32 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
             known_sum = round(ckmb_score + tdgq_score + online_score + tttt_score + mdsh_score, 2)
             mdhl_score = max(0.0, round(total_score - known_sum, 2)) if total_score > 0 else 0.0
 
+        p_recv = p_info.get("totalReceived")
+        p_ontime = p_info.get("totalOnTime")
+        p_comp = p_info.get("totalCompleted")
+        p_over = p_info.get("totalOverdue")
+
+        o_auth = o_info.get("authorityCount")
+        o_part = o_info.get("partialCount")
+        o_full = o_info.get("fullCount")
+        o_on_dos = o_info.get("onlineDossierCount")
+        o_on_tot = o_info.get("onlineServiceTotal")
+        o_ch_on = o_info.get("channelOnlineSum")
+        o_ch_dir = o_info.get("channelDirectSum")
+        o_ch_pos = o_info.get("channelPostalSum")
+        o_ch_tot = o_info.get("channelTotalSum")
+        o_on_time = o_info.get("onlineOnTimeSum")
+        o_on_over = o_info.get("onlineOverdueSum")
+
+        pay_dos_ok = pay_info.get("totalDossierOnlinePaymentSuccess")
+        pay_dos_fin = pay_info.get("totalDossierFinancialObligation")
+        pay_form_ok = pay_info.get("totalDossierOnlineFormalityPaymentSuccess")
+        pay_form_dist = pay_info.get("totalFeeDossierFormalityDistinct")
+        pay_form_cfg = pay_info.get("totalFeeDossierFormality")
+        pay_form_tot = pay_info.get("totalFeeFormality")
+
+        digitized_extracted = extract_digitized_indicators(d_info)
+
         unit_record = {
             "departmentId": did,
             "departmentName": name,
@@ -568,13 +743,15 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
             },
             "componentIndicators": {
                 "TDGQ_TienDoGiaiQuyet": {
-                    "totalReceived": p_info.get("totalReceived"),
-                    "totalOnTime": p_info.get("totalOnTime"),
-                    "totalOverdue": p_info.get("totalOverdue"),
+                    "totalReceived": p_recv,
+                    "totalOnTime": p_ontime,
+                    "totalCompleted": p_comp,
+                    "totalOverdue": p_over,
                     "avgProcessingDays": p_info.get("avgProcessingDays"),
                     "ratio": p_info.get("ratio"),
                     "score": tdgq_score,
                     "maxScore": p_info.get("maxScore", 20),
+                    "subMetrics": compute_progress_submetrics(p_recv, p_ontime, p_comp, p_over),
                     "metrics": p_info.get("metrics", []),
                 },
                 "CKMB_CongKhaiMinhBach": {
@@ -587,6 +764,11 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
                     "score": mdsh_score,
                     "maxScore": d_info.get("totalMaxScore", 22),
                     "ratio": d_info.get("ratio"),
+                    "resultDigitizedDossiers": digitized_extracted["resultDigitizedDossiers"],
+                    "digitizedDossiers": digitized_extracted["digitizedDossiers"],
+                    "reusedDataDossiers": digitized_extracted["reusedDataDossiers"],
+                    "syncedStorageDossiers": digitized_extracted["syncedStorageDossiers"],
+                    "citizenConnectedDossiers": digitized_extracted["citizenConnectedDossiers"],
                     "metrics": d_info.get("metrics", []),
                 },
                 "ONLINE_DichVuTrucTuyen": {
@@ -595,29 +777,36 @@ def process_detailed_units(raw_endpoints: dict[str, dict[str, Any]]) -> dict[str
                     "totalScore": o_info.get("totalScore", online_score),
                     "totalMaxScore": o_info.get("totalMaxScore", 12),
                     "ratio": o_info.get("ratio"),
-                    "authorityCount": o_info.get("authorityCount"),
-                    "partialCount": o_info.get("partialCount"),
-                    "fullCount": o_info.get("fullCount"),
-                    "onlineDossierCount": o_info.get("onlineDossierCount"),
-                    "onlineServiceTotal": o_info.get("onlineServiceTotal"),
-                    "channelOnlineSum": o_info.get("channelOnlineSum"),
-                    "channelDirectSum": o_info.get("channelDirectSum"),
-                    "channelPostalSum": o_info.get("channelPostalSum"),
-                    "channelTotalSum": o_info.get("channelTotalSum"),
-                    "onlineOnTimeSum": o_info.get("onlineOnTimeSum"),
-                    "onlineOverdueSum": o_info.get("onlineOverdueSum"),
+                    "authorityCount": o_auth,
+                    "partialCount": o_part,
+                    "fullCount": o_full,
+                    "onlineDossierCount": o_on_dos,
+                    "onlineServiceTotal": o_on_tot,
+                    "channelOnlineSum": o_ch_on,
+                    "channelDirectSum": o_ch_dir,
+                    "channelPostalSum": o_ch_pos,
+                    "channelTotalSum": o_ch_tot,
+                    "onlineOnTimeSum": o_on_time,
+                    "onlineOverdueSum": o_on_over,
+                    "subMetrics": compute_online_submetrics(
+                        o_auth, o_part, o_full, o_on_dos, o_on_tot,
+                        o_ch_on, o_ch_dir, o_ch_pos, o_ch_tot, o_on_time, o_on_over
+                    ),
                     "metrics": o_info.get("metrics", []),
                 },
                 "TTTT_ThanhToanTrucTuyen": {
                     "score": tttt_score,
                     "maxScore": pay_info.get("totalMaxScore", 10),
                     "ratio": pay_info.get("ratio"),
-                    "totalDossierOnlinePaymentSuccess": pay_info.get("totalDossierOnlinePaymentSuccess"),
-                    "totalDossierFinancialObligation": pay_info.get("totalDossierFinancialObligation"),
-                    "totalDossierOnlineFormalityPaymentSuccess": pay_info.get("totalDossierOnlineFormalityPaymentSuccess"),
-                    "totalFeeDossierFormalityDistinct": pay_info.get("totalFeeDossierFormalityDistinct"),
-                    "totalFeeDossierFormality": pay_info.get("totalFeeDossierFormality"),
-                    "totalFeeFormality": pay_info.get("totalFeeFormality"),
+                    "totalDossierOnlinePaymentSuccess": pay_dos_ok,
+                    "totalDossierFinancialObligation": pay_dos_fin,
+                    "totalDossierOnlineFormalityPaymentSuccess": pay_form_ok,
+                    "totalFeeDossierFormalityDistinct": pay_form_dist,
+                    "totalFeeDossierFormality": pay_form_cfg,
+                    "totalFeeFormality": pay_form_tot,
+                    "subMetrics": compute_payment_submetrics(
+                        pay_dos_ok, pay_dos_fin, pay_form_ok, pay_form_dist, pay_form_cfg, pay_form_tot
+                    ),
                     "metrics": pay_info.get("metrics", []),
                 },
                 "MDHL_MucDoHaiLong": {
