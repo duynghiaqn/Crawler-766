@@ -1,0 +1,5304 @@
+{
+  "provinceCode": "H01",
+  "provinceName": "UBND tỉnh An Giang",
+  "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+  "agencyCount": 15,
+  "agenciesDetail": [
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e9-0249dc1612b2",
+      "departmentName": "Thanh tra tỉnh An Giang",
+      "departmentCode": "H01.08",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 82.0,
+      "totalMaxScore": 100,
+      "ratio": 95.35,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 20.0,
+        "ONLINE": 8.0,
+        "TTTT": 10.0,
+        "MDSH": 22.0,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 0,
+          "totalOnTime": 0,
+          "totalCompleted": null,
+          "totalOverdue": 0,
+          "avgProcessingDays": 0,
+          "ratio": 100,
+          "score": 20.0,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": null,
+            "overdueRatio": null
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 20,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 0,
+                "completed": 0
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": null,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 22.0,
+          "maxScore": 22,
+          "ratio": 100,
+          "resultDigitizedDossiers": 0,
+          "digitizedDossiers": 0,
+          "reusedDataDossiers": 0,
+          "syncedStorageDossiers": 0,
+          "citizenConnectedDossiers": 0,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 4,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 4,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 2,
+              "denominator": 2,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 8.0,
+          "maxScore": 12,
+          "totalScore": 8,
+          "totalMaxScore": 12,
+          "ratio": 66.67,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 0,
+          "onlineServiceTotal": 3,
+          "channelOnlineSum": 0,
+          "channelDirectSum": 0,
+          "channelPostalSum": 0,
+          "channelTotalSum": 0,
+          "onlineOnTimeSum": 0,
+          "onlineOverdueSum": 0,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 0.0,
+            "dossierOnlineChannelRatio": null,
+            "onlineDossierOnTimeRatio": null
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 0,
+              "denominator": 3,
+              "ratio": 0,
+              "score": 0,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 0,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": null,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 0,
+                "overdue": 0
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 10.0,
+          "maxScore": 10,
+          "ratio": 100,
+          "totalDossierOnlinePaymentSuccess": 0,
+          "totalDossierFinancialObligation": 0,
+          "totalDossierOnlineFormalityPaymentSuccess": 0,
+          "totalFeeDossierFormalityDistinct": 0,
+          "totalFeeDossierFormality": 0,
+          "totalFeeFormality": 0,
+          "subMetrics": {
+            "paymentDossierRatio": null,
+            "paymentFormalityTransactionRatio": null,
+            "paymentFormalityConfigRatio": null
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 0,
+          "classifiedPetitions": 0,
+          "totalDossiers": 0,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 1
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e9-5ebbf67a8511",
+      "departmentName": "Ban Quản lý Khu kinh tế - tỉnh An Giang",
+      "departmentCode": "H01.13",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 79.54,
+      "totalMaxScore": 100,
+      "ratio": 92.49,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 20.0,
+        "ONLINE": 8.77,
+        "TTTT": 10.0,
+        "MDSH": 18.77,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 47,
+          "totalOnTime": 47,
+          "totalCompleted": null,
+          "totalOverdue": 0,
+          "avgProcessingDays": 11.6,
+          "ratio": 100,
+          "score": 20.0,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 100.0,
+            "overdueRatio": 0.0
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 47,
+              "denominator": 47,
+              "ratio": 100,
+              "score": 20,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 0,
+                "completed": 29
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 50,
+              "denominator": 50,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 18.77,
+          "maxScore": 22,
+          "ratio": 85.32,
+          "resultDigitizedDossiers": 29,
+          "digitizedDossiers": 29,
+          "reusedDataDossiers": 42,
+          "syncedStorageDossiers": 9,
+          "citizenConnectedDossiers": 47,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 29,
+              "denominator": 29,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 29,
+              "denominator": 29,
+              "ratio": 100,
+              "score": 4,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 42,
+              "denominator": 47,
+              "ratio": 89.36,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 9,
+              "denominator": 47,
+              "ratio": 19.15,
+              "score": 0.77,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 47,
+              "denominator": 47,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 42,
+              "denominator": 42,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 8.77,
+          "maxScore": 12,
+          "totalScore": 8.77,
+          "totalMaxScore": 12,
+          "ratio": 73.08,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 9,
+          "onlineServiceTotal": 47,
+          "channelOnlineSum": 47,
+          "channelDirectSum": 0,
+          "channelPostalSum": 0,
+          "channelTotalSum": 47,
+          "onlineOnTimeSum": 47,
+          "onlineOverdueSum": 0,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 19.15,
+            "dossierOnlineChannelRatio": 100.0,
+            "onlineDossierOnTimeRatio": 100.0
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 9,
+              "denominator": 47,
+              "ratio": 19.15,
+              "score": 0.77,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 47,
+              "denominator": 47,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 0,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 47,
+              "denominator": 47,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 47,
+                "overdue": 0
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 10.0,
+          "maxScore": 10,
+          "ratio": 100,
+          "totalDossierOnlinePaymentSuccess": 0,
+          "totalDossierFinancialObligation": 0,
+          "totalDossierOnlineFormalityPaymentSuccess": 0,
+          "totalFeeDossierFormalityDistinct": 0,
+          "totalFeeDossierFormality": 0,
+          "totalFeeFormality": 0,
+          "subMetrics": {
+            "paymentDossierRatio": null,
+            "paymentFormalityTransactionRatio": null,
+            "paymentFormalityConfigRatio": null
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 0,
+          "classifiedPetitions": 0,
+          "totalDossiers": 47,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 47,
+              "denominator": 47,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 2
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e9-a6744450cc6f",
+      "departmentName": "Ban Quản lý Khu kinh tế Phú Quốc - tỉnh An Giang",
+      "departmentCode": "H01.16",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 79.49,
+      "totalMaxScore": 100,
+      "ratio": 92.43,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 20.0,
+        "ONLINE": 9.11,
+        "TTTT": 10.0,
+        "MDSH": 18.38,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 550,
+          "totalOnTime": 550,
+          "totalCompleted": null,
+          "totalOverdue": 0,
+          "avgProcessingDays": 9.75,
+          "ratio": 100,
+          "score": 20.0,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 100.0,
+            "overdueRatio": 0.0
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 550,
+              "denominator": 550,
+              "ratio": 100,
+              "score": 20,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 0,
+                "completed": 501
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 559,
+              "denominator": 559,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 18.38,
+          "maxScore": 22,
+          "ratio": 83.55,
+          "resultDigitizedDossiers": 488,
+          "digitizedDossiers": 500,
+          "reusedDataDossiers": 501,
+          "syncedStorageDossiers": 76,
+          "citizenConnectedDossiers": 549,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 488,
+              "denominator": 501,
+              "ratio": 97.41,
+              "score": 5.84,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 500,
+              "denominator": 501,
+              "ratio": 99.8,
+              "score": 3.99,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 501,
+              "denominator": 550,
+              "ratio": 91.09,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 76,
+              "denominator": 550,
+              "ratio": 13.82,
+              "score": 0.55,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 549,
+              "denominator": 550,
+              "ratio": 99.82,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 42,
+              "denominator": 42,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 9.11,
+          "maxScore": 12,
+          "totalScore": 9.11,
+          "totalMaxScore": 12,
+          "ratio": 75.92,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 13,
+          "onlineServiceTotal": 47,
+          "channelOnlineSum": 549,
+          "channelDirectSum": 1,
+          "channelPostalSum": 0,
+          "channelTotalSum": 550,
+          "onlineOnTimeSum": 549,
+          "onlineOverdueSum": 0,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 27.66,
+            "dossierOnlineChannelRatio": 99.82,
+            "onlineDossierOnTimeRatio": 100.0
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 13,
+              "denominator": 47,
+              "ratio": 27.66,
+              "score": 1.11,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 549,
+              "denominator": 550,
+              "ratio": 99.82,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 1,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 549,
+              "denominator": 549,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 549,
+                "overdue": 0
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 10.0,
+          "maxScore": 10,
+          "ratio": 100,
+          "totalDossierOnlinePaymentSuccess": 0,
+          "totalDossierFinancialObligation": 0,
+          "totalDossierOnlineFormalityPaymentSuccess": 0,
+          "totalFeeDossierFormalityDistinct": 0,
+          "totalFeeDossierFormality": 0,
+          "totalFeeFormality": 0,
+          "subMetrics": {
+            "paymentDossierRatio": null,
+            "paymentFormalityTransactionRatio": null,
+            "paymentFormalityConfigRatio": null
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 0,
+          "classifiedPetitions": 0,
+          "totalDossiers": 550,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 548,
+              "denominator": 550,
+              "ratio": 99.64,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 3
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e8-e2ba4cf4edfb",
+      "departmentName": "Sở Công Thương - tỉnh An Giang",
+      "departmentCode": "H01.06",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 77.94,
+      "totalMaxScore": 100,
+      "ratio": 90.63,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 19.85,
+        "ONLINE": 8.39,
+        "TTTT": 10.0,
+        "MDSH": 17.7,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 913,
+          "totalOnTime": 906,
+          "totalCompleted": null,
+          "totalOverdue": 7,
+          "avgProcessingDays": 10.02,
+          "ratio": 99.23,
+          "score": 19.85,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 99.23,
+            "overdueRatio": 0.77
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 906,
+              "denominator": 913,
+              "ratio": 99.23,
+              "score": 19.85,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 7,
+                "completed": 643
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 1143,
+              "denominator": 1143,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 17.7,
+          "maxScore": 22,
+          "ratio": 80.45,
+          "resultDigitizedDossiers": 604,
+          "digitizedDossiers": 641,
+          "reusedDataDossiers": 597,
+          "syncedStorageDossiers": 134,
+          "citizenConnectedDossiers": 911,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 604,
+              "denominator": 643,
+              "ratio": 93.93,
+              "score": 5.64,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 641,
+              "denominator": 643,
+              "ratio": 99.69,
+              "score": 3.99,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 597,
+              "denominator": 913,
+              "ratio": 65.39,
+              "score": 1.63,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 134,
+              "denominator": 913,
+              "ratio": 14.68,
+              "score": 0.59,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 911,
+              "denominator": 913,
+              "ratio": 99.78,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 74,
+              "denominator": 80,
+              "ratio": 92.5,
+              "score": 1.85,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 8.39,
+          "maxScore": 12,
+          "totalScore": 8.39,
+          "totalMaxScore": 12,
+          "ratio": 69.92,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 29,
+          "onlineServiceTotal": 300,
+          "channelOnlineSum": 911,
+          "channelDirectSum": 2,
+          "channelPostalSum": 0,
+          "channelTotalSum": 913,
+          "onlineOnTimeSum": 904,
+          "onlineOverdueSum": 7,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 9.67,
+            "dossierOnlineChannelRatio": 99.78,
+            "onlineDossierOnTimeRatio": 99.23
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 29,
+              "denominator": 300,
+              "ratio": 9.67,
+              "score": 0.39,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 911,
+              "denominator": 913,
+              "ratio": 99.78,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 2,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 904,
+              "denominator": 911,
+              "ratio": 99.23,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 904,
+                "overdue": 7
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 10.0,
+          "maxScore": 10,
+          "ratio": 100,
+          "totalDossierOnlinePaymentSuccess": 0,
+          "totalDossierFinancialObligation": 0,
+          "totalDossierOnlineFormalityPaymentSuccess": 0,
+          "totalFeeDossierFormalityDistinct": 0,
+          "totalFeeDossierFormality": 0,
+          "totalFeeFormality": 0,
+          "subMetrics": {
+            "paymentDossierRatio": null,
+            "paymentFormalityTransactionRatio": null,
+            "paymentFormalityConfigRatio": null
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 4,
+          "classifiedPetitions": 4,
+          "totalDossiers": 913,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 4,
+              "denominator": 4,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 904,
+              "denominator": 913,
+              "ratio": 99.01,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 4,
+              "denominator": 4,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 4,
+              "denominator": 4,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 4
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e8-ede845d821c5",
+      "departmentName": "Sở Dân tộc và Tôn giáo - tỉnh An Giang",
+      "departmentCode": "H01.07",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 76.66,
+      "totalMaxScore": 100,
+      "ratio": 89.14,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 20.0,
+        "ONLINE": 10.22,
+        "TTTT": 10.0,
+        "MDSH": 14.44,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 38,
+          "totalOnTime": 38,
+          "totalCompleted": null,
+          "totalOverdue": 0,
+          "avgProcessingDays": 11.92,
+          "ratio": 100,
+          "score": 20.0,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 100.0,
+            "overdueRatio": 0.0
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 38,
+              "denominator": 38,
+              "ratio": 100,
+              "score": 20,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 0,
+                "completed": 33
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 38,
+              "denominator": 38,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 14.44,
+          "maxScore": 22,
+          "ratio": 65.64,
+          "resultDigitizedDossiers": 14,
+          "digitizedDossiers": 33,
+          "reusedDataDossiers": 38,
+          "syncedStorageDossiers": 0,
+          "citizenConnectedDossiers": 36,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 14,
+              "denominator": 33,
+              "ratio": 42.42,
+              "score": 2.55,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 33,
+              "denominator": 33,
+              "ratio": 100,
+              "score": 4,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 38,
+              "denominator": 38,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 0,
+              "denominator": 38,
+              "ratio": 0,
+              "score": 0,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 36,
+              "denominator": 38,
+              "ratio": 94.74,
+              "score": 1.89,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 2,
+              "denominator": 2,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 10.22,
+          "maxScore": 12,
+          "totalScore": 10.22,
+          "totalMaxScore": 12,
+          "ratio": 85.17,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 5,
+          "onlineServiceTotal": 9,
+          "channelOnlineSum": 36,
+          "channelDirectSum": 2,
+          "channelPostalSum": 0,
+          "channelTotalSum": 38,
+          "onlineOnTimeSum": 36,
+          "onlineOverdueSum": 0,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 55.56,
+            "dossierOnlineChannelRatio": 94.74,
+            "onlineDossierOnTimeRatio": 100.0
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 5,
+              "denominator": 9,
+              "ratio": 55.56,
+              "score": 2.22,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 36,
+              "denominator": 38,
+              "ratio": 94.74,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 2,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 36,
+              "denominator": 36,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 36,
+                "overdue": 0
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 10.0,
+          "maxScore": 10,
+          "ratio": 100,
+          "totalDossierOnlinePaymentSuccess": 0,
+          "totalDossierFinancialObligation": 0,
+          "totalDossierOnlineFormalityPaymentSuccess": 0,
+          "totalFeeDossierFormalityDistinct": 0,
+          "totalFeeDossierFormality": 0,
+          "totalFeeFormality": 0,
+          "subMetrics": {
+            "paymentDossierRatio": null,
+            "paymentFormalityTransactionRatio": null,
+            "paymentFormalityConfigRatio": null
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 0,
+          "classifiedPetitions": 0,
+          "totalDossiers": 38,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 38,
+              "denominator": 38,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 5
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e9-76a6cf444205",
+      "departmentName": "Sở Du lịch - tỉnh An Giang",
+      "departmentCode": "H01.15",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 75.89,
+      "totalMaxScore": 100,
+      "ratio": 88.24,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 20.0,
+        "ONLINE": 8.65,
+        "TTTT": 7.37,
+        "MDSH": 17.87,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 210,
+          "totalOnTime": 210,
+          "totalCompleted": null,
+          "totalOverdue": 0,
+          "avgProcessingDays": 4.86,
+          "ratio": 100,
+          "score": 20.0,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 100.0,
+            "overdueRatio": 0.0
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 210,
+              "denominator": 210,
+              "ratio": 100,
+              "score": 20,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 0,
+                "completed": 159
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 218,
+              "denominator": 218,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 17.87,
+          "maxScore": 22,
+          "ratio": 81.23,
+          "resultDigitizedDossiers": 158,
+          "digitizedDossiers": 158,
+          "reusedDataDossiers": 199,
+          "syncedStorageDossiers": 0,
+          "citizenConnectedDossiers": 210,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 158,
+              "denominator": 159,
+              "ratio": 99.37,
+              "score": 5.96,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 158,
+              "denominator": 159,
+              "ratio": 99.37,
+              "score": 3.97,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 199,
+              "denominator": 210,
+              "ratio": 94.76,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 0,
+              "denominator": 210,
+              "ratio": 0,
+              "score": 0,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 210,
+              "denominator": 210,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 62,
+              "denominator": 64,
+              "ratio": 96.88,
+              "score": 1.94,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 8.65,
+          "maxScore": 12,
+          "totalScore": 8.65,
+          "totalMaxScore": 12,
+          "ratio": 72.08,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 11,
+          "onlineServiceTotal": 68,
+          "channelOnlineSum": 209,
+          "channelDirectSum": 1,
+          "channelPostalSum": 0,
+          "channelTotalSum": 210,
+          "onlineOnTimeSum": 209,
+          "onlineOverdueSum": 0,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 16.18,
+            "dossierOnlineChannelRatio": 99.52,
+            "onlineDossierOnTimeRatio": 100.0
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 11,
+              "denominator": 68,
+              "ratio": 16.18,
+              "score": 0.65,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 209,
+              "denominator": 210,
+              "ratio": 99.52,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 1,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 209,
+              "denominator": 209,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 209,
+                "overdue": 0
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 7.37,
+          "maxScore": 10,
+          "ratio": 73.7,
+          "totalDossierOnlinePaymentSuccess": 102,
+          "totalDossierFinancialObligation": 152,
+          "totalDossierOnlineFormalityPaymentSuccess": 6,
+          "totalFeeDossierFormalityDistinct": 9,
+          "totalFeeDossierFormality": 6,
+          "totalFeeFormality": 9,
+          "subMetrics": {
+            "paymentDossierRatio": 67.11,
+            "paymentFormalityTransactionRatio": 66.67,
+            "paymentFormalityConfigRatio": 66.67
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 102,
+              "denominator": 152,
+              "ratio": 67.11,
+              "score": 4.03,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 6,
+              "denominator": 9,
+              "ratio": 66.67,
+              "score": 1.67,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 6,
+              "denominator": 9,
+              "ratio": 66.67,
+              "score": 1.67,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 0,
+          "classifiedPetitions": 0,
+          "totalDossiers": 210,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 209,
+              "denominator": 210,
+              "ratio": 99.52,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 6
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e9-40fb0fce1602",
+      "departmentName": "Sở Giáo dục và Đào tạo - tỉnh An Giang",
+      "departmentCode": "H01.11",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 74.11,
+      "totalMaxScore": 100,
+      "ratio": 86.17,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 19.98,
+        "ONLINE": 8.47,
+        "TTTT": 5.2,
+        "MDSH": 18.46,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 937,
+          "totalOnTime": 936,
+          "totalCompleted": null,
+          "totalOverdue": 1,
+          "avgProcessingDays": 1.38,
+          "ratio": 99.89,
+          "score": 19.98,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 99.89,
+            "overdueRatio": 0.11
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 936,
+              "denominator": 937,
+              "ratio": 99.89,
+              "score": 19.98,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 1,
+                "completed": 913
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 951,
+              "denominator": 951,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 18.46,
+          "maxScore": 22,
+          "ratio": 83.91,
+          "resultDigitizedDossiers": 905,
+          "digitizedDossiers": 913,
+          "reusedDataDossiers": 768,
+          "syncedStorageDossiers": 185,
+          "citizenConnectedDossiers": 937,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 905,
+              "denominator": 913,
+              "ratio": 99.12,
+              "score": 5.95,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 913,
+              "denominator": 913,
+              "ratio": 100,
+              "score": 4,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 768,
+              "denominator": 937,
+              "ratio": 81.96,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 185,
+              "denominator": 937,
+              "ratio": 19.74,
+              "score": 0.79,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 937,
+              "denominator": 937,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 31,
+              "denominator": 36,
+              "ratio": 86.11,
+              "score": 1.72,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 8.47,
+          "maxScore": 12,
+          "totalScore": 8.47,
+          "totalMaxScore": 12,
+          "ratio": 70.58,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 7,
+          "onlineServiceTotal": 60,
+          "channelOnlineSum": 937,
+          "channelDirectSum": 0,
+          "channelPostalSum": 0,
+          "channelTotalSum": 937,
+          "onlineOnTimeSum": 936,
+          "onlineOverdueSum": 1,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 11.67,
+            "dossierOnlineChannelRatio": 100.0,
+            "onlineDossierOnTimeRatio": 99.89
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 7,
+              "denominator": 60,
+              "ratio": 11.67,
+              "score": 0.47,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 937,
+              "denominator": 937,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 0,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 936,
+              "denominator": 937,
+              "ratio": 99.89,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 936,
+                "overdue": 1
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 5.2,
+          "maxScore": 10,
+          "ratio": 52,
+          "totalDossierOnlinePaymentSuccess": 1,
+          "totalDossierFinancialObligation": 5,
+          "totalDossierOnlineFormalityPaymentSuccess": 1,
+          "totalFeeDossierFormalityDistinct": 1,
+          "totalFeeDossierFormality": 1,
+          "totalFeeFormality": 1,
+          "subMetrics": {
+            "paymentDossierRatio": 20.0,
+            "paymentFormalityTransactionRatio": 100.0,
+            "paymentFormalityConfigRatio": 100.0
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 1,
+              "denominator": 5,
+              "ratio": 20,
+              "score": 1.2,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 1,
+              "denominator": 1,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 1,
+              "denominator": 1,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 5,
+          "classifiedPetitions": 5,
+          "totalDossiers": 937,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 5,
+              "denominator": 5,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 924,
+              "denominator": 937,
+              "ratio": 98.61,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 5,
+              "denominator": 5,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 5,
+              "denominator": 5,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 7
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e9-22fd27b0d0e0",
+      "departmentName": "Sở Y tế - tỉnh An Giang",
+      "departmentCode": "H01.10",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 73.94,
+      "totalMaxScore": 100,
+      "ratio": 85.98,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 18.94,
+        "ONLINE": 8.91,
+        "TTTT": 6.01,
+        "MDSH": 18.08,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 4185,
+          "totalOnTime": 3963,
+          "totalCompleted": null,
+          "totalOverdue": 222,
+          "avgProcessingDays": 16.32,
+          "ratio": 94.7,
+          "score": 18.94,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 94.7,
+            "overdueRatio": 5.3
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 3963,
+              "denominator": 4185,
+              "ratio": 94.7,
+              "score": 18.94,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 222,
+                "completed": 3149
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 4701,
+              "denominator": 4701,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 18.08,
+          "maxScore": 22,
+          "ratio": 82.18,
+          "resultDigitizedDossiers": 2904,
+          "digitizedDossiers": 3149,
+          "reusedDataDossiers": 3499,
+          "syncedStorageDossiers": 875,
+          "citizenConnectedDossiers": 4185,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 2904,
+              "denominator": 3149,
+              "ratio": 92.22,
+              "score": 5.53,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 3149,
+              "denominator": 3149,
+              "ratio": 100,
+              "score": 4,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 3499,
+              "denominator": 4185,
+              "ratio": 83.61,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 875,
+              "denominator": 4185,
+              "ratio": 20.91,
+              "score": 0.84,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 4185,
+              "denominator": 4185,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 53,
+              "denominator": 62,
+              "ratio": 85.48,
+              "score": 1.71,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 8.91,
+          "maxScore": 12,
+          "totalScore": 8.91,
+          "totalMaxScore": 12,
+          "ratio": 74.25,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 31,
+          "onlineServiceTotal": 137,
+          "channelOnlineSum": 4185,
+          "channelDirectSum": 0,
+          "channelPostalSum": 0,
+          "channelTotalSum": 4185,
+          "onlineOnTimeSum": 3963,
+          "onlineOverdueSum": 222,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 22.63,
+            "dossierOnlineChannelRatio": 100.0,
+            "onlineDossierOnTimeRatio": 94.7
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 31,
+              "denominator": 137,
+              "ratio": 22.63,
+              "score": 0.91,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 4185,
+              "denominator": 4185,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 0,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 3963,
+              "denominator": 4185,
+              "ratio": 94.7,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 3963,
+                "overdue": 222
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 6.01,
+          "maxScore": 10,
+          "ratio": 60.1,
+          "totalDossierOnlinePaymentSuccess": 2350,
+          "totalDossierFinancialObligation": 2968,
+          "totalDossierOnlineFormalityPaymentSuccess": 16,
+          "totalFeeDossierFormalityDistinct": 64,
+          "totalFeeDossierFormality": 16,
+          "totalFeeFormality": 64,
+          "subMetrics": {
+            "paymentDossierRatio": 79.18,
+            "paymentFormalityTransactionRatio": 25.0,
+            "paymentFormalityConfigRatio": 25.0
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 2350,
+              "denominator": 2968,
+              "ratio": 79.18,
+              "score": 4.75,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 16,
+              "denominator": 64,
+              "ratio": 25,
+              "score": 0.63,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 16,
+              "denominator": 64,
+              "ratio": 25,
+              "score": 0.63,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 5,
+          "classifiedPetitions": 5,
+          "totalDossiers": 4185,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 5,
+              "denominator": 5,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 3956,
+              "denominator": 4185,
+              "ratio": 94.53,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 5,
+              "denominator": 5,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 5,
+              "denominator": 5,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 8
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e8-d26d7cd2c575",
+      "departmentName": "Sở Khoa học và Công nghệ - tỉnh An Giang",
+      "departmentCode": "H01.05",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 73.48,
+      "totalMaxScore": 100,
+      "ratio": 85.44,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 19.98,
+        "ONLINE": 8.54,
+        "TTTT": 4.61,
+        "MDSH": 18.35,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 1665,
+          "totalOnTime": 1663,
+          "totalCompleted": null,
+          "totalOverdue": 2,
+          "avgProcessingDays": 10.3,
+          "ratio": 99.88,
+          "score": 19.98,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 99.88,
+            "overdueRatio": 0.12
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 1663,
+              "denominator": 1665,
+              "ratio": 99.88,
+              "score": 19.98,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 2,
+                "completed": 1341
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 1677,
+              "denominator": 1677,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 18.35,
+          "maxScore": 22,
+          "ratio": 83.41,
+          "resultDigitizedDossiers": 1322,
+          "digitizedDossiers": 1341,
+          "reusedDataDossiers": 1613,
+          "syncedStorageDossiers": 199,
+          "citizenConnectedDossiers": 1665,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 1322,
+              "denominator": 1341,
+              "ratio": 98.58,
+              "score": 5.91,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 1341,
+              "denominator": 1341,
+              "ratio": 100,
+              "score": 4,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 1613,
+              "denominator": 1665,
+              "ratio": 96.88,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 199,
+              "denominator": 1665,
+              "ratio": 11.95,
+              "score": 0.48,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 1665,
+              "denominator": 1665,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 95,
+              "denominator": 97,
+              "ratio": 97.94,
+              "score": 1.96,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 8.54,
+          "maxScore": 12,
+          "totalScore": 8.54,
+          "totalMaxScore": 12,
+          "ratio": 71.17,
+          "authorityCount": 1,
+          "partialCount": 0,
+          "fullCount": 1,
+          "onlineDossierCount": 36,
+          "onlineServiceTotal": 269,
+          "channelOnlineSum": 1664,
+          "channelDirectSum": 1,
+          "channelPostalSum": 0,
+          "channelTotalSum": 1665,
+          "onlineOnTimeSum": 1662,
+          "onlineOverdueSum": 2,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": 100.0,
+            "onlineServiceHasDossierRatio": 13.38,
+            "dossierOnlineChannelRatio": 99.94,
+            "onlineDossierOnTimeRatio": 99.88
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 1,
+              "denominator": 1,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 1
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 36,
+              "denominator": 269,
+              "ratio": 13.38,
+              "score": 0.54,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 1664,
+              "denominator": 1665,
+              "ratio": 99.94,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 1,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 1662,
+              "denominator": 1664,
+              "ratio": 99.88,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 1662,
+                "overdue": 2
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 4.61,
+          "maxScore": 10,
+          "ratio": 46.1,
+          "totalDossierOnlinePaymentSuccess": 101,
+          "totalDossierFinancialObligation": 148,
+          "totalDossierOnlineFormalityPaymentSuccess": 4,
+          "totalFeeDossierFormalityDistinct": 39,
+          "totalFeeDossierFormality": 4,
+          "totalFeeFormality": 39,
+          "subMetrics": {
+            "paymentDossierRatio": 68.24,
+            "paymentFormalityTransactionRatio": 10.26,
+            "paymentFormalityConfigRatio": 10.26
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 101,
+              "denominator": 148,
+              "ratio": 68.24,
+              "score": 4.09,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 4,
+              "denominator": 39,
+              "ratio": 10.26,
+              "score": 0.26,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 4,
+              "denominator": 39,
+              "ratio": 10.26,
+              "score": 0.26,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 1,
+          "classifiedPetitions": 1,
+          "totalDossiers": 1665,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 1,
+              "denominator": 1,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 1663,
+              "denominator": 1665,
+              "ratio": 99.88,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 1,
+              "denominator": 1,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 1,
+              "denominator": 1,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 9
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e9-07b83f6f4a7c",
+      "departmentName": "Sở Xây dựng - tỉnh An Giang",
+      "departmentCode": "H01.09",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 72.43,
+      "totalMaxScore": 100,
+      "ratio": 84.22,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 19.95,
+        "ONLINE": 9.06,
+        "TTTT": 6.0,
+        "MDSH": 16.02,
+        "MDHL": 17.4
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 6350,
+          "totalOnTime": 6334,
+          "totalCompleted": null,
+          "totalOverdue": 16,
+          "avgProcessingDays": 3.26,
+          "ratio": 99.75,
+          "score": 19.95,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 99.75,
+            "overdueRatio": 0.25
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 6334,
+              "denominator": 6350,
+              "ratio": 99.75,
+              "score": 19.95,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 16,
+                "completed": 5460
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 6553,
+              "denominator": 6553,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 16.02,
+          "maxScore": 22,
+          "ratio": 72.82,
+          "resultDigitizedDossiers": 2927,
+          "digitizedDossiers": 4833,
+          "reusedDataDossiers": 5902,
+          "syncedStorageDossiers": 2314,
+          "citizenConnectedDossiers": 6193,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 2927,
+              "denominator": 5460,
+              "ratio": 53.61,
+              "score": 3.22,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 4833,
+              "denominator": 5460,
+              "ratio": 88.52,
+              "score": 3.54,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 5902,
+              "denominator": 6350,
+              "ratio": 92.94,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 2314,
+              "denominator": 6350,
+              "ratio": 36.44,
+              "score": 1.46,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 6193,
+              "denominator": 6350,
+              "ratio": 97.53,
+              "score": 1.95,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 115,
+              "denominator": 124,
+              "ratio": 92.74,
+              "score": 1.85,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 9.06,
+          "maxScore": 12,
+          "totalScore": 9.06,
+          "totalMaxScore": 12,
+          "ratio": 75.5,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 46,
+          "onlineServiceTotal": 174,
+          "channelOnlineSum": 5541,
+          "channelDirectSum": 809,
+          "channelPostalSum": 0,
+          "channelTotalSum": 6350,
+          "onlineOnTimeSum": 5528,
+          "onlineOverdueSum": 13,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 26.44,
+            "dossierOnlineChannelRatio": 87.26,
+            "onlineDossierOnTimeRatio": 99.77
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 46,
+              "denominator": 174,
+              "ratio": 26.44,
+              "score": 1.06,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 5541,
+              "denominator": 6350,
+              "ratio": 87.26,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 809,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 5528,
+              "denominator": 5541,
+              "ratio": 99.77,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 5528,
+                "overdue": 13
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 6.0,
+          "maxScore": 10,
+          "ratio": 60,
+          "totalDossierOnlinePaymentSuccess": 0,
+          "totalDossierFinancialObligation": 0,
+          "totalDossierOnlineFormalityPaymentSuccess": 0,
+          "totalFeeDossierFormalityDistinct": 1,
+          "totalFeeDossierFormality": 0,
+          "totalFeeFormality": 1,
+          "subMetrics": {
+            "paymentDossierRatio": null,
+            "paymentFormalityTransactionRatio": 0.0,
+            "paymentFormalityConfigRatio": 0.0
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 1,
+              "ratio": 0,
+              "score": 0,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 0,
+              "denominator": 1,
+              "ratio": 0,
+              "score": 0,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 17.4,
+          "maxScore": 18,
+          "ratio": 96.67,
+          "totalPetitions": 10,
+          "classifiedPetitions": 10,
+          "totalDossiers": 6350,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 10,
+              "denominator": 10,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 6332,
+              "denominator": 6350,
+              "ratio": 99.72,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 10,
+              "denominator": 10,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 9,
+              "denominator": 10,
+              "ratio": 90,
+              "score": 5.4,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 10
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e9-491bdd23abd3",
+      "departmentName": "Sở Tư pháp - tỉnh An Giang",
+      "departmentCode": "H01.12",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 72.42,
+      "totalMaxScore": 100,
+      "ratio": 84.21,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 20.0,
+        "ONLINE": 8.47,
+        "TTTT": 5.46,
+        "MDSH": 16.49,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 332,
+          "totalOnTime": 332,
+          "totalCompleted": null,
+          "totalOverdue": 0,
+          "avgProcessingDays": 5.71,
+          "ratio": 100,
+          "score": 20.0,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 100.0,
+            "overdueRatio": 0.0
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 332,
+              "denominator": 332,
+              "ratio": 100,
+              "score": 20,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 0,
+                "completed": 238
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 363,
+              "denominator": 363,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 16.49,
+          "maxScore": 22,
+          "ratio": 74.95,
+          "resultDigitizedDossiers": 215,
+          "digitizedDossiers": 216,
+          "reusedDataDossiers": 187,
+          "syncedStorageDossiers": 32,
+          "citizenConnectedDossiers": 300,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 215,
+              "denominator": 238,
+              "ratio": 90.34,
+              "score": 5.42,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 216,
+              "denominator": 238,
+              "ratio": 90.76,
+              "score": 3.63,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 187,
+              "denominator": 332,
+              "ratio": 56.33,
+              "score": 1.41,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 32,
+              "denominator": 332,
+              "ratio": 9.64,
+              "score": 0.39,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 300,
+              "denominator": 332,
+              "ratio": 90.36,
+              "score": 1.81,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 66,
+              "denominator": 72,
+              "ratio": 91.67,
+              "score": 1.83,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 8.47,
+          "maxScore": 12,
+          "totalScore": 8.47,
+          "totalMaxScore": 12,
+          "ratio": 70.58,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 17,
+          "onlineServiceTotal": 145,
+          "channelOnlineSum": 292,
+          "channelDirectSum": 40,
+          "channelPostalSum": 0,
+          "channelTotalSum": 332,
+          "onlineOnTimeSum": 292,
+          "onlineOverdueSum": 0,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 11.72,
+            "dossierOnlineChannelRatio": 87.95,
+            "onlineDossierOnTimeRatio": 100.0
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 17,
+              "denominator": 145,
+              "ratio": 11.72,
+              "score": 0.47,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 292,
+              "denominator": 332,
+              "ratio": 87.95,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 40,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 292,
+              "denominator": 292,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 292,
+                "overdue": 0
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 5.46,
+          "maxScore": 10,
+          "ratio": 54.6,
+          "totalDossierOnlinePaymentSuccess": 196,
+          "totalDossierFinancialObligation": 300,
+          "totalDossierOnlineFormalityPaymentSuccess": 12,
+          "totalFeeDossierFormalityDistinct": 39,
+          "totalFeeDossierFormality": 12,
+          "totalFeeFormality": 39,
+          "subMetrics": {
+            "paymentDossierRatio": 65.33,
+            "paymentFormalityTransactionRatio": 30.77,
+            "paymentFormalityConfigRatio": 30.77
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 196,
+              "denominator": 300,
+              "ratio": 65.33,
+              "score": 3.92,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 12,
+              "denominator": 39,
+              "ratio": 30.77,
+              "score": 0.77,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 12,
+              "denominator": 39,
+              "ratio": 30.77,
+              "score": 0.77,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 2,
+          "classifiedPetitions": 2,
+          "totalDossiers": 332,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 1,
+              "denominator": 2,
+              "ratio": 50,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 331,
+              "denominator": 332,
+              "ratio": 99.7,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 2,
+              "denominator": 2,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 2,
+              "denominator": 2,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 11
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e7-f92cd528c096",
+      "departmentName": "Sở Tài chính - tỉnh An Giang",
+      "departmentCode": "H01.02",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 72.34,
+      "totalMaxScore": 100,
+      "ratio": 84.12,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 19.92,
+        "ONLINE": 9.01,
+        "TTTT": 0.0,
+        "MDSH": 21.41,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 1431,
+          "totalOnTime": 1425,
+          "totalCompleted": null,
+          "totalOverdue": 6,
+          "avgProcessingDays": 2.15,
+          "ratio": 99.58,
+          "score": 19.92,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 99.58,
+            "overdueRatio": 0.42
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 1425,
+              "denominator": 1431,
+              "ratio": 99.58,
+              "score": 19.92,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 6,
+                "completed": 1317
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 1739,
+              "denominator": 1739,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 21.41,
+          "maxScore": 22,
+          "ratio": 97.32,
+          "resultDigitizedDossiers": 1298,
+          "digitizedDossiers": 1314,
+          "reusedDataDossiers": 1431,
+          "syncedStorageDossiers": 1318,
+          "citizenConnectedDossiers": 1431,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 1298,
+              "denominator": 1317,
+              "ratio": 98.56,
+              "score": 5.91,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 1314,
+              "denominator": 1317,
+              "ratio": 99.77,
+              "score": 3.99,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 1431,
+              "denominator": 1431,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 1318,
+              "denominator": 1431,
+              "ratio": 92.1,
+              "score": 3.68,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 1431,
+              "denominator": 1431,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 66,
+              "denominator": 72,
+              "ratio": 91.67,
+              "score": 1.83,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 9.01,
+          "maxScore": 12,
+          "totalScore": 9.01,
+          "totalMaxScore": 12,
+          "ratio": 75.08,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 19,
+          "onlineServiceTotal": 75,
+          "channelOnlineSum": 1424,
+          "channelDirectSum": 7,
+          "channelPostalSum": 0,
+          "channelTotalSum": 1431,
+          "onlineOnTimeSum": 1418,
+          "onlineOverdueSum": 6,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 25.33,
+            "dossierOnlineChannelRatio": 99.51,
+            "onlineDossierOnTimeRatio": 99.58
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 19,
+              "denominator": 75,
+              "ratio": 25.33,
+              "score": 1.01,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 1424,
+              "denominator": 1431,
+              "ratio": 99.51,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 7,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 1418,
+              "denominator": 1424,
+              "ratio": 99.58,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 1418,
+                "overdue": 6
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 0.0,
+          "maxScore": 10,
+          "ratio": 0,
+          "totalDossierOnlinePaymentSuccess": 0,
+          "totalDossierFinancialObligation": 1418,
+          "totalDossierOnlineFormalityPaymentSuccess": 0,
+          "totalFeeDossierFormalityDistinct": 24,
+          "totalFeeDossierFormality": 0,
+          "totalFeeFormality": 24,
+          "subMetrics": {
+            "paymentDossierRatio": 0.0,
+            "paymentFormalityTransactionRatio": 0.0,
+            "paymentFormalityConfigRatio": 0.0
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 1418,
+              "ratio": 0,
+              "score": 0,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 24,
+              "ratio": 0,
+              "score": 0,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 0,
+              "denominator": 24,
+              "ratio": 0,
+              "score": 0,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 1,
+          "classifiedPetitions": 1,
+          "totalDossiers": 1431,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 1,
+              "denominator": 1,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 1425,
+              "denominator": 1431,
+              "ratio": 99.58,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 1,
+              "denominator": 1,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 1,
+              "denominator": 1,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 12
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e8-b4ec663d546a",
+      "departmentName": "Sở Văn hóa và Thể thao - tỉnh An Giang",
+      "departmentCode": "H01.04",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 72.14,
+      "totalMaxScore": 100,
+      "ratio": 83.88,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 19.36,
+        "ONLINE": 8.71,
+        "TTTT": 4.16,
+        "MDSH": 17.91,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 755,
+          "totalOnTime": 731,
+          "totalCompleted": null,
+          "totalOverdue": 24,
+          "avgProcessingDays": 3.16,
+          "ratio": 96.82,
+          "score": 19.36,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 96.82,
+            "overdueRatio": 3.18
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 731,
+              "denominator": 755,
+              "ratio": 96.82,
+              "score": 19.36,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 24,
+                "completed": 632
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 787,
+              "denominator": 787,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 17.91,
+          "maxScore": 22,
+          "ratio": 81.41,
+          "resultDigitizedDossiers": 632,
+          "digitizedDossiers": 631,
+          "reusedDataDossiers": 753,
+          "syncedStorageDossiers": 5,
+          "citizenConnectedDossiers": 745,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 632,
+              "denominator": 632,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 631,
+              "denominator": 632,
+              "ratio": 99.84,
+              "score": 3.99,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 753,
+              "denominator": 755,
+              "ratio": 99.74,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 5,
+              "denominator": 755,
+              "ratio": 0.66,
+              "score": 0.03,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 745,
+              "denominator": 755,
+              "ratio": 98.68,
+              "score": 1.97,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 119,
+              "denominator": 124,
+              "ratio": 95.97,
+              "score": 1.92,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 8.71,
+          "maxScore": 12,
+          "totalScore": 8.71,
+          "totalMaxScore": 12,
+          "ratio": 72.58,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 23,
+          "onlineServiceTotal": 130,
+          "channelOnlineSum": 745,
+          "channelDirectSum": 10,
+          "channelPostalSum": 0,
+          "channelTotalSum": 755,
+          "onlineOnTimeSum": 723,
+          "onlineOverdueSum": 22,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 17.69,
+            "dossierOnlineChannelRatio": 98.68,
+            "onlineDossierOnTimeRatio": 97.05
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 23,
+              "denominator": 130,
+              "ratio": 17.69,
+              "score": 0.71,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 745,
+              "denominator": 755,
+              "ratio": 98.68,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 10,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 723,
+              "denominator": 745,
+              "ratio": 97.05,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 723,
+                "overdue": 22
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 4.16,
+          "maxScore": 10,
+          "ratio": 41.6,
+          "totalDossierOnlinePaymentSuccess": 31,
+          "totalDossierFinancialObligation": 57,
+          "totalDossierOnlineFormalityPaymentSuccess": 2,
+          "totalFeeDossierFormalityDistinct": 11,
+          "totalFeeDossierFormality": 2,
+          "totalFeeFormality": 11,
+          "subMetrics": {
+            "paymentDossierRatio": 54.39,
+            "paymentFormalityTransactionRatio": 18.18,
+            "paymentFormalityConfigRatio": 18.18
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 31,
+              "denominator": 57,
+              "ratio": 54.39,
+              "score": 3.26,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 2,
+              "denominator": 11,
+              "ratio": 18.18,
+              "score": 0.45,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 2,
+              "denominator": 11,
+              "ratio": 18.18,
+              "score": 0.45,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 0,
+          "classifiedPetitions": 0,
+          "totalDossiers": 755,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 731,
+              "denominator": 755,
+              "ratio": 96.82,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 13
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e7-e6ff209f8ebc",
+      "departmentName": "Sở Nội vụ - tỉnh An Giang",
+      "departmentCode": "H01.01",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 69.75,
+      "totalMaxScore": 100,
+      "ratio": 81.1,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 19.99,
+        "ONLINE": 8.47,
+        "TTTT": 0.0,
+        "MDSH": 19.29,
+        "MDHL": 18.0
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 2890,
+          "totalOnTime": 2889,
+          "totalCompleted": null,
+          "totalOverdue": 1,
+          "avgProcessingDays": 7.03,
+          "ratio": 99.97,
+          "score": 19.99,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 99.97,
+            "overdueRatio": 0.03
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 2889,
+              "denominator": 2890,
+              "ratio": 99.97,
+              "score": 19.99,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 1,
+                "completed": 1608
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 3134,
+              "denominator": 3134,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 19.29,
+          "maxScore": 22,
+          "ratio": 87.68,
+          "resultDigitizedDossiers": 1389,
+          "digitizedDossiers": 1550,
+          "reusedDataDossiers": 2764,
+          "syncedStorageDossiers": 2043,
+          "citizenConnectedDossiers": 2890,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 1389,
+              "denominator": 1608,
+              "ratio": 86.38,
+              "score": 5.18,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 1550,
+              "denominator": 1608,
+              "ratio": 96.39,
+              "score": 3.86,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 2764,
+              "denominator": 2890,
+              "ratio": 95.64,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 2043,
+              "denominator": 2890,
+              "ratio": 70.69,
+              "score": 2.83,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 2890,
+              "denominator": 2890,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 63,
+              "denominator": 89,
+              "ratio": 70.79,
+              "score": 1.42,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 8.47,
+          "maxScore": 12,
+          "totalScore": 8.47,
+          "totalMaxScore": 12,
+          "ratio": 70.58,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 13,
+          "onlineServiceTotal": 110,
+          "channelOnlineSum": 2717,
+          "channelDirectSum": 173,
+          "channelPostalSum": 0,
+          "channelTotalSum": 2890,
+          "onlineOnTimeSum": 2717,
+          "onlineOverdueSum": 0,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 11.82,
+            "dossierOnlineChannelRatio": 94.01,
+            "onlineDossierOnTimeRatio": 100.0
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 13,
+              "denominator": 110,
+              "ratio": 11.82,
+              "score": 0.47,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 2717,
+              "denominator": 2890,
+              "ratio": 94.01,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 173,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 2717,
+              "denominator": 2717,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 2717,
+                "overdue": 0
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 0.0,
+          "maxScore": 10,
+          "ratio": 0,
+          "totalDossierOnlinePaymentSuccess": 0,
+          "totalDossierFinancialObligation": 633,
+          "totalDossierOnlineFormalityPaymentSuccess": 0,
+          "totalFeeDossierFormalityDistinct": 5,
+          "totalFeeDossierFormality": 0,
+          "totalFeeFormality": 5,
+          "subMetrics": {
+            "paymentDossierRatio": 0.0,
+            "paymentFormalityTransactionRatio": 0.0,
+            "paymentFormalityConfigRatio": 0.0
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 633,
+              "ratio": 0,
+              "score": 0,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 0,
+              "denominator": 5,
+              "ratio": 0,
+              "score": 0,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 0,
+              "denominator": 5,
+              "ratio": 0,
+              "score": 0,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 18.0,
+          "maxScore": 18,
+          "ratio": 100,
+          "totalPetitions": 3,
+          "classifiedPetitions": 3,
+          "totalDossiers": 2890,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 3,
+              "denominator": 3,
+              "ratio": 100,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 2887,
+              "denominator": 2890,
+              "ratio": 99.9,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 3,
+              "denominator": 3,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 3,
+              "denominator": 3,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 14
+    },
+    {
+      "departmentId": "019d2be3-6a84-779d-b3e7-fd2672114531",
+      "departmentName": "Sở Nông nghiệp và Môi trường - tỉnh An Giang",
+      "departmentCode": "H01.03",
+      "childGroup": "AGENCY",
+      "provinceCode": "H01",
+      "provinceName": "UBND tỉnh An Giang",
+      "rootDepartmentId": "019d2be3-6a84-779d-b3e7-e214bdb86482",
+      "totalScore": 66.18,
+      "totalMaxScore": 100,
+      "ratio": 76.95,
+      "scoreDelta": null,
+      "groupScores": {
+        "CKMB": 6.0,
+        "TDGQ": 19.87,
+        "ONLINE": 9.11,
+        "TTTT": 1.51,
+        "MDSH": 17.19,
+        "MDHL": 14.59
+      },
+      "componentIndicators": {
+        "TDGQ_TienDoGiaiQuyet": {
+          "totalReceived": 108870,
+          "totalOnTime": 108181,
+          "totalCompleted": null,
+          "totalOverdue": 689,
+          "avgProcessingDays": 3.82,
+          "ratio": 99.37,
+          "score": 19.87,
+          "maxScore": 20,
+          "subMetrics": {
+            "onTimeRatio": 99.37,
+            "overdueRatio": 0.63
+          },
+          "metrics": [
+            {
+              "code": "ON_TIME_AHEAD_OF_SCHEDULE",
+              "name": "Tỷ lệ hồ sơ xử lý trước hạn, đúng hạn",
+              "numerator": 108181,
+              "denominator": 108870,
+              "ratio": 99.37,
+              "score": 19.87,
+              "maxScore": 20,
+              "breakdown": {
+                "overdue": 689,
+                "completed": 66210
+              }
+            }
+          ]
+        },
+        "CKMB_CongKhaiMinhBach": {
+          "score": 6.0,
+          "maxScore": 6,
+          "ratio": 100,
+          "metrics": [
+            {
+              "code": "PUBLISH_ON_TIME",
+              "name": "Tỷ lệ TTHC công bố đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 6,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_UPDATE_ON_TIME",
+              "name": "Tỷ lệ TTHC cập nhật, công khai đúng hạn",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 4,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "PUBLIC_CONTENT_FULL",
+              "name": "Tỷ lệ TTHC công khai đầy đủ nội dung",
+              "numerator": null,
+              "denominator": null,
+              "ratio": null,
+              "score": null,
+              "maxScore": 2,
+              "applicable": false,
+              "dataQualityStatus": "LEVEL1_ONLY",
+              "dataQualityMessage": "Chỉ số chỉ tính điểm cho đơn vị cấp 1"
+            },
+            {
+              "code": "DOSSIER_SYNC",
+              "name": "Tỷ lệ hồ sơ đồng bộ lên Cổng DVCQG",
+              "numerator": 111050,
+              "denominator": 111050,
+              "ratio": 100,
+              "score": 6,
+              "maxScore": 6,
+              "applicable": true,
+              "dataQualityStatus": "NO_NATIONAL_REPORT_DATA",
+              "dataQualityMessage": "Chưa có dữ liệu từ hệ thống báo cáo Quốc gia",
+              "breakdown": {
+                "excludedLate": 0,
+                "notSynced": 0
+              }
+            }
+          ]
+        },
+        "MDSH_SoHoaHoSo": {
+          "score": 17.19,
+          "maxScore": 22,
+          "ratio": 78.14,
+          "resultDigitizedDossiers": 61022,
+          "digitizedDossiers": 51785,
+          "reusedDataDossiers": 87652,
+          "syncedStorageDossiers": 22267,
+          "citizenConnectedDossiers": 101347,
+          "metrics": [
+            {
+              "code": "ORIGINAL_RESULT_AVAILABLE",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính có cấp kết quả giải quyết thủ tục hành chính điện tử",
+              "numerator": 61022,
+              "denominator": 66175,
+              "ratio": 92.21,
+              "score": 5.53,
+              "maxScore": 6
+            },
+            {
+              "code": "SO_HOA_GIAY_TO_GIAI_QUYET",
+              "name": "Tỷ lệ hồ sơ thủ tục hành chính thực hiện số hóa hồ sơ",
+              "numerator": 51785,
+              "denominator": 66175,
+              "ratio": 78.25,
+              "score": 3.13,
+              "maxScore": 4
+            },
+            {
+              "code": "REUSED_DIGITIZED_DATA",
+              "name": "Tỷ lệ hồ sơ khai thác, sử dụng lại thông tin, dữ liệu số hóa",
+              "numerator": 87652,
+              "denominator": 108784,
+              "ratio": 80.57,
+              "score": 2,
+              "maxScore": 2
+            },
+            {
+              "code": "SYNCED_WITH_DVCQG_PERSONAL_STORAGE",
+              "name": "Tỷ lệ hồ sơ TTHC được số hóa có kết nối, chia sẻ dữ liệu phục vụ tái sử dụng",
+              "numerator": 22267,
+              "denominator": 108784,
+              "ratio": 20.47,
+              "score": 0.82,
+              "maxScore": 4
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_DOSSIER",
+              "name": "Tỷ lệ hồ sơ TTHC có sử dụng thông tin, dữ liệu dân cư",
+              "numerator": 101347,
+              "denominator": 108784,
+              "ratio": 93.16,
+              "score": 1.86,
+              "maxScore": 2
+            },
+            {
+              "code": "CITIZEN_DATA_CONNECTED_FORMALITY",
+              "name": "Tỷ lệ TTHC triển khai kết nối, chia sẻ dữ liệu dân cư phục vụ GQ TTHC",
+              "numerator": 204,
+              "denominator": 220,
+              "ratio": 92.73,
+              "score": 1.85,
+              "maxScore": 2
+            },
+            {
+              "code": "ELECTRONIC_CERTIFIED_COPY",
+              "name": "Tỷ lệ cung cấp dịch vụ chứng thực bản sao điện tử từ bản chính",
+              "numerator": null,
+              "denominator": null,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2
+            }
+          ]
+        },
+        "ONLINE_DichVuTrucTuyen": {
+          "score": 9.11,
+          "maxScore": 12,
+          "totalScore": 9.11,
+          "totalMaxScore": 12,
+          "ratio": 75.92,
+          "authorityCount": 0,
+          "partialCount": 0,
+          "fullCount": 0,
+          "onlineDossierCount": 78,
+          "onlineServiceTotal": 281,
+          "channelOnlineSum": 82094,
+          "channelDirectSum": 26776,
+          "channelPostalSum": 0,
+          "channelTotalSum": 108870,
+          "onlineOnTimeSum": 81453,
+          "onlineOverdueSum": 641,
+          "subMetrics": {
+            "formalityOnlineProvisionRatio": null,
+            "onlineServiceHasDossierRatio": 27.76,
+            "dossierOnlineChannelRatio": 75.41,
+            "onlineDossierOnTimeRatio": 99.22
+          },
+          "metrics": [
+            {
+              "code": "FORMALITY_ONLINE_PROVISION",
+              "name": "Tỷ lệ TTHC cung cấp dịch vụ công trực tuyến",
+              "numerator": 0,
+              "denominator": 0,
+              "ratio": 100,
+              "score": 2,
+              "maxScore": 2,
+              "breakdown": {
+                "partial": 0,
+                "full": 0
+              }
+            },
+            {
+              "code": "ONLINE_SERVICE_HAS_DOSSIER",
+              "name": "Tỷ lệ dịch vụ công trực tuyến có phát sinh hồ sơ trực tuyến",
+              "numerator": 78,
+              "denominator": 281,
+              "ratio": 27.76,
+              "score": 1.11,
+              "maxScore": 4
+            },
+            {
+              "code": "DOSSIER_ONLINE_CHANNEL",
+              "name": "Tỷ lệ hồ sơ TTHC theo hình thức nộp hồ sơ trực tuyến",
+              "numerator": 82094,
+              "denominator": 108870,
+              "ratio": 75.41,
+              "score": 6,
+              "maxScore": 6,
+              "breakdown": {
+                "direct": 26776,
+                "postal": 0
+              }
+            },
+            {
+              "code": "ONLINE_DOSSIER_RESULT",
+              "name": "Kết quả xử lý hồ sơ nộp trực tuyến",
+              "numerator": 81453,
+              "denominator": 82094,
+              "ratio": 99.22,
+              "score": null,
+              "maxScore": 0,
+              "breakdown": {
+                "onTime": 81453,
+                "overdue": 641
+              }
+            }
+          ]
+        },
+        "TTTT_ThanhToanTrucTuyen": {
+          "score": 1.51,
+          "maxScore": 10,
+          "ratio": 15.1,
+          "totalDossierOnlinePaymentSuccess": 938,
+          "totalDossierFinancialObligation": 45292,
+          "totalDossierOnlineFormalityPaymentSuccess": 7,
+          "totalFeeDossierFormalityDistinct": 27,
+          "totalFeeDossierFormality": 8,
+          "totalFeeFormality": 27,
+          "subMetrics": {
+            "paymentDossierRatio": 2.07,
+            "paymentFormalityTransactionRatio": 25.93,
+            "paymentFormalityConfigRatio": 29.63
+          },
+          "metrics": [
+            {
+              "code": "DOSSIER_ONLINE_PAYMENT",
+              "name": "Tỷ lệ hồ sơ có giao dịch thanh toán trực tuyến",
+              "numerator": 938,
+              "denominator": 45292,
+              "ratio": 2.07,
+              "score": 0.12,
+              "maxScore": 6
+            },
+            {
+              "code": "FORMALITY_ONLINE_PAYMENT",
+              "name": "Tỷ lệ thủ tục hành chính có phát sinh thanh toán trực tuyến",
+              "numerator": 7,
+              "denominator": 27,
+              "ratio": 25.93,
+              "score": 0.65,
+              "maxScore": 2
+            },
+            {
+              "code": "FORMALITY_FEE_DOSSIER",
+              "name": "Tỷ lệ thủ tục hành chính có hồ sơ phát sinh nghĩa vụ tài chính",
+              "numerator": 8,
+              "denominator": 27,
+              "ratio": 29.63,
+              "score": 0.74,
+              "maxScore": 2
+            }
+          ]
+        },
+        "MDHL_MucDoHaiLong": {
+          "score": 14.59,
+          "maxScore": 18,
+          "ratio": 81.06,
+          "totalPetitions": 37,
+          "classifiedPetitions": 37,
+          "totalDossiers": 108784,
+          "averageScore": null,
+          "metrics": [
+            {
+              "code": "PETITION_CLASSIFICATION_TTHC",
+              "name": "Tỷ lệ PAKN về quy định, thủ tục hành chính",
+              "numerator": 26,
+              "denominator": 37,
+              "ratio": 70.27,
+              "score": null,
+              "maxScore": 0
+            },
+            {
+              "code": "DOSSIER_RECEIVING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong tiếp nhận, giải quyết TTHC",
+              "numerator": 108078,
+              "denominator": 108784,
+              "ratio": 99.35,
+              "score": 6,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_PROCESSING_ON_TIME",
+              "name": "Tỷ lệ PAKN xử lý đúng hạn",
+              "numerator": 28,
+              "denominator": 37,
+              "ratio": 75.68,
+              "score": 4.54,
+              "maxScore": 6
+            },
+            {
+              "code": "PETITION_HANDLING_SATISFACTION",
+              "name": "Tỷ lệ hài lòng trong xử lý PAKN",
+              "numerator": 25,
+              "denominator": 37,
+              "ratio": 67.57,
+              "score": 4.05,
+              "maxScore": 6
+            }
+          ]
+        }
+      },
+      "groupRank": 15
+    }
+  ],
+  "updatedAt": "2026-11-12T22:31:31Z"
+}
